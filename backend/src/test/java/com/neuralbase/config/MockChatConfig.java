@@ -1,6 +1,7 @@
 package com.neuralbase.config;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -19,6 +20,10 @@ public class MockChatConfig {
     /** 每次 prompt 调用都会记录（含 SystemMessage 的 RAG 上下文与多轮历史），测试断言用。测试前请 clear。 */
     public static final List<Prompt> PROMPTS = new CopyOnWriteArrayList<>();
 
+    private static final String BAGUWEN_JSON =
+        "{\"qa_pairs\":[{\"question\":\"什么是 JVM 内存模型？\",\"answer\":\"分为堆、栈、方法区等。\",\"difficulty\":\"中等\"}],"
+        + "\"tags\":[\"Java\",\"JVM\"]}";
+
     @Bean
     @Primary
     public ChatModel mockChatModel() {
@@ -26,7 +31,10 @@ public class MockChatConfig {
             @Override
             public ChatResponse call(Prompt prompt) {
                 PROMPTS.add(prompt);
-                return new ChatResponse(List.of(new Generation(new AssistantMessage("mock 回复"))));
+                boolean baguwen = prompt.getInstructions().stream().anyMatch(m ->
+                    m instanceof SystemMessage sm && sm.getText().contains("整理为面试题格式"));
+                String text = baguwen ? BAGUWEN_JSON : "mock 回复";
+                return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
             }
 
             @Override
