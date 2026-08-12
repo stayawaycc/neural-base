@@ -40,6 +40,14 @@ class DocumentUploadTest {
     }
 
     @Test
+    void uploadWithoutTokenReturns401() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+            "file", "notes.md", MediaType.TEXT_MARKDOWN_VALUE, "content".getBytes());
+        mvc.perform(multipart("/api/document").file(file))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void uploadCreatesPendingDocument() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
             "file", "notes.md", MediaType.TEXT_MARKDOWN_VALUE, "# 标题\n\n正文内容".getBytes());

@@ -25,7 +25,8 @@ public class FileStorageService {
 
     public String store(MultipartFile file) throws IOException {
         String original = file.getOriginalFilename() == null ? "unnamed" : file.getOriginalFilename();
-        Path target = uploadDir.resolve(UUID.randomUUID() + "_" + original);
+        String safeName = Path.of(original).getFileName().toString();
+        Path target = uploadDir.resolve(UUID.randomUUID() + "_" + safeName);
         file.transferTo(target);
         return target.toString();
     }
