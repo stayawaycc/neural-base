@@ -64,4 +64,16 @@ class DocumentUploadTest {
         String status = data.get("status").asText();
         assertThat(status).isIn("PENDING", "PROCESSING", "READY", "FAILED");
     }
+
+    @Test
+    void uploadWithInvalidKbIdReturns400() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+            "file", "notes.md", MediaType.TEXT_MARKDOWN_VALUE, "content".getBytes());
+        mvc.perform(multipart("/api/document")
+                .file(file)
+                .param("kbId", "999999")
+                .header("Authorization", "Bearer " + token()))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value(400));
+    }
 }

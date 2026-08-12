@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neuralbase.config.MockEmbeddingConfig;
 import com.neuralbase.entity.Document;
+import com.neuralbase.entity.Kb;
 import com.neuralbase.service.DocumentService;
+import com.neuralbase.service.KbService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,8 @@ class DocumentSearchTest {
     private ObjectMapper objectMapper;
     @Autowired
     private DocumentService documentService;
+    @Autowired
+    private KbService kbService;
 
     private String token;
 
@@ -73,5 +77,45 @@ class DocumentSearchTest {
                     java.util.Map.of("query", "zzz qqq xxx 无意义", "topK", 3))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    void kbIdFilterIsolatesAcrossKbs() throws Exception {
+        Kb kb2 = new Kb();
+        kb2.setName("kb2");
+        kbService.save(kb2);
+        MockMultipartFile other = new MockMultipartFile(
+            "file", "other.txt", "text/plain",
+            ("OTHER 前缀独立内容，与 kb1 无关。".repeat(200)).getBytes());
+        Document otherDoc = documentService.upload(other, kb2.getId());
+        documentService.process(otherDoc.getId());
+
+        String q = "OTHER 前缀独立内容，与 kb1 无关。";
+        mvc.perform(post("/api/document/search")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(java.util.Map.of("query", q, "kbId", kb2.getId(), "topK", 3))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].docId").value(otherDoc.getId()));
+        mvc.perform(post("/api/document/search")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(java.util.Map.of("query", q, "kbId", 1, "topK", 3))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[?(@.docId == " + otherDoc.getId() + ")]").doesNotExist());
+    }
+
+    @Test
+    void searchWithInvalidInputReturns400() throws Exception {
+        mvc.perform(post("/api/document/search")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"\",\"topK\":3}"))
+            .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/document/search")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"query\":\"x\",\"topK\":0}"))
+            .andExpect(status().isBadRequest());
     }
 }

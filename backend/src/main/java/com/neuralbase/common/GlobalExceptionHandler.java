@@ -16,4 +16,9 @@ public class GlobalExceptionHandler {
             .orElse("参数错误");
         return ResponseEntity.badRequest().body(Result.fail(400, msg));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Result<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Result.fail(400, ex.getMessage()));
+    }
 }

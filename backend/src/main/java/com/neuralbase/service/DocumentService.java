@@ -3,6 +3,7 @@ package com.neuralbase.service;
 import com.neuralbase.dto.SearchResult;
 import com.neuralbase.entity.Document;
 import com.neuralbase.mapper.DocumentMapper;
+import com.neuralbase.mapper.KbMapper;
 import org.apache.tika.exception.TikaException;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,19 +28,24 @@ public class DocumentService {
     private final TextChunker textChunker;
     private final VectorStore vectorStore;
     private final JdbcTemplate jdbcTemplate;
+    private final KbMapper kbMapper;
 
     public DocumentService(DocumentMapper documentMapper, FileStorageService fileStorageService,
                            TextExtractorService textExtractorService, TextChunker textChunker,
-                           VectorStore vectorStore, JdbcTemplate jdbcTemplate) {
+                           VectorStore vectorStore, JdbcTemplate jdbcTemplate, KbMapper kbMapper) {
         this.documentMapper = documentMapper;
         this.fileStorageService = fileStorageService;
         this.textExtractorService = textExtractorService;
         this.textChunker = textChunker;
         this.vectorStore = vectorStore;
         this.jdbcTemplate = jdbcTemplate;
+        this.kbMapper = kbMapper;
     }
 
     public Document upload(MultipartFile file, Long kbId) throws IOException {
+        if (kbId != null && kbMapper.selectById(kbId) == null) {
+            throw new IllegalArgumentException("知识库不存在: " + kbId);
+        }
         String path = fileStorageService.store(file);
         String original = file.getOriginalFilename() == null ? "unnamed" : file.getOriginalFilename();
         Document doc = new Document();
@@ -97,7 +103,13 @@ public class DocumentService {
     }
 
     public List<SearchResult> search(String query, Long kbId, Integer topK) {
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException("query 不能为空");
+        }
         int k = topK == null ? 5 : topK;
+        if (k < 1 || k > 20) {
+            throw new IllegalArgumentException("topK 必须在 1~20 之间");
+        }
         org.springframework.ai.vectorstore.SearchRequest.Builder builder =
             org.springframework.ai.vectorstore.SearchRequest.builder().query(query).topK(k);
         if (kbId != null) {
