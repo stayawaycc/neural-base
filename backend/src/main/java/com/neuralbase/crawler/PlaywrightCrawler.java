@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
 @Profile("!test")
 public class PlaywrightCrawler implements ArticleCrawler {
 
-    private static final int TIMEOUT_MS = 15_000;
+    // 45s：VuePress 等重型首屏 + 慢网络下渲染耗时可能超过 15s（冒烟实测 javaguide 超时）
+    private static final int TIMEOUT_MS = 45_000;
 
     @Override
     public CrawledArticle fetch(String url) throws CrawlException {

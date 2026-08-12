@@ -26,11 +26,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class BaguwenService {
 
@@ -119,6 +122,9 @@ public class BaguwenService {
 
         CrawledArticle crawled = articleCrawler.fetch(task.getUrl());
         String content = contentExtractor.extract(crawled.html());
+        log.info("[baguwen] task={} url={} htmlLen={} contentLen={} contentHead={}",
+            taskId, task.getUrl(), crawled.html() == null ? 0 : crawled.html().length(),
+            content.length(), content.substring(0, Math.min(120, content.length())).replace('\n', ' '));
         if (content.length() < MIN_CONTENT_CHARS) {
             throw new IllegalStateException("未能从页面提取到有效正文: " + task.getUrl());
         }
