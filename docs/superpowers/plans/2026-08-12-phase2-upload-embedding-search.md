@@ -12,7 +12,7 @@
 
 - 沿用 Phase 1：`D:\neural-base\backend`，包根 `com.neuralbase`，测试 `@SpringBootTest` + `@ActiveProfiles("test")` 跑 `neuralbase_test`
 - **pgvector 4096 维、无 ANN 索引**（已裁决）：Spring AI `PgVectorStore` 必须 `initializeSchema(false)` + `dimensions(4096)`，表由 V1 Flyway 管理，**绝不**让它自动建 schema/索引（2000 维上限会炸）
-- Embedding 用显式 Bean（非 autoconfig）：`OpenAiEmbeddingModel` → SiliconFlow `https://api.siliconflow.cn/v1`，模型 `Qwen/Qwen3-Embedding-8B`，`dimensions=4096`
+- Embedding 用显式 Bean（非 autoconfig）：`OpenAiEmbeddingModel` → SiliconFlow `https://api.siliconflow.cn`（**已修正 2026-08-12**：Spring AI 1.1.8 的 `OpenAiApi` 默认 `embeddingsPath=/v1/embeddings`，baseUrl 带 `/v1` 会拼成 `/v1/v1/embeddings` → 404；baseUrl 必须不含 `/v1`），模型 `Qwen/Qwen3-Embedding-8B`，`dimensions=4096`
 - **测试不依赖真实 API**：`EmbeddingConfig` 用 `@Profile("!test")`（测试环境不建真 Bean），测试用 `@TestConfiguration` 提供假 `EmbeddingModel`（确定性向量）
 - 异步：`@EnableAsync` + `@Async`（Q8-B 决策）；文档状态机 `PENDING → PROCESSING → READY/FAILED`，失败记 `document.error`
 - 上传文件存 `neuralbase.storage.upload-dir`（默认 `uploads`，git 忽略）；multipart 上限 50MB
@@ -98,7 +98,7 @@ neuralbase:
   storage:
     upload-dir: ${UPLOAD_DIR:uploads}
   ai:
-    siliconflow-base-url: https://api.siliconflow.cn/v1
+    siliconflow-base-url: https://api.siliconflow.cn
     siliconflow-api-key: ${SILICONFLOW_API_KEY:}
 ```
 （注意缩进：`servlet:` 要挂在 `spring:` 下——把它合并进现有 `spring:` 块，不要另起顶层 `spring`。最终 `application.yml` 的 `spring` 块应包含 `application/datasource/flyway/servlet`。）
@@ -220,7 +220,10 @@ public class MockEmbeddingConfig {
 
             private float[] embed(String text) {
                 float[] v = new float[4096];
-                v[Math.floorMod(text.hashCode(), 4096)] = 1.0f;
+                // 已修正（2026-08-12）：用前 8 字符前缀哈希，使 query 与含同前缀的 chunk 落同桶
+                // （整文本 one-hot 下 query/chunk 正交，cosine 距离=1.0 被 PgVectorStore 阈值过滤，search 恒空）
+                String prefix = text.length() <= 8 ? text : text.substring(0, 8);
+                v[Math.floorMod(prefix.hashCode(), 4096)] = 1.0f;
                 return v;
             }
         };
@@ -861,7 +864,6 @@ package com.neuralbase.service;
 
 import com.neuralbase.entity.Document;
 import com.neuralbase.mapper.DocumentMapper;
-import org.springframework.ai.document.Document as AiDocument;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -929,13 +931,13 @@ public class DocumentService {
         try (var in = Files.newInputStream(Path.of(doc.getFilePath()))) {
             String text = textExtractorService.extract(in, doc.getTitle());
             List<String> chunks = textChunker.chunk(text);
-            List<AiDocument> docs = new ArrayList<>();
+            List<org.springframework.ai.document.Document> docs = new ArrayList<>();
             for (int i = 0; i < chunks.size(); i++) {
                 Map<String, Object> metadata = new HashMap<>();
                 metadata.put("docId", doc.getId());
                 metadata.put("kbId", doc.getKbId());
                 metadata.put("chunkIndex", i);
-                docs.add(new AiDocument(chunks.get(i), metadata));
+                docs.add(new org.springframework.ai.document.Document(chunks.get(i), metadata));
             }
             if (!docs.isEmpty()) {
                 vectorStore.add(docs);
