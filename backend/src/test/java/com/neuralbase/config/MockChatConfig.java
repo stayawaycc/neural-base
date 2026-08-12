@@ -32,8 +32,11 @@ public class MockChatConfig {
             @Override
             public Flux<ChatResponse> stream(Prompt prompt) {
                 PROMPTS.add(prompt);
-                return Flux.just("mock 回答", "片段二")
-                    .map(text -> new ChatResponse(List.of(new Generation(new AssistantMessage(text)))));
+                // 模拟 DeepSeek 流式返回的 null 文本 chunk（Reactor 会拒绝 Flux 中的字面 null 元素，
+                // 因此用空字符串作为哨兵，映射为 AssistantMessage(null)，触发 ChatService 的 null 文本分支）。
+                return Flux.just("mock 回答", "", "片段二")
+                    .map(text -> new ChatResponse(List.of(new Generation(
+                        text.isEmpty() ? new AssistantMessage(null) : new AssistantMessage(text)))));
             }
         };
     }

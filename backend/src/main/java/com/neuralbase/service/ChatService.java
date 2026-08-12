@@ -83,7 +83,7 @@ public class ChatService {
         AtomicBoolean persisted = new AtomicBoolean(false);
 
         Flux<ServerSentEvent<String>> stream = chatModel.stream(new Prompt(promptMessages))
-            .map(resp -> resp.getResult().getOutput().getText())
+            .mapNotNull(resp -> resp.getResult().getOutput().getText())
             .filter(text -> text != null && !text.isBlank())
             .doOnNext(full::append)
             .map(text -> ServerSentEvent.<String>builder(text).event("delta").build())
