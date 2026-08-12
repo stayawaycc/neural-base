@@ -1,6 +1,6 @@
 # NeuralBase 项目进度记录
 
-> 最后更新：2026-08-12（Phase 3 完成）。本文件记录「设计文档 vs 实际实现」的逐项核对结果。✅=已实现并验证　⏸=部分实现（已裁决延迟）　❌=未开始
+> 最后更新：2026-08-12（Phase 4 后端完成）。本文件记录「设计文档 vs 实际实现」的逐项核对结果。✅=已实现并验证　⏸=部分实现（已裁决延迟）　❌=未开始
 > 对照基准：`docs/NeuralBase-系统设计文档.md`；各阶段实施计划见 `docs/superpowers/plans/`。
 
 ---
@@ -12,7 +12,7 @@
 | **Phase 1** | 脚手架、数据库、认证 JWT、知识库 CRUD | ✅ | 完成 |
 | **Phase 2** | 上传 + SiliconFlow Embedding + pgvector 检索 | ✅ | 完成，真实 embedding 冒烟通过 |
 | **Phase 3** | AI 对话（SSE 流式 + RAG 模式 + DeepSeek） | ✅ | 完成，真实冒烟双模式通过 |
-| **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ❌ | 未开始 |
+| **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ✅ | 后端完成（前端仍 ❌） |
 | **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ❌ | 未开始 |
 | **Phase 6** | UI 精细化打磨、动画、响应式 | ❌ | 依赖前端，前端未开始 |
 | **Phase 7** | Docker 本地部署、性能优化、压测 | ❌ | 未开始 |
@@ -48,9 +48,12 @@
 
 | 功能点 | 状态 |
 |--------|------|
-| URL 输入 / 智能爬取（Playwright） | ❌ |
-| AI 结构化提取问答对 | ❌ |
-| 分类标签 / 阅读模式 / 批量导入 | ❌ |
+| URL 输入 / 批量导入 | ✅ `POST /api/baguwen/import`，异步任务 + 进度表，可重试 |
+| 智能爬取（Jsoup + Playwright 兜底） | ✅ `CompositeCrawler`：静态优先，JS 渲染站点降级 Playwright |
+| AI 结构化提取问答对 | ✅ `BaguwenAiService`：DeepSeek 非流式提取 `{qa_pairs, tags}` |
+| 分类标签 / 筛选 / 全文搜索 | ✅ tags 聚合 + 分页列表（tag 精确 / keyword 匹配标题正文与问答对） |
+| 收藏进知识库（embedding） | ✅ `POST /api/baguwen/{id}/favorite` 复用 VectorStore 管线 |
+| 阅读模式 / 前端 | ❌ 前端未开始（Phase 6） |
 
 ### 4️⃣ AI 日报
 
@@ -76,7 +79,7 @@
 | 关系库 | **MySQL**（用户/文档元数据） | ❌ **未采用** | 实际为单 PostgreSQL 同库 |
 | 向量库 | PostgreSQL + pgvector | ✅ 单 PostgreSQL 18.4 同库 | — |
 | 缓存/队列/限流 | **Redis / Redis Stream** | ❌ **未实现** | pom 无 redis 依赖 |
-| 爬虫引擎 | Playwright + Jsoup | ❌ 未实现 | Phase 4 |
+| 爬虫引擎 | Playwright + Jsoup | ✅ Jsoup 1.22.2 + Playwright 1.60.0（`CompositeCrawler` 兜底链） | — |
 | 任务调度 | Quartz | ❌ 未实现 | Phase 5 |
 | API 文档 | SpringDoc OpenAPI | ❌ 未加 | 可选补 |
 | 安全 | Spring Security + JWT | ✅ | — |
@@ -88,8 +91,9 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：35/35 绿（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel，不依赖真实 API key）
+- **自动化测试**：66/66 绿（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）
   - Auth(5)、Kb(1)、Document 上传/处理/检索(8)、Chat 服务(3)、Chat HTTP 层 SSE(3)、Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
+  - Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
 - **真实冒烟**：
   - Phase 2：SiliconFlow embedding 链路 ✅
   - Phase 3：普通模式（DeepSeek 流式）+ RAG 模式（真 embedding 检索 → 引用回答 → `message.sources` 落库）✅
