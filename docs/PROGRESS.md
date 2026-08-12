@@ -97,6 +97,8 @@
 - **真实冒烟**：
   - Phase 2：SiliconFlow embedding 链路 ✅
   - Phase 3：普通模式（DeepSeek 流式）+ RAG 模式（真 embedding 检索 → 引用回答 → `message.sources` 落库）✅
+  - Phase 4（2026-08-12）：真实 URL 导入（阮一峰周刊 287 期）→ Jsoup 抓取 103KB → 正文提取 6.8K 字符 → DeepSeek 提取 10 问答对 + 5 标签 → 任务 SUCCESS → 收藏进 KB → 检索命中问答对 ✅
+  - 冒烟发现并修复：① 生产环境 ArticleCrawler 三实现注入歧义（测试 @Primary 掩盖，改为真实爬虫 `@Profile("!test")` + `CompositeCrawler @Primary`）；② Jsoup 壳页面（VuePress 等 JS 渲染站）183 字符正文误判"有实质内容"，兜底阈值 100→500；③ Playwright 渲染超时 15s→45s（重型首屏）；④ 计划中 javaguide URL 已失效（404），冒烟改用有效站点
 - **运行**：本机 8080 被占用，用 `--server.port=8081`；本地 PG 密码 `root`（`export DB_PASSWORD='root'`）
 
 ---
