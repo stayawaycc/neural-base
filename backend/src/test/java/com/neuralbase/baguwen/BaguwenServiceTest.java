@@ -1,6 +1,9 @@
 package com.neuralbase.baguwen;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.neuralbase.dto.BaguwenArticleView;
+import com.neuralbase.dto.BaguwenDetail;
+import com.neuralbase.dto.BaguwenTagCount;
 import com.neuralbase.dto.FavoriteResult;
 import com.neuralbase.entity.BaguwenArticle;
 import com.neuralbase.entity.BaguwenImportTask;
@@ -138,6 +141,66 @@ class BaguwenServiceTest {
         assertThatThrownBy(() -> baguwenService.favorite(articleId, 999L))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("知识库不存在");
+    }
+
+    @Test
+    void listFiltersByKeywordMatchingQaPair() {
+        Long taskId = baguwenService.importUrls(List.of("http://ok/1")).get(0).getId();
+        baguwenService.process(taskId);
+        Long articleId = taskMapper.selectById(taskId).getArticleId();
+
+        // keyword 命中问答对 question（"JVM 内存模型"），但 title/content 不含该词
+        var page = baguwenService.list(null, "JVM 内存模型", 1, 10);
+        assertThat(page.getRecords()).extracting(BaguwenArticleView::id)
+            .contains(articleId);
+
+        // keyword 完全不匹配 → 空
+        assertThat(baguwenService.list(null, "不存在的词xyz", 1, 10).getRecords()).isEmpty();
+    }
+
+    @Test
+    void listFiltersByTag() {
+        Long taskId = baguwenService.importUrls(List.of("http://ok/1")).get(0).getId();
+        baguwenService.process(taskId);
+
+        assertThat(baguwenService.list("Java", null, 1, 10).getRecords()).hasSize(1);
+        assertThat(baguwenService.list("Python", null, 1, 10).getRecords()).isEmpty();
+    }
+
+    @Test
+    void tagCountsAggregates() {
+        Long taskId = baguwenService.importUrls(List.of("http://ok/1")).get(0).getId();
+        baguwenService.process(taskId);
+
+        List<BaguwenTagCount> counts = baguwenService.tagCounts();
+        assertThat(counts).extracting(BaguwenTagCount::tag).contains("Java", "JVM");
+    }
+
+    @Test
+    void deleteRemovesArticleAndPairsAndUnlinksTask() {
+        Long taskId = baguwenService.importUrls(List.of("http://ok/1")).get(0).getId();
+        baguwenService.process(taskId);
+        Long articleId = taskMapper.selectById(taskId).getArticleId();
+
+        baguwenService.delete(articleId);
+
+        assertThat(articleMapper.selectById(articleId)).isNull();
+        assertThat(qaPairMapper.selectCount(new LambdaQueryWrapper<BaguwenQaPair>()
+            .eq(BaguwenQaPair::getArticleId, articleId))).isZero();
+        assertThat(taskMapper.selectById(taskId).getArticleId()).isNull();
+    }
+
+    @Test
+    void detailReturnsArticleWithQaPairs() {
+        Long taskId = baguwenService.importUrls(List.of("http://ok/1")).get(0).getId();
+        baguwenService.process(taskId);
+        Long articleId = taskMapper.selectById(taskId).getArticleId();
+
+        BaguwenDetail detail = baguwenService.detail(articleId);
+
+        assertThat(detail.tags()).contains("Java");
+        assertThat(detail.qaPairs()).hasSize(1);
+        assertThat(detail.qaPairs().get(0).question()).contains("JVM 内存模型");
     }
 
     private void awaitStatus(Long taskId, String expected) throws InterruptedException {

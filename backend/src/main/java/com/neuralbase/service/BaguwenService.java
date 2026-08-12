@@ -1,8 +1,13 @@
 package com.neuralbase.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.neuralbase.dto.BaguwenArticleView;
+import com.neuralbase.dto.BaguwenDetail;
+import com.neuralbase.dto.BaguwenTagCount;
+import com.neuralbase.dto.QaPairView;
 import com.neuralbase.crawler.ArticleCrawler;
 import com.neuralbase.crawler.ContentExtractor;
 import com.neuralbase.crawler.CrawledArticle;
@@ -175,6 +180,68 @@ public class BaguwenService {
         return qaPairMapper.selectList(new LambdaQueryWrapper<BaguwenQaPair>()
             .eq(BaguwenQaPair::getArticleId, articleId)
             .orderByAsc(BaguwenQaPair::getSortOrder));
+    }
+
+    // ---------- 文章查询 ----------
+
+    private static final long MAX_PAGE = 100;
+
+    public Page<BaguwenArticleView> list(String tag, String keyword, long page, long size) {
+        long safePage = Math.max(page, 1);
+        long safeSize = Math.min(Math.max(size, 1), MAX_PAGE);
+        LambdaQueryWrapper<BaguwenArticle> w = new LambdaQueryWrapper<>();
+        if (tag != null && !tag.isBlank()) {
+            w.apply("tags @> {0}::jsonb", "[\"" + tag + "\"]");
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            w.and(q -> q.like(BaguwenArticle::getTitle, keyword)
+                .or().like(BaguwenArticle::getContent, keyword)
+                .or().apply("EXISTS (SELECT 1 FROM baguwen_qa_pair q WHERE q.article_id = baguwen_article.id "
+                    + "AND (q.question LIKE {0} OR q.answer LIKE {1}))",
+                    "%" + keyword + "%", "%" + keyword + "%"));
+        }
+        w.orderByDesc(BaguwenArticle::getCreatedAt);
+        Page<BaguwenArticle> p = articleMapper.selectPage(new Page<>(safePage, safeSize), w);
+        Page<BaguwenArticleView> view = new Page<>(p.getCurrent(), p.getSize(), p.getTotal());
+        view.setRecords(p.getRecords().stream()
+            .map(a -> new BaguwenArticleView(a.getId(), a.getTitle(), a.getUrl(),
+                parseTags(a.getTags()), a.getCreatedAt()))
+            .toList());
+        return view;
+    }
+
+    public BaguwenDetail detail(Long id) {
+        BaguwenArticle article = getArticle(id);
+        List<QaPairView> qaViews = qaPairs(id).stream().map(QaPairView::from).toList();
+        return new BaguwenDetail(article.getId(), article.getTitle(), article.getUrl(),
+            article.getContent(), parseTags(article.getTags()), article.getCreatedAt(), qaViews);
+    }
+
+    public List<BaguwenTagCount> tagCounts() {
+        return jdbcTemplate.queryForList(
+            "SELECT jsonb_array_elements_text(tags) AS tag, count(*) AS cnt "
+            + "FROM baguwen_article GROUP BY tag ORDER BY cnt DESC, tag ASC")
+            .stream()
+            .map(m -> new BaguwenTagCount((String) m.get("tag"), ((Number) m.get("cnt")).longValue()))
+            .toList();
+    }
+
+    public void delete(Long id) {
+        BaguwenArticle article = getArticle(id);
+        // qa_pair 由 FK ON DELETE CASCADE 删除；import_task.article_id 由 FK ON DELETE SET NULL 置空
+        articleMapper.deleteById(article.getId());
+    }
+
+    private List<String> parseTags(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json,
+                new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     // ---------- 收藏到知识库 ----------
