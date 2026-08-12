@@ -16,7 +16,7 @@
 - JDK 21；Boot 3.5.16；包根 `com.neuralbase`
 - 认证：单系统用户，启动时种子化 `admin`（密码取 `neuralbase.auth.default-admin-password`，默认 `admin123`）；JWT 24h 过期
 - 统一响应体 `Result<T>{code,message,data}`；未认证返回 401 JSON
-- 测试：`@SpringBootTest` + MockMvc，跑在 `neuralbase_test`（Flyway 自动迁移）
+- 测试：`@SpringBootTest` + MockMvc + `@ActiveProfiles("test")`，跑在 `neuralbase_test`（Flyway 自动迁移）；`application-test.yml` 位于 `src/test/resources/`（不入生产 JAR）
 - Spring AI（1.1.8 BOM + deepseek/pgvector starter）**本阶段不加入 pom**，Phase 2 再加（避免未配置 api-key 导致上下文启动失败）
 
 ## 前置条件（执行者必须向用户获取）
@@ -34,7 +34,7 @@
 - Create: `D:\neural-base\backend\src\main\java\com\neuralbase\common\Result.java`
 - Create: `D:\neural-base\backend\src\main\java\com\neuralbase\controller\HealthController.java`
 - Create: `D:\neural-base\backend\src\main\resources\application.yml`
-- Create: `D:\neural-base\backend\src\main\resources\application-test.yml`
+- Create: `D:\neural-base\backend\src\test\resources\application-test.yml`
 - Test: `D:\neural-base\backend\src\test\java\com\neuralbase\NeuralBaseApplicationTests.java`
 
 **Interfaces:**
@@ -290,8 +290,10 @@ package com.neuralbase;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class NeuralBaseApplicationTests {
     @Test
     void contextLoads() {
@@ -348,7 +350,10 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.springframework.test.context.ActiveProfiles;
+
 @SpringBootTest
+@ActiveProfiles("test")
 class SchemaMigrationTest {
 
     @Autowired
@@ -570,7 +575,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.springframework.test.context.ActiveProfiles;
+
 @SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class AuthControllerTest {
 
@@ -975,7 +983,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.springframework.test.context.ActiveProfiles;
+
 @SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class KbControllerTest {
 
