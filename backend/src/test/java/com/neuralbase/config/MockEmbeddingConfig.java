@@ -35,8 +35,14 @@ public class MockEmbeddingConfig {
             }
 
             private float[] oneHot(String text) {
+                // 保持 one-hot（同文本→cosine 1，异文本→正交），但对文本前 8 个字符做哈希而非整文本：
+                // PgVectorStore 的 COSINE 过滤是 distance < 1 - threshold（默认 threshold=0 → < 1.0），
+                // 整文本 one-hot 会让 query 与任何 chunk 正交（distance=1.0）被过滤掉，检索永远为空。
+                // 基于前缀哈希后，query 与含同一前缀的 chunk 映射到同一桶 → cosine 1 → 可命中。
                 float[] v = new float[4096];
-                v[Math.floorMod(text.hashCode(), 4096)] = 1.0f;
+                if (!text.isEmpty()) {
+                    v[Math.floorMod(text.substring(0, Math.min(8, text.length())).hashCode(), 4096)] = 1.0f;
+                }
                 return v;
             }
         };

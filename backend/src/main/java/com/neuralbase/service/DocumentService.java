@@ -1,5 +1,6 @@
 package com.neuralbase.service;
 
+import com.neuralbase.dto.SearchResult;
 import com.neuralbase.entity.Document;
 import com.neuralbase.mapper.DocumentMapper;
 import org.apache.tika.exception.TikaException;
@@ -93,6 +94,22 @@ public class DocumentService {
             doc.setChunkCount(chunks.size());
             documentMapper.updateById(doc);
         }
+    }
+
+    public List<SearchResult> search(String query, Long kbId, Integer topK) {
+        int k = topK == null ? 5 : topK;
+        org.springframework.ai.vectorstore.SearchRequest.Builder builder =
+            org.springframework.ai.vectorstore.SearchRequest.builder().query(query).topK(k);
+        if (kbId != null) {
+            builder.filterExpression("kbId == " + kbId);
+        }
+        var matches = vectorStore.similaritySearch(builder.build());
+        return matches.stream().map(d -> {
+            Object rawDocId = d.getMetadata().get("docId");
+            Long docId = rawDocId instanceof Number n ? n.longValue() : null;
+            Document doc = docId == null ? null : documentMapper.selectById(docId);
+            return new SearchResult(docId, doc == null ? null : doc.getTitle(), d.getText(), d.getScore());
+        }).toList();
     }
 
     public List<Document> list(Long kbId) {
