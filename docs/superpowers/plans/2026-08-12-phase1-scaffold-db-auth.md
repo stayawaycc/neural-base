@@ -618,6 +618,15 @@ class AuthControllerTest {
     }
 
     @Test
+    void loginWithMissingPasswordReturns400() throws Exception {
+        mvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"admin\"}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
     void meWithTokenReturnsUser() throws Exception {
         String token = login("admin", "admin123");
         assertThat(token).isNotBlank();
