@@ -12,7 +12,7 @@
 
 - 项目根目录：`D:\neural-base`，git init；后端在 `backend/`（目录命名与设计文档的 `neural-base-backend` 略异，更简洁）
 - **单 PostgreSQL**：开发库 `neuralbase`、测试库 `neuralbase_test`；**不用 MySQL、不用 Docker**
-- pgvector 必须启用；`vector_store.embedding` 为 `VECTOR(4096)`
+- pgvector 必须启用；`vector_store.embedding` 为 `VECTOR(4096)`。**已裁决（2026-08-12）**：pgvector 的 HNSW/IVFFlat 索引上限 2000 维，4096 维无法建近似索引 → 采用精确扫描（个人量级足够快）；Phase 2 的 Spring AI `PgVectorStore` 必须用 `initializeSchema(false)` + Flyway 管理表结构，避开自动建索引导致的 2000 维报错
 - JDK 21；Boot 3.5.16；包根 `com.neuralbase`
 - 认证：单系统用户，启动时种子化 `admin`（密码取 `neuralbase.auth.default-admin-password`，默认 `admin123`）；JWT 24h 过期
 - 统一响应体 `Result<T>{code,message,data}`；未认证返回 401 JSON
@@ -516,8 +516,10 @@ CREATE TABLE vector_store (
     embedding VECTOR(4096)
 );
 
-CREATE INDEX idx_vector_store_embedding
-    ON vector_store USING hnsw (embedding vector_cosine_ops);
+-- 已知不可行（pgvector HNSW/IVFFlat 索引上限 2000 维，本列为 vector(4096)）：
+-- 用注释保留，等维度 ≤2000 或 pgvector 支持更高维后再启用。
+-- CREATE INDEX idx_vector_store_embedding
+--     ON vector_store USING hnsw (embedding vector_cosine_ops);
 ```
 
 - [ ] **Step 4: 跑测试确认通过**
