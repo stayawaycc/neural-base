@@ -39,7 +39,7 @@
 - Produces: 实体 `BaguwenArticle`(id/title/url/content/tags:String/createdAt/updatedAt)、`BaguwenImportTask`(id/url/status/errorMsg/articleId/attempt/createdAt/updatedAt)、`BaguwenQaPair`(id/articleId/question/answer/difficulty/sortOrder/createdAt)
 - Produces: `BaguwenArticleMapper.insertWithTags(article)`（jsonb CAST 插入，回填 id）
 
-- [ ] **Step 1: 写 V4 迁移**
+- [x] **Step 1: 写 V4 迁移**
 
 ```sql
 -- Phase 4 八股文库
@@ -78,7 +78,7 @@ CREATE TABLE baguwen_qa_pair (
 CREATE INDEX idx_baguwen_qa_article ON baguwen_qa_pair(article_id, sort_order);
 ```
 
-- [ ] **Step 2: 更新 SchemaMigrationTest 的 expected 集合**
+- [x] **Step 2: 更新 SchemaMigrationTest 的 expected 集合**
 
 把 `SchemaMigrationTest.allBusinessTablesExist` 的 expected 改为：
 ```java
@@ -87,7 +87,7 @@ Set.of("users", "kb", "document", "chat_session", "chat_message", "baguwen", "da
     "baguwen_import_task", "baguwen_qa_pair");
 ```
 
-- [ ] **Step 3: 创建三个实体**
+- [x] **Step 3: 创建三个实体**
 
 `entity/BaguwenArticle.java`：
 ```java
@@ -165,7 +165,7 @@ public class BaguwenQaPair {
 }
 ```
 
-- [ ] **Step 4: 创建三个 Mapper**
+- [x] **Step 4: 创建三个 Mapper**
 
 `mapper/BaguwenArticleMapper.java`：
 ```java
@@ -210,7 +210,7 @@ public interface BaguwenQaPairMapper extends BaseMapper<BaguwenQaPair> {
 }
 ```
 
-- [ ] **Step 5: 创建分页拦截器配置**
+- [x] **Step 5: 创建分页拦截器配置**
 
 `config/MybatisPlusConfig.java`：
 ```java
@@ -234,12 +234,12 @@ public class MybatisPlusConfig {
 }
 ```
 
-- [ ] **Step 6: 跑 SchemaMigrationTest 验证**
+- [x] **Step 6: 跑 SchemaMigrationTest 验证**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=SchemaMigrationTest -q`（需 `export DB_PASSWORD='root'`，PG 本机跑着 `neuralbase_test` 库）
 Expected: BUILD SUCCESS，`allBusinessTablesExist` 断言通过（含新三表）
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 cd /d/neural-base && git add backend/src/main/resources/db/migration/V4__baguwen_tables.sql \
@@ -273,7 +273,7 @@ cd /d/neural-base && git add backend/src/main/resources/db/migration/V4__baguwen
 - Produces: `class CrawlException extends RuntimeException`（两个构造器：`(String)`、`(String, Throwable)`）
 - Produces: `class ContentExtractor { String extract(String html); }`——通用正文提取，噪音内容剥离
 
-- [ ] **Step 1: pom.xml 加 jsoup 依赖**
+- [x] **Step 1: pom.xml 加 jsoup 依赖**
 
 在 `</dependencies>` 前的 `tika-parsers-standard-package` 依赖块后加：
 ```xml
@@ -284,7 +284,7 @@ cd /d/neural-base && git add backend/src/main/resources/db/migration/V4__baguwen
         </dependency>
 ```
 
-- [ ] **Step 2: 创建接口、载体、异常**
+- [x] **Step 2: 创建接口、载体、异常**
 
 `crawler/ArticleCrawler.java`：
 ```java
@@ -317,7 +317,7 @@ public class CrawlException extends RuntimeException {
 }
 ```
 
-- [ ] **Step 3: 写失败测试（ContentExtractorTest）**
+- [x] **Step 3: 写失败测试（ContentExtractorTest）**
 
 `crawler/ContentExtractorTest.java`：
 ```java
@@ -369,12 +369,12 @@ class ContentExtractorTest {
 }
 ```
 
-- [ ] **Step 4: 跑测试验证失败**
+- [x] **Step 4: 跑测试验证失败**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=ContentExtractorTest -q`
 Expected: 编译错误（ContentExtractor 不存在）→ FAIL
 
-- [ ] **Step 5: 实现 ContentExtractor**
+- [x] **Step 5: 实现 ContentExtractor**
 
 `crawler/ContentExtractor.java`：
 ```java
@@ -441,12 +441,12 @@ public class ContentExtractor {
 }
 ```
 
-- [ ] **Step 6: 跑测试验证通过**
+- [x] **Step 6: 跑测试验证通过**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=ContentExtractorTest -q`
 Expected: 2 tests PASS
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 cd /d/neural-base && git add backend/pom.xml \
@@ -476,7 +476,7 @@ cd /d/neural-base && git add backend/pom.xml \
 - Produces: `@Component PlaywrightCrawler implements ArticleCrawler`（Bean 名 `playwrightCrawler`，无单测）
 - Produces: `@Component CompositeCrawler implements ArticleCrawler`——构造器 `(@Qualifier("jsoupCrawler") ArticleCrawler jsoup, @Qualifier("playwrightCrawler") ArticleCrawler playwright, ContentExtractor extractor)`；静态正文不足 100 字或抛异常时降级 Playwright
 
-- [ ] **Step 1: pom.xml 加 playwright 依赖**
+- [x] **Step 1: pom.xml 加 playwright 依赖**
 
 在 Task 2 的 jsoup 依赖块后加：
 ```xml
@@ -487,7 +487,7 @@ cd /d/neural-base && git add backend/pom.xml \
         </dependency>
 ```
 
-- [ ] **Step 2: 写失败测试（JsoupCrawlerTest + CompositeCrawlerTest）**
+- [x] **Step 2: 写失败测试（JsoupCrawlerTest + CompositeCrawlerTest）**
 
 `crawler/JsoupCrawlerTest.java`：
 ```java
@@ -598,12 +598,12 @@ class CompositeCrawlerTest {
 }
 ```
 
-- [ ] **Step 3: 跑测试验证失败**
+- [x] **Step 3: 跑测试验证失败**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=JsoupCrawlerTest,CompositeCrawlerTest -q`
 Expected: 编译错误（三个 crawler 类不存在）→ FAIL
 
-- [ ] **Step 4: 实现 JsoupCrawler**
+- [x] **Step 4: 实现 JsoupCrawler**
 
 `crawler/JsoupCrawler.java`：
 ```java
@@ -651,7 +651,7 @@ public class JsoupCrawler implements ArticleCrawler {
 }
 ```
 
-- [ ] **Step 5: 实现 PlaywrightCrawler（无单测，冒烟覆盖）**
+- [x] **Step 5: 实现 PlaywrightCrawler（无单测，冒烟覆盖）**
 
 `crawler/PlaywrightCrawler.java`：
 ```java
@@ -685,7 +685,7 @@ public class PlaywrightCrawler implements ArticleCrawler {
 }
 ```
 
-- [ ] **Step 6: 实现 CompositeCrawler**
+- [x] **Step 6: 实现 CompositeCrawler**
 
 `crawler/CompositeCrawler.java`：
 ```java
@@ -739,12 +739,12 @@ public class CompositeCrawler implements ArticleCrawler {
 }
 ```
 
-- [ ] **Step 7: 跑测试验证通过**
+- [x] **Step 7: 跑测试验证通过**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=JsoupCrawlerTest,CompositeCrawlerTest -q`
 Expected: 6 tests PASS（无需浏览器二进制；PlaywrightCrawler 未被测试调用）
 
-- [ ] **Step 8: 提交**
+- [x] **Step 8: 提交**
 
 ```bash
 cd /d/neural-base && git add backend/pom.xml \
@@ -771,7 +771,7 @@ cd /d/neural-base && git add backend/pom.xml \
 - Produces: 内部 record `ExtractionResult(List<QaPair> qaPairs, List<String> tags)`、`QaPair(String question, String answer, String difficulty)`
 - Produces: 常量 `SYSTEM_PROMPT` 必须含字符串「整理为面试题格式」（MockChatConfig 据此分发）
 
-- [ ] **Step 1: 写失败测试（BaguwenAiServiceTest，纯单测无 Spring）**
+- [x] **Step 1: 写失败测试（BaguwenAiServiceTest，纯单测无 Spring）**
 
 `baguwen/BaguwenAiServiceTest.java`：
 ```java
@@ -845,12 +845,12 @@ class BaguwenAiServiceTest {
 }
 ```
 
-- [ ] **Step 2: 跑测试验证失败**
+- [x] **Step 2: 跑测试验证失败**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=BaguwenAiServiceTest -q`
 Expected: 编译错误（BaguwenAiService 不存在）→ FAIL
 
-- [ ] **Step 3: 实现 BaguwenAiService**
+- [x] **Step 3: 实现 BaguwenAiService**
 
 `service/BaguwenAiService.java`：
 ```java
@@ -927,7 +927,7 @@ public class BaguwenAiService {
 }
 ```
 
-- [ ] **Step 4: 改造 MockChatConfig，call() 对八股文 prompt 返回 JSON**
+- [x] **Step 4: 改造 MockChatConfig，call() 对八股文 prompt 返回 JSON**
 
 修改 `src/test/java/com/neuralbase/config/MockChatConfig.java`：
 - import 加 `org.springframework.ai.chat.messages.SystemMessage`
@@ -953,12 +953,12 @@ public class BaguwenAiService {
 
 （`stream()` 方法不动，ChatService 既有测试不受影响。）
 
-- [ ] **Step 5: 跑测试验证通过**
+- [x] **Step 5: 跑测试验证通过**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=BaguwenAiServiceTest -q`
 Expected: 3 tests PASS
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 cd /d/neural-base && git add backend/src/main/java/com/neuralbase/service/BaguwenAiService.java \
@@ -985,7 +985,7 @@ cd /d/neural-base && git add backend/src/main/java/com/neuralbase/service/Baguwe
 - Produces: `BaguwenStartupRunner`（`@Profile("!test")`，启动把 PENDING/PROCESSING 重新排队）
 - Produces: `mockArticleCrawler`（测试 @Primary `ArticleCrawler`：URL 含 `fail` 抛 CrawlException，否则返回带正文的 HTML）
 
-- [ ] **Step 1: 创建测试假 Crawler 配置**
+- [x] **Step 1: 创建测试假 Crawler 配置**
 
 `src/test/java/com/neuralbase/config/MockBaguwenConfig.java`：
 ```java
@@ -1017,7 +1017,7 @@ public class MockBaguwenConfig {
 }
 ```
 
-- [ ] **Step 2: 写失败测试（BaguwenServiceTest）**
+- [x] **Step 2: 写失败测试（BaguwenServiceTest）**
 
 `baguwen/BaguwenServiceTest.java`：
 ```java
@@ -1170,12 +1170,12 @@ class BaguwenServiceTest {
 }
 ```
 
-- [ ] **Step 3: 跑测试验证失败**
+- [x] **Step 3: 跑测试验证失败**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=BaguwenServiceTest -q`
 Expected: 编译错误（BaguwenService、FavoriteResult 不存在）→ FAIL
 
-- [ ] **Step 4: 创建 FavoriteResult DTO**
+- [x] **Step 4: 创建 FavoriteResult DTO**
 
 `dto/FavoriteResult.java`：
 ```java
@@ -1185,7 +1185,7 @@ public record FavoriteResult(int embedded) {
 }
 ```
 
-- [ ] **Step 5: 实现 BaguwenService**
+- [x] **Step 5: 实现 BaguwenService**
 
 `service/BaguwenService.java`：
 ```java
@@ -1401,7 +1401,7 @@ public class BaguwenService {
 }
 ```
 
-- [ ] **Step 6: 创建 BaguwenStartupRunner（断点续跑）**
+- [x] **Step 6: 创建 BaguwenStartupRunner（断点续跑）**
 
 `service/BaguwenStartupRunner.java`：
 ```java
@@ -1441,12 +1441,12 @@ public class BaguwenStartupRunner implements ApplicationRunner {
 }
 ```
 
-- [ ] **Step 7: 跑测试验证通过**
+- [x] **Step 7: 跑测试验证通过**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=BaguwenServiceTest -q`
 Expected: 7 tests PASS（`process` 同步调用确定性；`processTask` 异步用 `awaitStatus` 轮询）
 
-- [ ] **Step 8: 提交**
+- [x] **Step 8: 提交**
 
 ```bash
 cd /d/neural-base && git add backend/src/main/java/com/neuralbase/service/BaguwenService.java \
@@ -1474,9 +1474,9 @@ cd /d/neural-base && git add backend/src/main/java/com/neuralbase/service/Baguwe
 - Produces: `Page<BaguwenArticleView> list(String tag, String keyword, long page, long size)`
 - Produces: `BaguwenArticle getArticle(Long id)`（不存在抛 IAE）；`BaguwenDetail detail(Long id)`；`List<BaguwenTagCount> tagCounts()`（JdbcTemplate jsonb 展开聚合，`ORDER BY cnt DESC, tag ASC` 保证并列确定序）；`void delete(Long id)`（FK 级联 qa_pair，任务 article_id 由 FK SET NULL 置空）
 
-- [ ] **Step 1: 确认 JdbcTemplate 已注入**（Task 5 的 BaguwenService 构造器已含 `JdbcTemplate`，本任务直接复用，无需改构造器）
+- [x] **Step 1: 确认 JdbcTemplate 已注入**（Task 5 的 BaguwenService 构造器已含 `JdbcTemplate`，本任务直接复用，无需改构造器）
 
-- [ ] **Step 2: 创建查询 DTO**
+- [x] **Step 2: 创建查询 DTO**
 
 `dto/BaguwenArticleView.java`：
 ```java
@@ -1523,7 +1523,7 @@ public record BaguwenTagCount(String tag, long count) {
 }
 ```
 
-- [ ] **Step 3: 在 BaguwenService 加查询与删除方法**
+- [x] **Step 3: 在 BaguwenService 加查询与删除方法**
 
 在 Task 5 的 `BaguwenService` 中追加以下方法（`parseTags` 用 `objectMapper.readValue` 解析 tags 字符串，解析失败返回空列表）：
 
@@ -1599,7 +1599,7 @@ public record BaguwenTagCount(String tag, long count) {
 
 补充 import：`com.baomidou.mybatisplus.extension.plugins.pagination.Page`、`com.neuralbase.dto.BaguwenArticleView`、`com.neuralbase.dto.BaguwenDetail`、`com.neuralbase.dto.BaguwenTagCount`、`com.neuralbase.dto.QaPairView`、`org.springframework.jdbc.core.JdbcTemplate`。
 
-- [ ] **Step 4: 扩展 BaguwenServiceTest 加查询/删除测试**
+- [x] **Step 4: 扩展 BaguwenServiceTest 加查询/删除测试**
 
 在 `BaguwenServiceTest` 中追加：
 ```java
@@ -1665,12 +1665,12 @@ public record BaguwenTagCount(String tag, long count) {
 ```
 （需 import `com.neuralbase.dto.BaguwenArticleView`、`com.neuralbase.dto.BaguwenDetail`、`com.neuralbase.dto.BaguwenTagCount`、`com.neuralbase.entity.BaguwenArticle`。）
 
-- [ ] **Step 5: 跑测试验证通过**
+- [x] **Step 5: 跑测试验证通过**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=BaguwenServiceTest -q`
 Expected: 12 tests PASS（原 7 + 新增 5）
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 cd /d/neural-base && git add backend/src/main/java/com/neuralbase/service/BaguwenService.java \
@@ -1696,7 +1696,7 @@ cd /d/neural-base && git add backend/src/main/java/com/neuralbase/service/Baguwe
 - Consumes: `BaguwenService` 全部方法（Task 5/6）
 - Produces: REST 端点——`POST /api/baguwen/import`、`GET /api/baguwen/tasks`、`POST /api/baguwen/tasks/{id}/retry`、`GET /api/baguwen`、`GET /api/baguwen/{id}`、`GET /api/baguwen/tags`、`DELETE /api/baguwen/{id}`、`POST /api/baguwen/{id}/favorite`
 
-- [ ] **Step 1: 创建请求 DTO**
+- [x] **Step 1: 创建请求 DTO**
 
 `dto/BaguwenImportRequest.java`：
 ```java
@@ -1716,7 +1716,7 @@ public record BaguwenFavoriteRequest(Long kbId) {
 }
 ```
 
-- [ ] **Step 2: 实现 Controller**
+- [x] **Step 2: 实现 Controller**
 
 `controller/BaguwenController.java`：
 ```java
@@ -1803,7 +1803,7 @@ public class BaguwenController {
 }
 ```
 
-- [ ] **Step 3: 写 HTTP 层测试**
+- [x] **Step 3: 写 HTTP 层测试**
 
 `baguwen/BaguwenControllerTest.java`：
 ```java
@@ -1972,12 +1972,12 @@ class BaguwenControllerTest {
 }
 ```
 
-- [ ] **Step 4: 跑测试验证通过**
+- [x] **Step 4: 跑测试验证通过**
 
 Run: `cd /d/neural-base/backend && mvn test -Dtest=BaguwenControllerTest -q`
 Expected: 8 tests PASS
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 cd /d/neural-base && git add backend/src/main/java/com/neuralbase/dto/BaguwenImportRequest.java \
@@ -1998,17 +1998,17 @@ cd /d/neural-base && git add backend/src/main/java/com/neuralbase/dto/BaguwenImp
 **Interfaces:**
 - Consumes: 全部
 
-- [ ] **Step 1: 全量跑测试**
+- [x] **Step 1: 全量跑测试**
 
 Run: `cd /d/neural-base/backend && export DB_PASSWORD='root' && mvn test -q`
 Expected: BUILD SUCCESS，全绿（既有 35 + 新增约 28+）
 
-- [ ] **Step 2: 可选真机冒烟（需 DeepSeek key + 网络）**
+- [x] **Step 2: 可选真机冒烟（需 DeepSeek key + 网络）**
 
 Run: 用本机 PG，`mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081`，登录后 `POST /api/baguwen/import` 传一个真实 URL（如 `https://javaguide.cn/java/jvm/jvm-memory-layout.html`），轮询 tasks 至 SUCCESS，`GET /api/baguwen/{id}` 验证问答对，`POST /{id}/favorite` 验证收藏后 `POST /api/document/search` 可检索到。若页面为 SSR，Jsoup 直达；若为 JS 渲染需先 `playwright install chromium`。
 Expected: 端到端 SUCCESS，无浏览器时可跳过此步并记录
 
-- [ ] **Step 3: 更新 PROGRESS.md**
+- [x] **Step 3: 更新 PROGRESS.md**
 
 更新 `docs/PROGRESS.md`：
 - Roadmap 表 Phase 4 状态 `❌` → `✅`（后端；前端仍 ❌）
@@ -2016,8 +2016,28 @@ Expected: 端到端 SUCCESS，无浏览器时可跳过此步并记录
 - 测试数行更新（35/35 → 66/66，Phase 4 新增 31：ContentExtractor 2 + JsoupCrawler 2 + CompositeCrawler 4 + BaguwenAiService 3 + BaguwenService 12 + BaguwenController 8）
 - 架构表：爬虫引擎 Playwright+Jsoup → ✅；任务调度 Quartz 仍 ❌
 
-- [ ] **Step 4: 提交**
+- [x] **Step 4: 提交**
 
 ```bash
 cd /d/neural-base && git add docs/PROGRESS.md && git commit -m "docs: phase4 baguwen progress"
 ```
+
+---
+
+## 执行记录（2026-08-12 完成，分支 phase4-baguwen）
+
+**状态：全部完成** ✅ 66/66 测试绿 + 真机冒烟通过（阮一峰周刊 287 期 → 10 问答对 + 5 标签 → 收藏 → 检索命中）。
+
+**与计划的偏差（详见 `docs/PROGRESS.md` 四点五节）：**
+
+1. pom 需额外加 `mybatis-plus-jsqlparser`（3.5.17 分页插件独立化）
+2. `ExtractionResult` 组件加 `@JsonAlias("qa_pairs")`（AI 输出 snake_case vs record camelCase）
+3. `favorite()` 方法计划代码缺失 → 按设计文档 4.5 补全
+4. 测试 `@BeforeEach` 需 seed kb id=1（新测试库无残留数据）
+5. 真实爬虫 `@Profile("!test")` + `CompositeCrawler @Primary`（生产注入歧义）
+6. CompositeCrawler 阈值 100→500（JS 壳页面误判）
+7. Playwright 超时 15s→45s
+8. Flyway checksum 手动登记勿用标准 CRC32（见 PROGRESS 坑 #8）
+9. 计划推荐 javaguide URL 已 404 → 冒烟改用阮一峰周刊
+
+**提交**：`phase4-baguwen` 分支 13 次提交（40ac615 ~ 5485ef6），未合并，保留待处理。

@@ -99,7 +99,29 @@
   - Phase 3：普通模式（DeepSeek 流式）+ RAG 模式（真 embedding 检索 → 引用回答 → `message.sources` 落库）✅
   - Phase 4（2026-08-12）：真实 URL 导入（阮一峰周刊 287 期）→ Jsoup 抓取 103KB → 正文提取 6.8K 字符 → DeepSeek 提取 10 问答对 + 5 标签 → 任务 SUCCESS → 收藏进 KB → 检索命中问答对 ✅
   - 冒烟发现并修复：① 生产环境 ArticleCrawler 三实现注入歧义（测试 @Primary 掩盖，改为真实爬虫 `@Profile("!test")` + `CompositeCrawler @Primary`）；② Jsoup 壳页面（VuePress 等 JS 渲染站）183 字符正文误判"有实质内容"，兜底阈值 100→500；③ Playwright 渲染超时 15s→45s（重型首屏）；④ 计划中 javaguide URL 已失效（404），冒烟改用有效站点
-- **运行**：本机 8080 被占用，用 `--server.port=8081`；本地 PG 密码 `root`（`export DB_PASSWORD='root'`）
+- **运行**：本机 8080 被占用，用 `--server.port=8081`；**本地 PG 密码 `Huangwei990758`**（`export DB_PASSWORD='Huangwei990758'`，yml 默认值同；⚠️ 早期文档误记 `root`，已更正，2026-08-12 实测）
+
+---
+
+## 四点五、Phase 4 执行记录（与计划的偏差，2026-08-12）
+
+计划 `docs/superpowers/plans/2026-08-12-phase4-baguwen.md` 已全部执行完成，以下偏差为执行中发现并修正，后续阶段注意：
+
+| # | 偏差 | 说明 |
+|---|------|------|
+| 1 | **MyBatis-Plus 分页插件需额外依赖** | 3.5.17 起 `PaginationInnerInterceptor` 拆到 `mybatis-plus-jsqlparser`，starter 不含，pom 需手动加 |
+| 2 | **AI 返回 snake_case 与 record camelCase 不匹配** | 提示词要求输出 `qa_pairs`，record 字段是 `qaPairs` → 组件加 `@JsonAlias("qa_pairs")` |
+| 3 | **计划中 `favorite()` 方法代码缺失** | Task 5/6 代码片段均未包含，按设计文档 4.5 补全（QA 拼文本→TextChunker→VectorStore，Document 表落 READY 记录） |
+| 4 | **测试库 kb 表为空** | 计划测试假设共享库有 kb id=1 残留，新测试库需在 `@BeforeEach` seed（`INSERT ... ON CONFLICT`） |
+| 5 | **生产 ArticleCrawler 注入歧义** | 3 个实现无主导致启动失败（测试 @Primary 掩盖）→ 真实爬虫 `@Profile("!test")` + `CompositeCrawler @Primary` |
+| 6 | **壳页面误判阈值** | VuePress 等 JS 渲染站静态正文 100~300 字符 ≥ 100 阈值 → 不触发 Playwright 兜底 → 阈值 100→500 |
+| 7 | **Playwright 超时 15s 不足** | 重型首屏渲染超时 → 45s |
+| 8 | **Flyway checksum 手动登记坑** | 手动执行 SQL + 插 `flyway_schema_history` 时，**checksum 不能用标准 CRC32 手算**（Flyway 11 算法不同）——应复制测试库中 Flyway 自算的权威值，或用 Flyway 命令执行迁移 |
+| 9 | **计划中 javaguide URL 已失效** | 冒烟时返回 404，改用阮一峰周刊验证（SSR 站点 Jsoup 直达） |
+
+---
+
+## 五、已裁决的延后项（有意不做，非遗漏）
 
 ---
 
@@ -120,8 +142,10 @@
 
 ## 七、下一步建议
 
-1. **前端**（价值最高）：对接现有 API，做知识库 + AI 聊天（SSE fetch 流式）
-2. **Phase 4** 八股文爬取整理（引入 Playwright + 队列）
-3. **Phase 5** AI 日报（Quartz 定时）
-4. **Phase 7/8** Docker 部署 + 文档
-5. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）
+> Phase 1-4 后端已完成（知识库 RAG、AI 对话、八股文库）。前端整体未开始。
+
+1. **前端**（价值最高）：对接现有 API，做知识库 + AI 聊天（SSE fetch 流式）+ 八股文库 UI（导入/阅读/筛选/收藏）
+2. **Phase 5** AI 日报（Quartz 定时爬取 + DeepSeek 汇总；`crawler_source`/`daily_news`/`crawl_task` 表已建好）
+3. **Phase 7/8** Docker 部署 + 文档
+4. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）
+5. 八股文库遗留：阅读模式、JS 渲染站点需本机先 `playwright install chromium`（Java CLI：`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`）
