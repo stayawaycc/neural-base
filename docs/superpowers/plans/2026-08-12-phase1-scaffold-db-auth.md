@@ -17,6 +17,8 @@
 - 认证：单系统用户，启动时种子化 `admin`（密码取 `neuralbase.auth.default-admin-password`，默认 `admin123`）；JWT 24h 过期
 - 统一响应体 `Result<T>{code,message,data}`；未认证返回 401 JSON
 - 测试：`@SpringBootTest` + MockMvc + `@ActiveProfiles("test")`，跑在 `neuralbase_test`（Flyway 自动迁移）；`application-test.yml` 位于 `src/test/resources/`（不入生产 JAR）
+- **已裁决 FK 级联（2026-08-12）**：`document.kb_id` → `ON DELETE CASCADE`（删库删文档）；`chat_session.kb_id` → `ON DELETE SET NULL`（保留会话）；`daily_news.source_id` → `ON DELETE SET NULL`（保留日报）。注意：文档的向量 chunk 需 Phase 2 显式清理
+- **已裁决缺省资源语义（2026-08-12）**：`GET/PUT/DELETE` 不存在的 id 返回 HTTP 200 + `code:0, data:null`（前端需特判）；Phase 2 接入 UI 前可再议
 - Spring AI（1.1.8 BOM + deepseek/pgvector starter）**本阶段不加入 pom**，Phase 2 再加（避免未配置 api-key 导致上下文启动失败）
 
 ## 前置条件（执行者必须向用户获取）
