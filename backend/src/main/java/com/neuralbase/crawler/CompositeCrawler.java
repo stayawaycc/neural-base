@@ -1,9 +1,14 @@
 package com.neuralbase.crawler;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+/** 生产环境的默认爬虫入口（Jsoup→Playwright 兜底链）。测试由 MockBaguwenConfig 的 @Primary mock 独占注入。 */
 @Component
+@Profile("!test")
+@Primary
 public class CompositeCrawler implements ArticleCrawler {
 
     private static final int MIN_TEXT_CHARS = 100;

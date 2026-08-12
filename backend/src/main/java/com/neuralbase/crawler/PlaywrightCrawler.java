@@ -5,9 +5,12 @@ import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.Playwright;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+/** 真实爬虫组件仅在非 test 环境注册，测试由 MockBaguwenConfig 的 @Primary mock 独占注入。 */
 @Component
+@Profile("!test")
 public class PlaywrightCrawler implements ArticleCrawler {
 
     private static final int TIMEOUT_MS = 15_000;

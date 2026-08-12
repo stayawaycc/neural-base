@@ -3,11 +3,14 @@ package com.neuralbase.crawler;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+/** 真实爬虫组件仅在非 test 环境注册，测试由 MockBaguwenConfig 的 @Primary mock 独占注入。 */
 @Component
+@Profile("!test")
 public class JsoupCrawler implements ArticleCrawler {
 
     private static final int TIMEOUT_MS = 10_000;
