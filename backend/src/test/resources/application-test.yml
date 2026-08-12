@@ -6,3 +6,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+neuralbase:
+  auth:
+    default-admin-password: admin123
+    jwt-secret: neuralbase-test-secret-key-please-change-me-32bytes!

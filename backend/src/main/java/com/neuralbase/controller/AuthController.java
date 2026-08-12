@@ -6,6 +6,7 @@ import com.neuralbase.common.Result;
 import com.neuralbase.entity.User;
 import com.neuralbase.mapper.UserMapper;
 import com.neuralbase.security.JwtUtil;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -31,7 +32,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Result<String>> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<Result<String>> login(@Valid @RequestBody LoginRequest req) {
         User user = userMapper.selectOne(
             new LambdaQueryWrapper<User>().eq(User::getUsername, req.username()));
         if (user == null || !passwordEncoder.matches(req.password(), user.getPasswordHash())) {
@@ -45,6 +46,9 @@ public class AuthController {
     public Result<User> me(Authentication authentication) {
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
             .eq(User::getUsername, authentication.getName()));
+        if (user == null) {
+            return Result.fail(404, "用户不存在");
+        }
         user.setPasswordHash(null);
         return Result.ok(user);
     }

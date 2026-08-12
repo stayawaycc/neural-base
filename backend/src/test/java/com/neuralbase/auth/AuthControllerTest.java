@@ -1,5 +1,6 @@
 package com.neuralbase.auth;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,6 +24,8 @@ class AuthControllerTest {
 
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private String login(String username, String password) throws Exception {
         MvcResult r = mvc.perform(post("/api/auth/login")
@@ -31,7 +34,7 @@ class AuthControllerTest {
             .andExpect(status().isOk())
             .andReturn();
         String body = r.getResponse().getContentAsString();
-        return body.replaceAll(".*\"data\":\"([^\"]+)\".*", "$1");
+        return objectMapper.readTree(body).get("data").asText();
     }
 
     @Test

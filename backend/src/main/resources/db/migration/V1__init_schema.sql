@@ -18,7 +18,7 @@ CREATE TABLE kb (
 
 CREATE TABLE document (
     id         BIGSERIAL PRIMARY KEY,
-    kb_id      BIGINT REFERENCES kb(id),
+    kb_id      BIGINT REFERENCES kb(id) ON DELETE CASCADE,
     title      VARCHAR(255)  NOT NULL,
     file_type  VARCHAR(20),
     file_path  VARCHAR(500),
@@ -32,7 +32,7 @@ CREATE TABLE chat_session (
     id             BIGSERIAL PRIMARY KEY,
     title          VARCHAR(255) NOT NULL,
     mode           VARCHAR(10)  NOT NULL DEFAULT 'NORMAL',
-    kb_id          BIGINT REFERENCES kb(id),
+    kb_id          BIGINT REFERENCES kb(id) ON DELETE SET NULL,
     model          VARCHAR(50)  NOT NULL DEFAULT 'deepseek-v4-flash',
     first_question TEXT,
     created_at     TIMESTAMPTZ  NOT NULL DEFAULT now()
@@ -72,7 +72,7 @@ CREATE TABLE crawler_source (
 
 CREATE TABLE daily_news (
     id         BIGSERIAL PRIMARY KEY,
-    source_id  BIGINT REFERENCES crawler_source(id),
+    source_id  BIGINT REFERENCES crawler_source(id) ON DELETE SET NULL,
     url        VARCHAR(1000),
     title      VARCHAR(255) NOT NULL,
     category   VARCHAR(50),

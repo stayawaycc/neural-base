@@ -18,6 +18,9 @@ public class JwtUtil {
 
     public JwtUtil(@Value("${neuralbase.auth.jwt-secret}") String secret,
                    @Value("${neuralbase.auth.token-expire-hours}") long expireHours) {
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("neuralbase.auth.jwt-secret 长度必须 ≥ 32 字节（HS256）");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expireMillis = expireHours * 3600_000L;
     }
