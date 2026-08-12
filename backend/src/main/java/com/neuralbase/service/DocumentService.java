@@ -1,0 +1,99 @@
+package com.neuralbase.service;
+
+import com.neuralbase.entity.Document;
+import com.neuralbase.mapper.DocumentMapper;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class DocumentService {
+
+    private final DocumentMapper documentMapper;
+    private final FileStorageService fileStorageService;
+    private final TextExtractorService textExtractorService;
+    private final TextChunker textChunker;
+    private final VectorStore vectorStore;
+
+    public DocumentService(DocumentMapper documentMapper, FileStorageService fileStorageService,
+                           TextExtractorService textExtractorService, TextChunker textChunker,
+                           VectorStore vectorStore) {
+        this.documentMapper = documentMapper;
+        this.fileStorageService = fileStorageService;
+        this.textExtractorService = textExtractorService;
+        this.textChunker = textChunker;
+        this.vectorStore = vectorStore;
+    }
+
+    public Document upload(MultipartFile file, Long kbId) throws IOException {
+        String path = fileStorageService.store(file);
+        String original = file.getOriginalFilename() == null ? "unnamed" : file.getOriginalFilename();
+        Document doc = new Document();
+        doc.setKbId(kbId);
+        doc.setTitle(original);
+        doc.setFileType(extension(original));
+        doc.setFilePath(path);
+        doc.setStatus("PENDING");
+        documentMapper.insert(doc);
+        processAsync(doc.getId());
+        return doc;
+    }
+
+    @Async
+    public void processAsync(Long documentId) {
+        try {
+            process(documentId);
+        } catch (Exception e) {
+            Document doc = documentMapper.selectById(documentId);
+            if (doc != null) {
+                doc.setStatus("FAILED");
+                doc.setError(e.getMessage());
+                documentMapper.updateById(doc);
+            }
+        }
+    }
+
+    public void process(Long documentId) throws Exception {
+        Document doc = documentMapper.selectById(documentId);
+        doc.setStatus("PROCESSING");
+        documentMapper.updateById(doc);
+        try (var in = Files.newInputStream(Path.of(doc.getFilePath()))) {
+            String text = textExtractorService.extract(in, doc.getTitle());
+            List<String> chunks = textChunker.chunk(text);
+            List<org.springframework.ai.document.Document> docs = new ArrayList<>();
+            for (int i = 0; i < chunks.size(); i++) {
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("docId", doc.getId());
+                metadata.put("kbId", doc.getKbId());
+                metadata.put("chunkIndex", i);
+                docs.add(new org.springframework.ai.document.Document(chunks.get(i), metadata));
+            }
+            if (!docs.isEmpty()) {
+                vectorStore.add(docs);
+            }
+            doc.setStatus("READY");
+            doc.setChunkCount(chunks.size());
+            documentMapper.updateById(doc);
+        }
+    }
+
+    public List<Document> list(Long kbId) {
+        return documentMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Document>()
+            .eq(kbId != null, Document::getKbId, kbId)
+            .orderByDesc(Document::getCreatedAt));
+    }
+
+    private String extension(String name) {
+        int i = name.lastIndexOf('.');
+        return i < 0 ? "" : name.substring(i + 1).toLowerCase();
+    }
+}
