@@ -27,7 +27,7 @@ neuralbase:
   storage:
     upload-dir: ${UPLOAD_DIR:uploads}
   ai:
-    siliconflow-base-url: https://api.siliconflow.cn/v1
+    siliconflow-base-url: https://api.siliconflow.cn
     siliconflow-api-key: ${SILICONFLOW_API_KEY:}
 server:
   port: 8080
