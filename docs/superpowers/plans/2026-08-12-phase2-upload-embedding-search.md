@@ -19,7 +19,7 @@
 - 统一响应 `Result<T>`；`/api/document/**` 全部需 Bearer token（SecurityConfig 已默认保护）
 - **测试 fixture（已裁决）**：P2 测试引用 `kbId=1`；由测试源码组件 `TestKbFixture` 在测试上下文启动时保证 kb id=1 存在 + `setval` 校正序列。**生产代码不 seed 默认库**（DataInitializer 只种 admin）
 - 切片：段落分割 + 重叠，`maxChunkChars=2000`/`overlapChars=300`（以字符近似"512-1024 tokens"，CJK 下 1 token≈1-2 字符；纯本地、可测）
-- 版本：`spring-ai-bom 1.1.8`、`tika-core 3.3.2`
+- 版本：`spring-ai-bom 1.1.8`、`tika-core 3.3.2` + `tika-parsers-standard-package 3.3.2`（**已修正 2026-08-12**：tika-core 无具体 parser，`parseToString` 恒返回空串，必须加 parsers 包才能提取）
 
 ## 前置条件（执行者向用户获取）
 
