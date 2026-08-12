@@ -1096,27 +1096,66 @@ public interface KbMapper extends BaseMapper<Kb> {
 ```java
 package com.neuralbase.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.repository.IRepository;
 import com.neuralbase.entity.Kb;
 
-public interface KbService extends IService<Kb> {
+public interface KbService extends IRepository<Kb> {
 }
 ```
+
+> **计划修正（2026-08-12，实测）**：MyBatis-Plus 3.5.9+ 已移除 `extension.service.IService/ServiceImpl`，替换为 `extension.repository.IRepository/AbstractRepository`。3.5.17 下 `IService` 不存在，必须用 `IRepository`。
 
 `service/impl/KbServiceImpl.java`：
 ```java
 package com.neuralbase.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.core.enums.SqlMethod;
+import com.baomidou.mybatisplus.extension.repository.AbstractRepository;
+import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
 import com.neuralbase.entity.Kb;
 import com.neuralbase.mapper.KbMapper;
 import com.neuralbase.service.KbService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+
 @Service
-public class KbServiceImpl extends ServiceImpl<KbMapper, Kb> implements KbService {
+public class KbServiceImpl extends AbstractRepository<KbMapper, Kb> implements KbService {
+
+    @Autowired
+    private KbMapper baseMapper;
+
+    @Override
+    public KbMapper getBaseMapper() {
+        return baseMapper;
+    }
+
+    @Override
+    public boolean saveBatch(Collection<Kb> entityList, int batchSize) {
+        return executeBatch(entityList, batchSize, (sqlSession, entity) ->
+            sqlSession.insert(SqlHelper.getSqlStatement(Kb.class, SqlMethod.INSERT_ONE), entity));
+    }
+
+    @Override
+    public boolean updateBatchById(Collection<Kb> entityList, int batchSize) {
+        return executeBatch(entityList, batchSize, (sqlSession, entity) ->
+            sqlSession.update(SqlHelper.getSqlStatement(Kb.class, SqlMethod.UPDATE_BY_ID), entity));
+    }
+
+    @Override
+    public boolean saveOrUpdateBatch(Collection<Kb> entityList, int batchSize) {
+        return SqlHelper.saveOrUpdateBatch(getSqlSessionFactory(), Kb.class, log, entityList, batchSize,
+            (sqlSession, entity) -> entity.getId() != null && getBaseMapper().selectById(entity.getId()) != null,
+            (sqlSession, entity) -> {
+                sqlSession.update(SqlHelper.getSqlStatement(Kb.class, SqlMethod.UPDATE_BY_ID), entity);
+                return 0;
+            });
+    }
 }
 ```
+
+> 注意：`IRepository` 声明 `saveBatch`/`updateBatchById`/`saveOrUpdateBatch`/`getBaseMapper` 为抽象方法，`AbstractRepository` 提供其余（含 controller 用到的 `save/list/getById/updateById/removeById`），故子类只需 override 这 4 个。
 
 `controller/KbController.java`：
 ```java
