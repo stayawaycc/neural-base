@@ -27,7 +27,9 @@ public class DocumentController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<Document> upload(@RequestParam("file") MultipartFile file,
                                    @RequestParam(value = "kbId", required = false) Long kbId) throws IOException {
-        return Result.ok(documentService.upload(file, kbId));
+        Document doc = documentService.upload(file, kbId);
+        documentService.processAsync(doc.getId());
+        return Result.ok(doc);
     }
 
     @GetMapping

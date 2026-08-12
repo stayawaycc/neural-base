@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -22,6 +23,8 @@ class DocumentProcessTest {
     private DocumentService documentService;
     @Autowired
     private DocumentMapper documentMapper;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     void uploadThenProcessMarksReadyAndStoresChunks() throws Exception {
@@ -32,10 +35,16 @@ class DocumentProcessTest {
         assertThat(doc.getStatus()).isEqualTo("PENDING");
 
         documentService.process(doc.getId());
+        documentService.process(doc.getId()); // 幂等：重复处理不应产生重复 chunk
 
         Document after = documentMapper.selectById(doc.getId());
         assertThat(after.getStatus()).isEqualTo("READY");
         assertThat(after.getChunkCount()).isGreaterThan(0);
         assertThat(after.getFilePath()).isNotBlank();
+
+        Integer stored = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM vector_store WHERE metadata->>'docId' = ?",
+            Integer.class, String.valueOf(doc.getId()));
+        assertThat(stored).isEqualTo(after.getChunkCount());
     }
 }

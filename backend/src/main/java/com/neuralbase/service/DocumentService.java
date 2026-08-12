@@ -2,7 +2,9 @@ package com.neuralbase.service;
 
 import com.neuralbase.entity.Document;
 import com.neuralbase.mapper.DocumentMapper;
+import org.apache.tika.exception.TikaException;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,15 +25,17 @@ public class DocumentService {
     private final TextExtractorService textExtractorService;
     private final TextChunker textChunker;
     private final VectorStore vectorStore;
+    private final JdbcTemplate jdbcTemplate;
 
     public DocumentService(DocumentMapper documentMapper, FileStorageService fileStorageService,
                            TextExtractorService textExtractorService, TextChunker textChunker,
-                           VectorStore vectorStore) {
+                           VectorStore vectorStore, JdbcTemplate jdbcTemplate) {
         this.documentMapper = documentMapper;
         this.fileStorageService = fileStorageService;
         this.textExtractorService = textExtractorService;
         this.textChunker = textChunker;
         this.vectorStore = vectorStore;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public Document upload(MultipartFile file, Long kbId) throws IOException {
@@ -44,7 +48,6 @@ public class DocumentService {
         doc.setFilePath(path);
         doc.setStatus("PENDING");
         documentMapper.insert(doc);
-        processAsync(doc.getId());
         return doc;
     }
 
@@ -62,8 +65,11 @@ public class DocumentService {
         }
     }
 
-    public void process(Long documentId) throws Exception {
+    public void process(Long documentId) throws IOException, TikaException {
         Document doc = documentMapper.selectById(documentId);
+        if (doc == null) {
+            throw new IllegalArgumentException("文档不存在: " + documentId);
+        }
         doc.setStatus("PROCESSING");
         documentMapper.updateById(doc);
         try (var in = Files.newInputStream(Path.of(doc.getFilePath()))) {
@@ -78,6 +84,9 @@ public class DocumentService {
                 docs.add(new org.springframework.ai.document.Document(chunks.get(i), metadata));
             }
             if (!docs.isEmpty()) {
+                jdbcTemplate.update(
+                    "DELETE FROM vector_store WHERE metadata->>'docId' = ?",
+                    String.valueOf(doc.getId()));
                 vectorStore.add(docs);
             }
             doc.setStatus("READY");
