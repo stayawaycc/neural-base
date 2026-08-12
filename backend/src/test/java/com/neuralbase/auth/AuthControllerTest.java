@@ -58,7 +58,8 @@ class AuthControllerTest {
         assertThat(token).isNotBlank();
         mvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.username").value("admin"));
+            .andExpect(jsonPath("$.data.username").value("admin"))
+            .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
     }
 
     @Test
