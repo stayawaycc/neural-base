@@ -10,6 +10,8 @@ import com.neuralbase.entity.Conversation;
 import com.neuralbase.entity.Message;
 import com.neuralbase.mapper.ConversationMapper;
 import com.neuralbase.mapper.MessageMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ConversationService {
+
+    private static final Logger log = LoggerFactory.getLogger(ConversationService.class);
 
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
@@ -87,6 +91,7 @@ public class ConversationService {
         try {
             return objectMapper.readValue(json, new TypeReference<List<RagSource>>() {});
         } catch (Exception e) {
+            log.warn("failed to parse sources json: {}", json, e);
             return List.of();
         }
     }

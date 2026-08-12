@@ -12,6 +12,8 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -19,11 +21,14 @@ import reactor.core.publisher.Flux;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Service
 public class ChatService {
+
+    private static final Logger log = LoggerFactory.getLogger(ChatService.class);
 
     private static final int HISTORY_WINDOW = 10;
     private static final int TOP_K = 5;
@@ -79,18 +84,25 @@ public class ChatService {
 
         Flux<ServerSentEvent<String>> stream = chatModel.stream(new Prompt(promptMessages))
             .map(resp -> resp.getResult().getOutput().getText())
+            .filter(text -> text != null && !text.isBlank())
             .doOnNext(full::append)
             .map(text -> ServerSentEvent.<String>builder(text).event("delta").build())
             .doFinally(sig -> {
                 if (persisted.compareAndSet(false, true)) {
-                    persistAssistant(convId, full.toString(), sources);
+                    try {
+                        persistAssistant(convId, full.toString(), sources);
+                    } catch (Exception ex) {
+                        log.warn("persist assistant message failed for conversation {}", convId, ex);
+                    }
                 }
             })
-            .onErrorResume(e ->
-                Flux.just(ServerSentEvent.<String>builder(e.getMessage()).event("error").build()));
+            .onErrorResume(e -> {
+                log.error("chat stream error for conversation {}", convId, e);
+                return Flux.just(ServerSentEvent.<String>builder("stream error").event("error").build());
+            });
 
         List<ServerSentEvent<String>> prefix = new ArrayList<>();
-        prefix.add(ServerSentEvent.<String>builder(metaJson(convId)).event("meta").build());
+        prefix.add(ServerSentEvent.<String>builder(toJson(Map.of("conversationId", convId))).event("meta").build());
         if (!sources.isEmpty()) {
             prefix.add(ServerSentEvent.<String>builder(toJson(sources)).event("sources").build());
         }
@@ -128,10 +140,6 @@ public class ChatService {
         }
         messageMapper.insertWithSources(assistant);
         conversationService.touch(conversationId);
-    }
-
-    private String metaJson(Long conversationId) {
-        return "{\"conversationId\":" + conversationId + "}";
     }
 
     private String toJson(Object value) {
