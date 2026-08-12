@@ -15,7 +15,7 @@ class CompositeCrawlerTest {
     void usesStaticWhenItHasSubstantialContent() {
         AtomicBoolean renderCalled = new AtomicBoolean(false);
         ArticleCrawler jsoup = url -> new CrawledArticle("文章", url,
-            "<html><body><article><p>" + "正文".repeat(200) + "</p></article></body></html>");
+            "<html><body><article><p>" + "正文".repeat(300) + "</p></article></body></html>");
         ArticleCrawler playwright = url -> {
             renderCalled.set(true);
             throw new CrawlException("不应被调用");

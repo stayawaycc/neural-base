@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 @Primary
 public class CompositeCrawler implements ArticleCrawler {
 
-    private static final int MIN_TEXT_CHARS = 100;
+    // 500 字符阈值：JS 渲染壳页面（VuePress 等 SSR 骨架）静态正文通常仅 100~300 字符，
+    // 低于真实文章正文量级；低于此值视为无实质内容，触发 Playwright 渲染兜底。
+    private static final int MIN_TEXT_CHARS = 500;
 
     private final ArticleCrawler jsoupCrawler;
     private final ArticleCrawler playwrightCrawler;
