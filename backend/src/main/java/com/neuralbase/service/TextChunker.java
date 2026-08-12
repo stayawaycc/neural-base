@@ -14,6 +14,11 @@ public class TextChunker {
 
     public TextChunker(@Value("${neuralbase.chunker.max-chars:2000}") int maxChunkChars,
                        @Value("${neuralbase.chunker.overlap-chars:300}") int overlapChars) {
+        // seed 会追加 overlapChars 字符 + 1 换行，必须留至少 1 字符余量，否则死循环/越界
+        if (maxChunkChars <= 0 || overlapChars <= 0 || overlapChars >= maxChunkChars - 1) {
+            throw new IllegalArgumentException(
+                "参数非法: 需 maxChunkChars > 0 且 0 < overlapChars < maxChunkChars - 1");
+        }
         this.maxChunkChars = maxChunkChars;
         this.overlapChars = overlapChars;
     }

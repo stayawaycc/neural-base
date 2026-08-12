@@ -40,4 +40,14 @@ class TextChunkerTest {
         assertThat(chunker.chunk("   \n\n  ")).isEmpty();
         assertThat(chunker.chunk(null)).isEmpty();
     }
+
+    @Test
+    void rejectsInvalidConfig() {
+        org.junit.jupiter.api.Assertions.assertThrows(
+            IllegalArgumentException.class, () -> new TextChunker(2000, 2000));
+        org.junit.jupiter.api.Assertions.assertThrows(
+            IllegalArgumentException.class, () -> new TextChunker(2000, 1999));
+        org.junit.jupiter.api.Assertions.assertThrows(
+            IllegalArgumentException.class, () -> new TextChunker(0, 300));
+    }
 }
