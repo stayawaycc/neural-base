@@ -2,12 +2,20 @@ package com.neuralbase.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.neuralbase.entity.Message;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
 public interface MessageMapper extends BaseMapper<Message> {
+
+    /** sources 列是 jsonb，MyBatis-Plus 默认把 String 当 varchar 绑定会报类型不匹配，这里显式 CAST 为 jsonb。 */
+    @Insert("""
+        INSERT INTO message (conversation_id, role, content, sources, created_at)
+        VALUES (#{conversationId}, #{role}, #{content}, CAST(#{sources} AS jsonb), #{createdAt})
+        """)
+    int insertWithSources(Message message);
 
     /** 取某会话最近 limit 条消息，升序返回（子查询倒排截断再正排）。 */
     @Select("""
