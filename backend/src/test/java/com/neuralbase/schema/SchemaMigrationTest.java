@@ -36,7 +36,8 @@ class SchemaMigrationTest {
     @Test
     void allBusinessTablesExist() throws Exception {
         Set<String> expected = Set.of("users", "kb", "document", "chat_session",
-            "chat_message", "baguwen", "daily_news", "crawl_task", "crawler_source", "vector_store");
+            "chat_message", "baguwen", "daily_news", "crawl_task", "crawler_source", "vector_store",
+            "baguwen_article", "baguwen_import_task", "baguwen_qa_pair");
         Set<String> actual = tableNames();
         assertTrue(actual.containsAll(expected), "缺少表: " + expected.stream().filter(e -> !actual.contains(e)).toList());
     }
