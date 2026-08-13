@@ -150,20 +150,20 @@ watch(
           :key="d.id"
           class="doc-item glass-card w-full !p-3 text-left"
           :class="[
-            currentDoc?.id === d.id ? '!border-cyan-400/40' : '',
+            currentDoc?.id === d.id ? '!border-cyan-500/50 dark:!border-cyan-400/40' : '',
             d.status !== 'READY' ? 'cursor-not-allowed opacity-50' : 'glass-card--hover',
           ]"
           :disabled="d.status !== 'READY'"
           @click="d.status === 'READY' && openDoc(d.id)"
         >
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-sm text-gray-200">{{ d.title }}</span>
+            <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ d.title }}</span>
             <n-tag v-if="d.status !== 'READY'" size="small" :type="statusMeta[d.status].type" :bordered="false">
               {{ statusMeta[d.status].label }}
             </n-tag>
           </div>
         </button>
-        <div v-if="!docStore.documents.length" class="py-8 text-center text-xs text-gray-600">
+        <div v-if="!docStore.documents.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
           这个知识库还没有文档,去「知识库」页上传
         </div>
       </div>
@@ -182,22 +182,22 @@ watch(
 
     <!-- 右:阅读区 -->
     <main class="flex min-w-0 flex-1 flex-col gap-3">
-      <header class="flex items-center gap-3 border-b border-white/5 pb-3">
-        <RouterLink :to="{ name: 'kb' }" class="shrink-0 text-xs text-gray-500 hover:text-cyan-300">← 返回知识库</RouterLink>
-        <span class="truncate text-base text-gray-100">{{ content?.title ?? currentDoc?.title ?? '文档阅读' }}</span>
+      <header class="flex items-center gap-3 border-b border-gray-100 pb-3 dark:border-white/5">
+        <RouterLink :to="{ name: 'kb' }" class="shrink-0 text-xs text-gray-500 hover:text-cyan-600 dark:hover:text-cyan-300">← 返回知识库</RouterLink>
+        <span class="truncate text-base text-gray-900 dark:text-gray-100">{{ content?.title ?? currentDoc?.title ?? '文档阅读' }}</span>
         <n-tag v-if="currentDoc" size="small" :bordered="false">
           {{ currentDoc.fileType.toUpperCase() }}<template v-if="currentDoc.chunkCount"> · {{ currentDoc.chunkCount }} 块</template>
         </n-tag>
         <div class="ml-auto flex shrink-0 items-center gap-3">
           <a
             v-if="docId != null && hasOriginal"
-            class="download-link text-xs text-gray-500 hover:text-cyan-300"
+            class="download-link text-xs text-gray-500 hover:text-cyan-600 dark:hover:text-cyan-300"
             :href="documentFileUrl(docId)"
             :download="currentDoc?.title"
           >下载原文</a>
           <a
             v-if="kind === 'baguwen' && currentDoc?.sourceUrl"
-            class="text-xs text-gray-500 hover:text-cyan-300"
+            class="text-xs text-gray-500 hover:text-cyan-600 dark:hover:text-cyan-300"
             :href="currentDoc.sourceUrl"
             target="_blank"
             rel="noopener"
@@ -207,22 +207,22 @@ watch(
       <div ref="readerPane" class="relative flex-1 overflow-y-auto" @scroll="onPaneScroll">
         <button
           v-if="kind === 'markdown'"
-          class="outline-trigger absolute right-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-full border border-white/10 bg-[#15151f]/90 px-3 text-xs text-gray-300 backdrop-blur hover:text-cyan-300"
+          class="outline-trigger absolute right-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-full border border-gray-200 bg-white/90 px-3 text-xs text-gray-600 backdrop-blur hover:text-cyan-600 dark:border-white/10 dark:bg-[#15151f]/90 dark:text-gray-300 dark:hover:text-cyan-300"
           @click="showOutline = true"
         >
           <span class="text-sm leading-none">☰</span> 目录
         </button>
         <div v-if="loading" class="py-20 text-center text-sm text-gray-500">加载中…</div>
         <div v-else-if="loadError" class="py-20 text-center text-sm text-gray-500">
-          <p class="text-red-400">{{ loadError }}</p>
-          <p v-if="loadError.includes('内容缺失')" class="mt-2 text-gray-600">请删除该文档后重新上传。</p>
-          <p v-else-if="loadError.includes('尚未处理')" class="mt-2 text-gray-600">处理完成后自动可用,稍后重新选择即可。</p>
+          <p class="text-red-500 dark:text-red-400">{{ loadError }}</p>
+          <p v-if="loadError.includes('内容缺失')" class="mt-2 text-gray-400 dark:text-gray-600">请删除该文档后重新上传。</p>
+          <p v-else-if="loadError.includes('尚未处理')" class="mt-2 text-gray-400 dark:text-gray-600">处理完成后自动可用,稍后重新选择即可。</p>
         </div>
-        <div v-else-if="!content" class="py-20 text-center text-sm text-gray-600">从左侧选择一篇文档开始阅读</div>
+        <div v-else-if="!content" class="py-20 text-center text-sm text-gray-400 dark:text-gray-600">从左侧选择一篇文档开始阅读</div>
         <template v-else>
           <MarkdownRenderer v-if="kind === 'markdown'" :content="content.content" anchor-headings />
-          <iframe v-else-if="kind === 'pdf'" :src="documentFileUrl(content.id)" class="h-full min-h-[60vh] w-full rounded-xl border border-white/5" />
-          <pre v-else class="whitespace-pre-wrap py-2 text-sm leading-relaxed text-gray-300">{{ content.content }}</pre>
+          <iframe v-else-if="kind === 'pdf'" :src="documentFileUrl(content.id)" class="h-full min-h-[60vh] w-full rounded-xl border border-gray-200 dark:border-white/5" />
+          <pre v-else class="whitespace-pre-wrap py-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ content.content }}</pre>
         </template>
       </div>
     </main>
@@ -237,13 +237,15 @@ watch(
             class="outline-item block w-full rounded px-2 py-1.5 text-left text-sm transition-colors"
             :class="[
               o.level === 2 ? 'pl-4' : o.level === 3 ? 'pl-8' : '',
-              o.id === activeId ? 'bg-cyan-400/10 text-cyan-300' : 'text-gray-400 hover:text-gray-200',
+              o.id === activeId
+                ? 'bg-cyan-50 text-cyan-600 dark:bg-cyan-400/10 dark:text-cyan-300'
+                : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200',
             ]"
             @click="jumpTo(o.id)"
           >
             {{ o.text }}
           </button>
-          <div v-if="!outlineItems.length" class="py-8 text-center text-xs text-gray-600">本文档没有标题</div>
+          <div v-if="!outlineItems.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">本文档没有标题</div>
         </div>
       </n-drawer-content>
     </n-drawer>

@@ -84,7 +84,7 @@ function openReader(d: DocumentItem) {
     <!-- 知识库列表 -->
     <aside class="hidden w-64 shrink-0 flex-col md:flex">
       <div class="mb-3 flex items-center justify-between">
-        <span class="text-sm text-gray-400">知识库</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">知识库</span>
         <n-button size="small" quaternary @click="kbModal = true">
           <template #icon><Icon icon="mdi:plus" class="h-4 w-4" /></template>
           新建
@@ -93,23 +93,23 @@ function openReader(d: DocumentItem) {
       <div class="flex-1 space-y-1.5 overflow-y-auto pr-1">
         <button
           class="glass-card w-full !p-3 text-left"
-          :class="docStore.currentKbId === null ? '!border-cyan-400/40' : ''"
+          :class="docStore.currentKbId === null ? '!border-cyan-500/50 dark:!border-cyan-400/40' : ''"
           @click="docStore.selectKb(null)"
         >
-          <span class="text-sm text-gray-200">全部文档</span>
+          <span class="text-sm text-gray-800 dark:text-gray-200">全部文档</span>
         </button>
         <button
           v-for="k in docStore.kbs"
           :key="k.id"
           class="glass-card w-full !p-3 text-left"
-          :class="docStore.currentKbId === k.id ? '!border-cyan-400/40' : ''"
+          :class="docStore.currentKbId === k.id ? '!border-cyan-500/50 dark:!border-cyan-400/40' : ''"
           @click="docStore.selectKb(k.id)"
         >
           <div class="flex items-center gap-2">
             <span v-if="k.color" class="h-2.5 w-2.5 rounded-full" :style="{ background: k.color }" />
-            <span class="truncate text-sm text-gray-200">{{ k.name }}</span>
+            <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ k.name }}</span>
             <span
-              class="ml-auto cursor-pointer text-gray-600 hover:text-red-400"
+              class="ml-auto cursor-pointer text-gray-400 hover:text-red-400 dark:text-gray-600"
               title="删除知识库"
               @click.stop="confirmDeleteKb(k.id, k.name)"
             >
@@ -117,7 +117,7 @@ function openReader(d: DocumentItem) {
             </span>
           </div>
         </button>
-        <div v-if="!docStore.kbs.length" class="py-8 text-center text-xs text-gray-600">
+        <div v-if="!docStore.kbs.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
           暂无知识库,点击「新建」创建
         </div>
       </div>
@@ -143,10 +143,10 @@ function openReader(d: DocumentItem) {
           class="glass-card !p-3"
         >
           <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-200">{{ r.title ?? `文档#${r.docId}` }}</span>
-            <span class="text-xs text-gray-600">相似度 {{ r.score.toFixed(3) }}</span>
+            <span class="text-sm text-gray-800 dark:text-gray-200">{{ r.title ?? `文档#${r.docId}` }}</span>
+            <span class="text-xs text-gray-400 dark:text-gray-600">相似度 {{ r.score.toFixed(3) }}</span>
           </div>
-          <p class="mt-1 line-clamp-3 text-xs leading-relaxed text-gray-400">{{ r.content }}</p>
+          <p class="mt-1 line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-400">{{ r.content }}</p>
         </div>
       </div>
 
@@ -158,8 +158,8 @@ function openReader(d: DocumentItem) {
           <div v-for="d in docStore.documents" :key="d.id" class="glass-card !p-3">
             <div class="flex items-center justify-between gap-2">
               <span
-                class="truncate text-sm text-gray-200"
-                :class="d.status === 'READY' && (d.kbId ?? docStore.currentKbId) != null ? 'cursor-pointer hover:text-cyan-300' : ''"
+                class="truncate text-sm text-gray-800 dark:text-gray-200"
+                :class="d.status === 'READY' && (d.kbId ?? docStore.currentKbId) != null ? 'cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-300' : ''"
                 @click="openReader(d)"
               >{{ d.title }}</span>
               <div class="flex shrink-0 items-center gap-2">
@@ -176,11 +176,11 @@ function openReader(d: DocumentItem) {
                 </n-popconfirm>
               </div>
             </div>
-            <div v-if="d.status === 'FAILED' && d.error" class="mt-1 text-xs text-red-400">
+            <div v-if="d.status === 'FAILED' && d.error" class="mt-1 text-xs text-red-500 dark:text-red-400">
               {{ d.error }}
             </div>
           </div>
-          <div v-if="!docStore.documents.length" class="py-12 text-center text-sm text-gray-600">
+          <div v-if="!docStore.documents.length" class="py-12 text-center text-sm text-gray-400 dark:text-gray-600">
             还没有文档,上传一个开始构建知识库
           </div>
         </div>
