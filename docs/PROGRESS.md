@@ -1,6 +1,6 @@
 # NeuralBase 项目进度记录
 
-> 最后更新：2026-08-12（Phase 4 后端完成）。本文件记录「设计文档 vs 实际实现」的逐项核对结果。✅=已实现并验证　⏸=部分实现（已裁决延迟）　❌=未开始
+> 最后更新：2026-08-13（Phase 6 前端完成）。本文件记录「设计文档 vs 实际实现」的逐项核对结果。✅=已实现并验证　⏸=部分实现（已裁决延迟）　❌=未开始
 > 对照基准：`docs/NeuralBase-系统设计文档.md`；各阶段实施计划见 `docs/superpowers/plans/`。
 
 ---
@@ -14,7 +14,7 @@
 | **Phase 3** | AI 对话（SSE 流式 + RAG 模式 + DeepSeek） | ✅ | 完成，真实冒烟双模式通过 |
 | **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ✅ | 后端完成（前端仍 ❌） |
 | **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ❌ | 未开始 |
-| **Phase 6** | UI 精细化打磨、动画、响应式 | ❌ | 依赖前端，前端未开始 |
+| **Phase 6** | UI 精细化打磨、动画、响应式 | ⏸ | 主要页面完成（登录/知识库/对话/八股文/日报占位）；动画打磨与亮色模式未做 |
 | **Phase 7** | Docker 本地部署、性能优化、压测 | ❌ | 未开始 |
 | **Phase 8** | Docker 部署文档 | ❌ | 未开始 |
 
@@ -26,10 +26,10 @@
 
 | 功能点 | 状态 | 说明 |
 |--------|------|------|
-| 多格式上传 | ⏸ | 后端 multipart 上传 + Tika 提取（PDF/Word/MD/TXT）✅；前端拖拽上传 ❌ |
+| 多格式上传 | ⏸ | 后端 multipart 上传 + Tika 提取（PDF/Word/MD/TXT）✅；前端拖拽上传 ✅（状态仍 ⏸，等文档阅读器） |
 | 异步解析（提取→切片→Embedding→入库） | ✅ | `DocumentService` + `@Async`，状态机 PENDING→PROCESSING→READY/FAILED |
 | 语义搜索 | ✅ | `POST /api/document/search`，pgvector 余弦距离 |
-| 文档阅读器（文件树/大纲） | ❌ | 前端未开始 |
+| 文档阅读器（文件树/大纲） | ❌ | 未做 |
 | RAG 问答 | ✅ | Phase 3，请求带 `kbId` 进入知识库模式，引用存 `message.sources` |
 
 ### 2️⃣ AI 对话
@@ -39,9 +39,9 @@
 | 双模式切换（普通/知识库） | ✅ | 请求 `kbId` 有无决定；知识库模式注入检索片段 |
 | 模型切换（flash/pro） | ⏸ | 仅 `deepseek-v4-flash`，`neuralbase.ai.deepseek-model` 可配，参数已预留 |
 | 流式输出 SSE | ✅ | `POST /api/chat/stream`，事件 `meta→sources→delta*→done` |
-| 停止生成 | ⏸ | 客户端断开即取消 Flux（无显式停止接口） |
-| Markdown 渲染 / 代码操作 | ❌ | 前端未开始 |
-| 会话管理 | ⏸ | 列表 + 删除 + 自动标题（首条问题前 20 字）✅；重命名/收藏 ❌（裁决延后 Phase 6） |
+| 停止生成 | ✅ | 前端停止按钮 + AbortController 断开 SSE |
+| Markdown 渲染 / 代码操作 | ✅ | 渲染 + 代码复制；插入编辑器仍无 |
+| 会话管理 | ⏸ | 后端列表/删除/自动标题 ✅；前端列表/新建/删除 ✅；重命名/收藏仍延后 |
 | 反馈机制（点赞/点踩） | ❌ | 裁决延后 Phase 6 |
 
 ### 3️⃣ 八股文库
@@ -53,7 +53,7 @@
 | AI 结构化提取问答对 | ✅ `BaguwenAiService`：DeepSeek 非流式提取 `{qa_pairs, tags}` |
 | 分类标签 / 筛选 / 全文搜索 | ✅ tags 聚合 + 分页列表（tag 精确 / keyword 匹配标题正文与问答对） |
 | 收藏进知识库（embedding） | ✅ `POST /api/baguwen/{id}/favorite` 复用 VectorStore 管线 |
-| 阅读模式 / 前端 | ❌ 前端未开始（Phase 6） |
+| 阅读模式 / 前端 | ✅ 列表/筛选/详情/收藏前端完成；原文渲染仍是纯文本问答对 |
 
 ### 4️⃣ AI 日报
 
@@ -82,7 +82,8 @@
 | 爬虫引擎 | Playwright + Jsoup | ✅ Jsoup 1.22.2 + Playwright 1.60.0（`CompositeCrawler` 兜底链） | — |
 | 任务调度 | Quartz | ❌ 未实现 | Phase 5 |
 | API 文档 | SpringDoc OpenAPI | ❌ 未加 | 可选补 |
-| 安全 | Spring Security + JWT | ✅ | — |
+| 安全 | Spring Security + JWT | ✅ | cookie 认证（login Set-Cookie + logout 端点 + filter 兜底，header 兼容保留） |
+| 前端 | 设计文档 Vue 3 + Vite 5 | ✅ Vue 3.5 + Vite 7 + Pinia 3 + Naive UI 2 + Tailwind 3.4 | TipTap/ECharts/GSAP 裁剪（见 spec） |
 | 部署 | Docker + nginx | ❌ 无 `docker/`、`docker-compose.yml`、`.env.example` | Phase 7/8 |
 
 > **架构偏差注意**：设计文档的「MySQL + PostgreSQL + Redis 三库」架构在实际实现中简化为「单 PostgreSQL（业务 + 向量同库）」+ 无 Redis。Phase 4/5（爬虫/日报）如需队列限流再考虑引入。
@@ -91,15 +92,17 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：66/66 绿（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）
-  - Auth(5)、Kb(1)、Document 上传/处理/检索(8)、Chat 服务(3)、Chat HTTP 层 SSE(3)、Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
-  - Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
+- **自动化测试**：后端 **73/73 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 30/30 绿** + typecheck 无输出 + build 成功（2026-08-13）
+  - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除(10)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
+  - 后端 Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
+  - 前端：GlassCard(2)、user(3)、sse(7)、chat(5)、MarkdownRenderer(2)、ChatMessage(3)、document(5)、baguwen(3)
 - **真实冒烟**：
   - Phase 2：SiliconFlow embedding 链路 ✅
   - Phase 3：普通模式（DeepSeek 流式）+ RAG 模式（真 embedding 检索 → 引用回答 → `message.sources` 落库）✅
   - Phase 4（2026-08-12）：真实 URL 导入（阮一峰周刊 287 期）→ Jsoup 抓取 103KB → 正文提取 6.8K 字符 → DeepSeek 提取 10 问答对 + 5 标签 → 任务 SUCCESS → 收藏进 KB → 检索命中问答对 ✅
   - 冒烟发现并修复：① 生产环境 ArticleCrawler 三实现注入歧义（测试 @Primary 掩盖，改为真实爬虫 `@Profile("!test")` + `CompositeCrawler @Primary`）；② Jsoup 壳页面（VuePress 等 JS 渲染站）183 字符正文误判"有实质内容"，兜底阈值 100→500；③ Playwright 渲染超时 15s→45s（重型首屏）；④ 计划中 javaguide URL 已失效（404），冒烟改用有效站点
-- **运行**：本机 8080 被占用，用 `--server.port=8081`；**本地 PG 密码 `Huangwei990758`**（`export DB_PASSWORD='Huangwei990758'`，yml 默认值同；⚠️ 早期文档误记 `root`，已更正，2026-08-12 实测）
+  - Phase 6（2026-08-13）：登录 cookie 落盘（nb_token HttpOnly）→ 上传 md → PENDING→READY → 删除文档（DB 记录 + 文件均删）→ 退出登录 cookie 清除 ✅；八股文导入：任务状态机 PENDING→PROCESSING→FAILED 与 errorMsg 落库验证通过，但 **SUCCESS 未能在本机复现**——brief 的 287 期 URL 已 404（站点改版，Chrome UA 实测 404），当前最新 407 期被 Cloudflare 指纹拦截，且本机 Playwright 浏览器二进制安装停滞（驱动进程疑似被本地安全软件阻断，curl 同源下载 12MB/s 正常）→ 导入 SUCCESS、收藏、RAG 命中问答对等项留待浏览器/换网络验证（管线代码自 Phase 4 未变，2026-08-12 已真实冒烟通过）
+- **运行**：本机 8080 被占用，用 `--server.port=8081`；**本地 PG 密码 `root`**（`export DB_PASSWORD='root'`，yml 默认值同；test 库 `neuralbase_test` 同密码；2026-08-13 实测，旧值 Huangwei990758 已失效）
 
 ---
 
@@ -136,16 +139,18 @@
 
 ## 六、前端状态
 
-**完全未开始**（Vue 3 + Vite + Pinia + Naive UI + Tailwind，设计文档有完整目录结构与 UI 规范）。Phase 6 前端落地时，本文件需同步更新所有标 ❌ 的前端功能点。
+**已完成**（2026-08-13）：
+- 登录页（cookie 认证）；Dashboard（四模块卡 + 最近会话/最近文档 + 日报占位）；知识库页（KB CRUD + 色板、拖拽上传、状态轮询、语义搜索、删除）；Chat 页（普通/知识库双模式、SSE fetch 流式 + 停止生成、Markdown 渲染 + 代码复制、会话列表/新建/删除）；八股文库（导入任务、标签筛选列表、详情问答对 + 难度徽标、收藏）；移动端（<768px）底部 Tab 导航。
+- **未做项**：亮色模式、动画打磨（GSAP 等已裁剪）、文档阅读器、日报真实功能。
 
 ---
 
 ## 七、下一步建议
 
-> Phase 1-4 后端已完成（知识库 RAG、AI 对话、八股文库）。前端整体未开始。
+> Phase 1-6：后端（知识库 RAG、AI 对话、八股文库）+ 前端主要页面（登录/知识库/对话/八股文/日报占位）已完成。
 
-1. **前端**（价值最高）：对接现有 API，做知识库 + AI 聊天（SSE fetch 流式）+ 八股文库 UI（导入/阅读/筛选/收藏）
+1. 前端收尾：文档阅读器、亮色模式、动画打磨
 2. **Phase 5** AI 日报（Quartz 定时爬取 + DeepSeek 汇总；`crawler_source`/`daily_news`/`crawl_task` 表已建好）
 3. **Phase 7/8** Docker 部署 + 文档
 4. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）
-5. 八股文库遗留：阅读模式、JS 渲染站点需本机先 `playwright install chromium`（Java CLI：`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`）
+5. 八股文库遗留：JS 渲染站点需本机先 `playwright install chromium`（Java CLI：`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`）
