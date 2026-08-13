@@ -126,6 +126,9 @@ class BaguwenServiceTest {
         Long docId = jdbcTemplate.queryForObject(
             "SELECT id FROM document WHERE kb_id = 1 AND source_url = ?", Long.class, "http://ok/1");
         assertThat(docId).isNotNull();
+        String content = jdbcTemplate.queryForObject(
+            "SELECT content FROM document WHERE id = ?", String.class, docId);
+        assertThat(content).contains("Q: ").contains("A: ");
         Integer vectors = jdbcTemplate.queryForObject(
             "SELECT count(*) FROM vector_store WHERE metadata->>'docId' = ?",
             Integer.class, String.valueOf(docId));

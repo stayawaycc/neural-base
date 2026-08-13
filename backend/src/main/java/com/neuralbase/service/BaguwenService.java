@@ -278,6 +278,7 @@ public class BaguwenService {
         doc.setSourceUrl(article.getUrl());
         doc.setStatus("READY");
         doc.setChunkCount(chunks.size());
+        doc.setContent(sb.toString());
         documentMapper.insert(doc);
 
         List<org.springframework.ai.document.Document> aiDocs = new ArrayList<>();
