@@ -20,6 +20,27 @@
     border-color 0.3s ease,
     box-shadow 0.3s ease;
 }
+/* 玻璃卡片修饰类(全局:裸 class 使用方如 BaguwenView 卡片因此生效) */
+.glass-card--padded {
+  padding: 16px;
+}
+.glass-card--hover:hover {
+  transform: translateY(-2px);
+  border-color: var(--nb-accent);
+  box-shadow: 0 8px 32px -8px var(--nb-accent);
+}
+.glass-card--cyan {
+  --nb-accent: #22d3ee;
+}
+.glass-card--violet {
+  --nb-accent: #a78bfa;
+}
+.glass-card--amber {
+  --nb-accent: #fbbf24;
+}
+.glass-card--emerald {
+  --nb-accent: #34d399;
+}
 
 html,
 body,
