@@ -6,7 +6,9 @@ import com.neuralbase.dto.SearchResult;
 import com.neuralbase.entity.Document;
 import com.neuralbase.service.DocumentService;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,5 +45,11 @@ public class DocumentController {
     @GetMapping
     public Result<List<Document>> list(@RequestParam(value = "kbId", required = false) Long kbId) {
         return Result.ok(documentService.list(kbId));
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        documentService.delete(id);
+        return Result.ok(null);
     }
 }

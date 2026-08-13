@@ -5,6 +5,8 @@ import com.neuralbase.entity.Document;
 import com.neuralbase.mapper.DocumentMapper;
 import com.neuralbase.mapper.KbMapper;
 import org.apache.tika.exception.TikaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -21,6 +23,8 @@ import java.util.Map;
 
 @Service
 public class DocumentService {
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
 
     private final DocumentMapper documentMapper;
     private final FileStorageService fileStorageService;
@@ -100,6 +104,24 @@ public class DocumentService {
             doc.setChunkCount(chunks.size());
             documentMapper.updateById(doc);
         }
+    }
+
+    public void delete(Long documentId) {
+        Document doc = documentMapper.selectById(documentId);
+        if (doc == null) {
+            throw new IllegalArgumentException("文档不存在: " + documentId);
+        }
+        jdbcTemplate.update(
+            "DELETE FROM vector_store WHERE metadata->>'docId' = ?",
+            String.valueOf(documentId));
+        if (doc.getFilePath() != null && !doc.getFilePath().isBlank()) {
+            try {
+                Files.deleteIfExists(Path.of(doc.getFilePath()));
+            } catch (IOException e) {
+                log.warn("删除文档文件失败 {}: {}", doc.getFilePath(), e.getMessage());
+            }
+        }
+        documentMapper.deleteById(documentId);
     }
 
     public List<SearchResult> search(String query, Long kbId, Integer topK) {
