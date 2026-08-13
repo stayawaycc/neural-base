@@ -26,10 +26,10 @@
 
 | 功能点 | 状态 | 说明 |
 |--------|------|------|
-| 多格式上传 | ⏸ | 后端 multipart 上传 + Tika 提取（PDF/Word/MD/TXT）✅；前端拖拽上传 ✅（状态仍 ⏸，等文档阅读器） |
-| 异步解析（提取→切片→Embedding→入库） | ✅ | `DocumentService` + `@Async`，状态机 PENDING→PROCESSING→READY/FAILED |
+| 多格式上传 | ✅ | 后端 multipart 上传 + Tika 提取（PDF/Word/MD/TXT）✅；前端拖拽上传 ✅ |
+| 异步解析（提取→切片→Embedding→入库） | ✅ | `DocumentService` + `@Async`，状态机 PENDING→PROCESSING→READY/FAILED；提取全文落 `document.content`（V5） |
 | 语义搜索 | ✅ | `POST /api/document/search`，pgvector 余弦距离 |
-| 文档阅读器（文件树/大纲） | ❌ | 未做 |
+| 文档阅读器（文件树/大纲） | ✅ | 2026-08-13：独立路由 `/kb/:kbId/reader/:docId?`，两级树（KB→文档，非 READY 置灰带徽标），分格式渲染（md→MarkdownRenderer 锚点模式、pdf→iframe、docx/txt/BAGUWEN→提取文本），md 目录抽屉（点击跳转 + 滚动高亮），下载原文/查看原文外链；后端新增 `GET /api/document/{id}/content` 与 `/{id}/file`（inline 流式） |
 | RAG 问答 | ✅ | Phase 3，请求带 `kbId` 进入知识库模式，引用存 `message.sources` |
 
 ### 2️⃣ AI 对话
@@ -92,7 +92,7 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：后端 **74/74 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 30/30 绿** + typecheck 无输出 + build 成功（2026-08-13）
+- **自动化测试**：后端 **88/88 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 50/50 绿** + typecheck 无输出 + build 成功（2026-08-13，文档阅读器后更新）
   - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除/竞态防护(11)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
   - 后端 Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
   - 前端：GlassCard(2)、user(3)、sse(7)、chat(5)、MarkdownRenderer(2)、ChatMessage(3)、document(5)、baguwen(3)
@@ -138,8 +138,8 @@
 ## 六、前端状态
 
 **已完成**（2026-08-13）：
-- 登录页（cookie 认证）；Dashboard（四模块卡 + 最近会话/最近文档 + 日报占位）；知识库页（KB CRUD + 色板、拖拽上传、状态轮询、语义搜索、删除）；Chat 页（普通/知识库双模式、SSE fetch 流式 + 停止生成、Markdown 渲染 + 代码复制、会话列表/新建/删除）；八股文库（导入任务、标签筛选列表、详情问答对 + 难度徽标、收藏）；移动端（<768px）底部 Tab 导航。
-- **未做项**：亮色模式、动画打磨（GSAP 等已裁剪）、文档阅读器、日报真实功能。
+- 登录页（cookie 认证）；Dashboard（四模块卡 + 最近会话/最近文档 + 日报占位）；知识库页（KB CRUD + 色板、拖拽上传、状态轮询、语义搜索、删除 + READY 文档点击进阅读器）；Chat 页（普通/知识库双模式、SSE fetch 流式 + 停止生成、Markdown 渲染 + 代码复制、会话列表/新建/删除）；八股文库（导入任务、标签筛选列表、详情问答对 + 难度徽标、收藏）；移动端（<768px）底部 Tab 导航；**文档阅读器**（两级树 + 分格式渲染 + md 目录抽屉/滚动高亮 + 下载/原文链接，规格 `docs/superpowers/specs/2026-08-13-document-reader-design.md`，计划 `docs/superpowers/plans/2026-08-13-document-reader.md`）。
+- **未做项**：亮色模式、动画打磨（前端收尾 2/4、3/4）、延后项补做（4/4）、日报真实功能。
 
 ---
 
@@ -147,7 +147,7 @@
 
 > Phase 1-6：后端（知识库 RAG、AI 对话、八股文库）+ 前端主要页面（登录/知识库/对话/八股文/日报占位）已完成。
 
-1. 前端收尾：文档阅读器、亮色模式、动画打磨
+1. 前端收尾剩余：亮色模式、动画打磨、延后项补做（会话重命名/收藏、消息点赞点踩、八股原文渲染）——各走独立规格循环
 2. **Phase 5** AI 日报（Quartz 定时爬取 + DeepSeek 汇总；`crawler_source`/`daily_news`/`crawl_task` 表已建好）
 3. **Phase 7/8** Docker 部署 + 文档
 4. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）
