@@ -1,10 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import ChatMessage from '@/components/ChatMessage.vue'
 
 const sources = [{ docId: 2, title: '参考文档', content: '片段内容', score: 0.9 }]
 
 describe('ChatMessage', () => {
+  // 内嵌 MarkdownRenderer 依赖 theme store
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('用户消息右对齐纯文本', () => {
     const wrapper = mount(ChatMessage, {
       props: { role: 'USER', content: '你好' },
