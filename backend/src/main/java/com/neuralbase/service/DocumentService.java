@@ -141,9 +141,34 @@ public class DocumentService {
                 : "文档尚未处理完成");
         }
         if (doc.getContent() == null || doc.getContent().isBlank()) {
+            // V5 之前的存量文档:READY 但 content 为空 → 从原文件惰性回填(自愈,免用户重传)
+            doc = backfillLegacyContent(doc);
+        }
+        if (doc.getContent() == null || doc.getContent().isBlank()) {
             throw new IllegalArgumentException("文档内容缺失,请重新上传");
         }
         return new DocumentContentView(doc.getId(), doc.getTitle(), doc.getFileType(), doc.getContent());
+    }
+
+    /** 存量文档回填:原文件仍在磁盘则重新提取全文并落库,否则原样返回。 */
+    private Document backfillLegacyContent(Document doc) {
+        if (doc.getFilePath() == null || doc.getFilePath().isBlank()) {
+            return doc; // 无原文件(如 V5 之前的收藏文档),无法回填
+        }
+        Path path = Path.of(doc.getFilePath());
+        if (!Files.exists(path)) {
+            return doc;
+        }
+        try (var in = Files.newInputStream(path)) {
+            String text = textExtractorService.extract(in, doc.getTitle());
+            if (!text.isBlank()) {
+                doc.setContent(text);
+                documentMapper.updateById(doc);
+            }
+        } catch (Exception e) {
+            log.warn("存量文档内容回填失败 {}: {}", doc.getId(), e.getMessage());
+        }
+        return doc;
     }
 
     public Document fileDocument(Long documentId) {

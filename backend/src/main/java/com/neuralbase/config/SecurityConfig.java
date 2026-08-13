@@ -23,6 +23,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter,
                                            ObjectMapper objectMapper) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
+            // 阅读器用同源 iframe 内嵌 PDF 原文件预览,默认 DENY 会阻止加载
+            .headers(h -> h.frameOptions(f -> f.sameOrigin()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/login", "/api/auth/logout", "/api/health").permitAll()

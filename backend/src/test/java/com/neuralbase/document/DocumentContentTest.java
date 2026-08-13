@@ -11,11 +11,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,6 +38,8 @@ class DocumentContentTest {
     private DocumentService documentService;
     @Autowired
     private DocumentMapper documentMapper;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private String token() throws Exception {
         MvcResult r = mvc.perform(post("/api/auth/login")
@@ -96,10 +100,25 @@ class DocumentContentTest {
     }
 
     @Test
-    void contentEmptyReturns400() throws Exception {
-        Document doc = uploadDoc("legacy.md", "x");
+    void contentEmptyLegacyDocBackfillsFromOriginalFile() throws Exception {
+        Document doc = uploadDoc("legacy.md", "# 存量文档\n\n这是 V5 之前上传的内容。");
         doc.setStatus("READY");
         documentMapper.updateById(doc); // 模拟 V5 之前的存量文档:READY 但 content 为空
+        mvc.perform(get("/api/document/" + doc.getId() + "/content")
+                .header("Authorization", "Bearer " + token()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.content").value(containsString("这是 V5 之前上传的内容")));
+        // 回填结果应持久化,后续请求直接命中
+        Document after = documentMapper.selectById(doc.getId());
+        assertThat(after.getContent()).contains("这是 V5 之前上传的内容");
+    }
+
+    @Test
+    void contentEmptyWithoutOriginalFileReturns400() throws Exception {
+        Document doc = uploadDoc("gone.md", "x");
+        doc.setStatus("READY");
+        documentMapper.updateById(doc);
+        jdbcTemplate.update("UPDATE document SET file_path = NULL WHERE id = ?", doc.getId());
         mvc.perform(get("/api/document/" + doc.getId() + "/content")
                 .header("Authorization", "Bearer " + token()))
             .andExpect(status().isBadRequest())

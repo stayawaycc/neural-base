@@ -72,8 +72,10 @@ function confirmDeleteKb(id: number, name: string) {
 }
 
 function openReader(d: DocumentItem) {
-  if (d.status !== 'READY' || docStore.currentKbId == null) return
-  void router.push({ name: 'kb-reader', params: { kbId: String(docStore.currentKbId), docId: String(d.id) } })
+  // 优先用文档自身的 kbId(「全部文档」模式下也能进阅读器);无归属的文档不可读
+  const kbId = d.kbId ?? docStore.currentKbId
+  if (d.status !== 'READY' || kbId == null) return
+  void router.push({ name: 'kb-reader', params: { kbId: String(kbId), docId: String(d.id) } })
 }
 </script>
 
@@ -157,7 +159,7 @@ function openReader(d: DocumentItem) {
             <div class="flex items-center justify-between gap-2">
               <span
                 class="truncate text-sm text-gray-200"
-                :class="d.status === 'READY' && docStore.currentKbId != null ? 'cursor-pointer hover:text-cyan-300' : ''"
+                :class="d.status === 'READY' && (d.kbId ?? docStore.currentKbId) != null ? 'cursor-pointer hover:text-cyan-300' : ''"
                 @click="openReader(d)"
               >{{ d.title }}</span>
               <div class="flex shrink-0 items-center gap-2">
