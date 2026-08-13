@@ -92,8 +92,8 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：后端 **73/73 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 30/30 绿** + typecheck 无输出 + build 成功（2026-08-13）
-  - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除(10)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
+- **自动化测试**：后端 **74/74 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 30/30 绿** + typecheck 无输出 + build 成功（2026-08-13）
+  - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除/竞态防护(11)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
   - 后端 Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
   - 前端：GlassCard(2)、user(3)、sse(7)、chat(5)、MarkdownRenderer(2)、ChatMessage(3)、document(5)、baguwen(3)
 - **真实冒烟**：
@@ -102,6 +102,7 @@
   - Phase 4（2026-08-12）：真实 URL 导入（阮一峰周刊 287 期）→ Jsoup 抓取 103KB → 正文提取 6.8K 字符 → DeepSeek 提取 10 问答对 + 5 标签 → 任务 SUCCESS → 收藏进 KB → 检索命中问答对 ✅
   - 冒烟发现并修复：① 生产环境 ArticleCrawler 三实现注入歧义（测试 @Primary 掩盖，改为真实爬虫 `@Profile("!test")` + `CompositeCrawler @Primary`）；② Jsoup 壳页面（VuePress 等 JS 渲染站）183 字符正文误判"有实质内容"，兜底阈值 100→500；③ Playwright 渲染超时 15s→45s（重型首屏）；④ 计划中 javaguide URL 已失效（404），冒烟改用有效站点
   - Phase 6（2026-08-13）：登录 cookie 落盘（nb_token HttpOnly）→ 上传 md → PENDING→READY → 删除文档（DB 记录 + 文件均删）→ 退出登录 cookie 清除 ✅；八股文导入：任务状态机 PENDING→PROCESSING→FAILED 与 errorMsg 落库验证通过，但 **SUCCESS 未能在本机复现**——brief 的 287 期 URL 已 404（站点改版，Chrome UA 实测 404），当前最新 407 期被 Cloudflare 指纹拦截，且本机 Playwright 浏览器二进制安装停滞（驱动进程疑似被本地安全软件阻断，curl 同源下载 12MB/s 正常）→ 导入 SUCCESS、收藏、RAG 命中问答对等项留待浏览器/换网络验证（管线代码自 Phase 4 未变，2026-08-12 已真实冒烟通过）
+  - Phase 6 终审与修复（2026-08-13）：全分支终审（19 commits）判定 **Ready to complete**，3 个 MUST-FIX 已修复——① `process()` 删除竞态双防护 + 回归测试（删除后迟到的处理回调不再重插向量，杜绝"幽灵向量"：不可删 + RAG 命中 title 为 null，commit `a137558`）② `feedback.ts` discrete API 注入 `darkTheme`（此前 message/dialog 弹层为默认亮色，commit `8df7144`）③ glass-card 修饰类全局化（BaguwenView 卡片 hover 提升生效，同 commit）；另有 20+ 项 DEFER 类 Minor 有意保留（见五）
 - **运行**：本机 8080 被占用，用 `--server.port=8081`；**本地 PG 密码 `root`**（`export DB_PASSWORD='root'`，yml 默认值同；test 库 `neuralbase_test` 同密码；2026-08-13 实测，旧值 Huangwei990758 已失效）
 
 ---
@@ -126,14 +127,11 @@
 
 ## 五、已裁决的延后项（有意不做，非遗漏）
 
----
-
-## 五、已裁决的延后项（有意不做，非遗漏）
-
 - 会话重命名/收藏、消息反馈（点赞/点踩）→ Phase 6
 - 模型双切换（pro）→ 需用时加一行配置
 - SSE 前端用 fetch + ReadableStream（非原生 EventSource，Bearer header）
 - 测试 mock 用 `@Configuration` 组件扫描自动注册（非 `@TestConfiguration`）
+- Phase 6 终审 DEFER（2026-08-13 裁决保留）：happy-dom ^18 有 RCE 公告（dev-only，修复需大版本升级）；SSE reader 未 releaseLock（GC 兜底）；document/baguwen 轮询 tick 无错误处理（网络失败仅控制台噪音，网络恢复自愈）；登录页回车可重复提交（重复登录无害）；BaguwenDetail 收藏弹窗不重置 kbId 且无 loading（列表页行为更完善）；discrete api 未带 themeOverrides（可选一行补全视觉一致性）；删除落在提取期间的 Windows 文件残留窄窗口（Linux 无此问题）；登录页本地 glass-card 样式副本已冗余（像素一致，仅注释过期）；`data:` 行 trimStart 与 SSE 规范差一个空格（delta 文本无前导空格场景）
 
 ---
 
