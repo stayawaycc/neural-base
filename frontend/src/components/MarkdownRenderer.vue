@@ -5,7 +5,7 @@ import hljs from 'highlight.js'
 import DOMPurify from 'dompurify'
 import 'highlight.js/styles/github-dark.css'
 import { message } from '@/utils/feedback'
-import { buildOutline, slugify, type OutlineItem } from '@/utils/outline'
+import { buildOutline, type OutlineItem } from '@/utils/outline'
 
 const props = defineProps<{ content: string; anchorHeadings?: boolean }>()
 
@@ -30,8 +30,11 @@ const md = createMd()
 const mdAnchor = createMd()
 let headingIndex = -1
 let anchorItems: OutlineItem[] = []
-// 锚点模式:渲染时按顺序取 anchorItems 的 id(与 buildOutline 共用 slugify 算法,id 必然一致)
+// 锚点模式:渲染时按顺序取 anchorItems 的 id(buildOutline 只收 h1~h3,这里同样跳过 h4+,
+// 否则 h4 会消费后续大纲项的 id 造成错位)
 mdAnchor.renderer.rules.heading_open = (tokens, idx) => {
+  const level = Number(tokens[idx].tag.slice(1))
+  if (level < 1 || level > 3) return `<${tokens[idx].tag}>`
   const item = anchorItems[++headingIndex]
   return `<${tokens[idx].tag}${item ? ` id="${item.id}"` : ''}>`
 }

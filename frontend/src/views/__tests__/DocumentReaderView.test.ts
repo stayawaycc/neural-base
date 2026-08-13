@@ -133,6 +133,26 @@ describe('DocumentReaderView 外壳', () => {
     )
   })
 
+  it('文档不存在时刷新树(重新拉取文档列表)', async () => {
+    vi.mocked(getDocumentContent).mockRejectedValue(new Error('文档不存在: 11'))
+    const wrapper = mountView()
+    await flushPromises()
+    // 挂载时拉一次 + 报错路径刷新一次
+    expect(listDocuments).toHaveBeenCalledTimes(2)
+  })
+
+  it('跨库直链访问时清空不属于当前库的 docId', async () => {
+    routeParams.kbId = '2'
+    vi.mocked(listDocuments).mockResolvedValue([
+      { id: 99, kbId: 2, title: 'other.md', fileType: 'md', status: 'READY' as const, createdAt: '' },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    expect(mockReplace).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'kb-reader', params: { kbId: '2' } }),
+    )
+  })
+
   it('md 文档显示目录按钮,打开抽屉列出大纲并可点击跳转', async () => {
     const scrollIntoView = vi.fn()
     Element.prototype.scrollIntoView = scrollIntoView

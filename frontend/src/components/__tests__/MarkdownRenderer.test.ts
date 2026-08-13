@@ -41,4 +41,16 @@ describe('MarkdownRenderer', () => {
     })
     expect(plain.html()).not.toContain('id="甲"')
   })
+
+  it('含 h4+ 的文档锚点不错位(h4 跳过,后续标题拿到自己的 id)', () => {
+    const anchored = mount(MarkdownRenderer, {
+      props: { content: '# 甲\n\n#### 丁\n\n## 乙', anchorHeadings: true },
+    })
+    const html = anchored.html()
+    expect(html).toContain('id="甲"')
+    expect(html).toContain('id="乙"')
+    expect(html).not.toContain('id="丁"')
+    // h4 不能消费「乙」的 id:「乙」的 id 必须恰好出现一次,且没有别的元素带它
+    expect(html.match(/id="乙"/g)).toHaveLength(1)
+  })
 })

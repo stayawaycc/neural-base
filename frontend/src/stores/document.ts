@@ -20,10 +20,10 @@ export const useDocumentStore = defineStore('document', () => {
     documents.value = await documentApi.listDocuments(currentKbId.value ?? undefined)
   }
 
-  function selectKb(id: number | null) {
+  async function selectKb(id: number | null) {
     currentKbId.value = id
     searchResults.value = null
-    void loadDocuments()
+    await loadDocuments()
   }
 
   async function upload(file: File, onProgress?: (pct: number) => void) {

@@ -30,7 +30,9 @@ function renderKind(ft: string): RenderKind {
   return 'text'
 }
 const kind = computed<RenderKind | null>(() => (content.value ? renderKind(content.value.fileType) : null))
-const hasOriginal = computed(() => !!currentDoc.value && currentDoc.value.fileType !== 'BAGUWEN')
+const hasOriginal = computed(
+  () => !!currentDoc.value && (currentDoc.value.fileType ?? '').toLowerCase() !== 'baguwen',
+)
 
 // 大纲(仅 md):目录抽屉 + 滚动高亮
 const showOutline = ref(false)
@@ -94,10 +96,18 @@ async function loadDocument() {
     content.value = null
     message.error(msg)
     if (msg.includes('不存在')) {
+      await docStore.loadDocuments() // 刷新树,移除已删除的文档(规格 5.3)
       void router.replace({ name: 'kb-reader', params: { kbId: String(route.params.kbId) } })
     }
   } finally {
     loading.value = false
+  }
+}
+
+// 校验当前 docId 属于当前知识库;不属于(跨库直链/已删除)则清空选择(规格 5.3)
+function validateDoc() {
+  if (docId.value != null && !docStore.documents.some((d) => d.id === docId.value)) {
+    void router.replace({ name: 'kb-reader', params: { kbId: String(route.params.kbId) } })
   }
 }
 
@@ -112,15 +122,19 @@ function switchKb(v: number) {
 
 onMounted(async () => {
   await docStore.loadKbs()
-  docStore.selectKb(Number(route.params.kbId))
+  await docStore.selectKb(Number(route.params.kbId))
+  validateDoc()
   await loadDocument()
 })
 
 watch(docId, () => void loadDocument())
 watch(
   () => route.params.kbId,
-  (v) => {
-    if (v && Number(v) !== docStore.currentKbId) docStore.selectKb(Number(v))
+  async (v) => {
+    if (v && Number(v) !== docStore.currentKbId) {
+      await docStore.selectKb(Number(v))
+      validateDoc()
+    }
   },
 )
 </script>
