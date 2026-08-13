@@ -1,0 +1,85 @@
+@use './variables' as *;
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --nb-card-bg: #{$card-bg};
+  --nb-border: #{$border-subtle};
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  background: $bg-base;
+  color: $text-primary;
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.3);
+}
+
+/* AI 打字光标(设计文档: cursor blink 1s) */
+@keyframes nb-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.nb-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: $accent-chat;
+  animation: nb-blink 1s infinite;
+}
+
+/* 页面切换(设计文档: 淡入 + 上滑 300ms) */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-leave-to {
+  opacity: 0;
+}
+
+/* 尊重系统减弱动效设置(仅减弱动画,不改变任何视觉 token) */
+@media (prefers-reduced-motion: reduce) {
+  .nb-cursor {
+    animation: none;
+    opacity: 1;
+  }
+  .page-enter-active,
+  .page-leave-active {
+    transition: opacity 0.1s ease;
+  }
+}
