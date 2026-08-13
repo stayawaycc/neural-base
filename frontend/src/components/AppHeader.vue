@@ -2,10 +2,13 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { NDropdown } from 'naive-ui'
+import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
+import { useThemeStore } from '@/stores/theme'
 
 const userStore = useUserStore()
 const router = useRouter()
+const themeStore = useThemeStore()
 
 const navs = [
   { name: 'dashboard', label: '首页', path: '/' },
@@ -30,12 +33,12 @@ async function onUserSelect(key: string) {
 <template>
   <header
     class="fixed inset-x-0 top-0 z-40 h-16 border-b backdrop-blur-xl"
-    style="background: rgba(10, 10, 15, 0.72); border-color: rgba(255, 255, 255, 0.05)"
+    style="background: var(--nb-header-bg); border-color: var(--nb-border)"
   >
     <div class="mx-auto flex h-full max-w-7xl items-center gap-2 px-4">
       <RouterLink to="/" class="flex shrink-0 items-center gap-2">
         <span class="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400" />
-        <span class="text-sm font-semibold tracking-wide text-gray-100">NeuralBase</span>
+        <span class="text-sm font-semibold tracking-wide text-gray-900 dark:text-gray-100">NeuralBase</span>
       </RouterLink>
       <nav class="ml-6 hidden items-center gap-1 md:flex">
         <RouterLink
@@ -47,10 +50,18 @@ async function onUserSelect(key: string) {
           {{ n.label }}
         </RouterLink>
       </nav>
-      <div class="ml-auto">
+      <div class="ml-auto flex items-center">
+        <button
+          class="theme-toggle mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
+          title="切换主题"
+          @click="themeStore.toggleTheme()"
+        >
+          <Icon v-if="themeStore.isDark" icon="mdi:white-balance-sunny" class="h-5 w-5" />
+          <Icon v-else icon="mdi:weather-night" class="h-5 w-5" />
+        </button>
         <n-dropdown :options="userOptions" trigger="click" @select="onUserSelect">
           <button
-            class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-300 transition-colors hover:bg-white/5"
+            class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
           >
             <span
               class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 text-xs font-semibold text-black"
@@ -67,13 +78,13 @@ async function onUserSelect(key: string) {
 
 <style scoped>
 .nav-link {
-  color: #9ca3af;
+  color: var(--nb-text-secondary);
 }
 .nav-link:hover {
-  color: #e5e7eb;
+  color: var(--nb-text-primary);
 }
 .nav-link.router-link-active {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--nb-text-primary);
+  background: var(--nb-nav-active-bg);
 }
 </style>

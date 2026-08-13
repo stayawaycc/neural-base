@@ -13,7 +13,7 @@ const tabs = [
 <template>
   <nav
     class="fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur-xl md:hidden"
-    style="background: rgba(10, 10, 15, 0.85); border-color: rgba(255, 255, 255, 0.05)"
+    style="background: var(--nb-header-bg); border-color: var(--nb-border)"
   >
     <div class="grid h-16 grid-cols-5">
       <RouterLink
@@ -31,7 +31,7 @@ const tabs = [
 
 <style scoped>
 .tab-link {
-  color: #6b7280;
+  color: var(--nb-text-faint);
 }
 .tab-link.router-link-active {
   color: #22d3ee;
