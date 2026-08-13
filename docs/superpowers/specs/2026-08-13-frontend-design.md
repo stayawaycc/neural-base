@@ -72,10 +72,10 @@ frontend/
     │   └── baguwen.ts      # 文章分页列表 / 标签 / 导入任务轮询 / 收藏
     ├── components/
     │   ├── AppHeader.vue   # 顶部导航 h-16，backdrop-blur，模块切换 + 用户菜单
-    │   ├── AppSidebar.vue  # 左侧栏 w-64 可折叠；聊天页内做会话列表
+    │   ├── BottomTabBar.vue # 移动端(<768px)底部 Tab 导航，五模块
     │   ├── GlassCard.vue   # 玻璃卡片基底（全站统一）
     │   ├── ModuleCard.vue  # Dashboard 模块入口卡片（四色强调）
-    │   ├── MarkdownRenderer.vue  # markdown-it + highlight.js + 代码块复制按钮
+    │   ├── MarkdownRenderer.vue  # markdown-it + highlight.js + DOMPurify + 代码块复制按钮
     │   ├── ChatMessage.vue # 单条消息（用户/助手/引用来源/打字光标）
     │   └── FileUploader.vue # 拖拽上传 + 进度 + 状态提示
     ├── views/
@@ -84,10 +84,12 @@ frontend/
     │   ├── KnowledgeBaseView.vue
     │   ├── ChatView.vue
     │   ├── BaguwenView.vue
+    │   ├── BaguwenDetailView.vue  # 问答对详情页（/baguwen/:id）
     │   └── DailyNewsView.vue   # 静态占位
-    ├── router/index.ts      # 路由表 + 未登录守卫（token 有无）
+    ├── router/index.ts      # 路由表 + 未登录守卫（cookie 登录态）
     ├── types/index.ts       # 后端 DTO 的 TS 镜像（见第六节）
     ├── utils/sse.ts         # SSE 事件流解析器（纯函数，独立可测）
+    ├── utils/feedback.ts    # createDiscreteApi 全局 message/dialog（全局化提示的实现）
     └── styles/
         ├── variables.scss   # 色值/间距/圆角 token
         └── global.scss      # 玻璃拟态全局样式、滚动条、打字光标
