@@ -624,6 +624,7 @@ Expected: FAIL — 找不到 `@/utils/outline` 模块
 
 ```ts
 import MarkdownIt from 'markdown-it'
+import type { Token } from 'markdown-it'
 
 export interface OutlineItem {
   text: string
@@ -641,6 +642,15 @@ export function slugify(text: string): string {
   return base || 'section'
 }
 
+/** 标题 token 的纯文本(含链接/代码时取 children 的 text/code_inline,而非原始 markdown 源码)。 */
+function headingText(inline?: Token): string {
+  if (!inline || !inline.children) return inline?.content ?? ''
+  return inline.children
+    .filter((c) => c.type === 'text' || c.type === 'code_inline')
+    .map((c) => c.content)
+    .join('')
+}
+
 /** 提取 markdown 的 h1~h3 标题生成大纲;重复标题 id 依次加 -2/-3 后缀(与锚点注入顺序一致)。 */
 export function buildOutline(content: string): OutlineItem[] {
   const tokens = new MarkdownIt().parse(content, {})
@@ -651,11 +661,11 @@ export function buildOutline(content: string): OutlineItem[] {
     if (t.type !== 'heading_open') continue
     const level = Number(t.tag.slice(1))
     if (level < 1 || level > 3) continue
-    const inline = tokens[i + 1]
-    const base = slugify(inline?.content ?? '')
+    const text = headingText(tokens[i + 1])
+    const base = slugify(text)
     const count = (used.get(base) ?? 0) + 1
     used.set(base, count)
-    items.push({ text: inline?.content ?? '', level, id: count === 1 ? base : `${base}-${count}` })
+    items.push({ text, level, id: count === 1 ? base : `${base}-${count}` })
   }
   return items
 }
