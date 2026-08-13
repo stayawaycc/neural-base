@@ -5,28 +5,46 @@ import hljs from 'highlight.js'
 import DOMPurify from 'dompurify'
 import 'highlight.js/styles/github-dark.css'
 import { message } from '@/utils/feedback'
+import { buildOutline, slugify, type OutlineItem } from '@/utils/outline'
 
-const props = defineProps<{ content: string }>()
+const props = defineProps<{ content: string; anchorHeadings?: boolean }>()
 
-const md = new MarkdownIt({
-  html: false, // 原始 HTML 一律转义(spec 二:Markdown 消毒第一道)
-  linkify: true,
-  highlight(code: string, lang: string): string {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return `<pre class="hljs"><code>${hljs.highlight(code, { language: lang }).value}</code></pre>`
-      } catch {
-        /* 高亮失败走默认转义 */
+function createMd(): MarkdownIt {
+  return new MarkdownIt({
+    html: false, // 原始 HTML 一律转义(spec 二:Markdown 消毒第一道)
+    linkify: true,
+    highlight(code: string, lang: string): string {
+      if (lang && hljs.getLanguage(lang)) {
+        try {
+          return `<pre class="hljs"><code>${hljs.highlight(code, { language: lang }).value}</code></pre>`
+        } catch {
+          /* 高亮失败走默认转义 */
+        }
       }
-    }
-    return `<pre class="hljs"><code>${md.utils.escapeHtml(code)}</code></pre>`
-  },
-})
+      return `<pre class="hljs"><code>${md.utils.escapeHtml(code)}</code></pre>`
+    },
+  })
+}
+
+const md = createMd()
+const mdAnchor = createMd()
+let headingIndex = -1
+let anchorItems: OutlineItem[] = []
+// 锚点模式:渲染时按顺序取 anchorItems 的 id(与 buildOutline 共用 slugify 算法,id 必然一致)
+mdAnchor.renderer.rules.heading_open = (tokens, idx) => {
+  const item = anchorItems[++headingIndex]
+  return `<${tokens[idx].tag}${item ? ` id="${item.id}"` : ''}>`
+}
 
 const container = ref<HTMLElement>()
 
 function renderHtml(): string {
-  // 第二道消毒:渲染产物再过 DOMPurify(spec 二)
+  headingIndex = -1
+  if (props.anchorHeadings) {
+    anchorItems = buildOutline(props.content) // 每次渲染只解析一次
+    // 第二道消毒:渲染产物再过 DOMPurify(spec 二;id 属性默认保留)
+    return DOMPurify.sanitize(mdAnchor.render(props.content), { USE_PROFILES: { html: true } })
+  }
   return DOMPurify.sanitize(md.render(props.content), { USE_PROFILES: { html: true } })
 }
 

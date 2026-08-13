@@ -26,4 +26,19 @@ describe('MarkdownRenderer', () => {
     // hljs 输出保留围栏末尾换行,复制内容为 'const a = 1\n'
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('const a = 1'))
   })
+
+  it('anchor-headings 模式给标题注入与 buildOutline 一致的 id,默认模式不注入', () => {
+    const anchored = mount(MarkdownRenderer, {
+      props: { content: '# 甲\n\n## 乙\n\n## 乙', anchorHeadings: true },
+    })
+    const anchoredHtml = anchored.html()
+    expect(anchoredHtml).toContain('id="甲"')
+    expect(anchoredHtml).toContain('id="乙"')
+    expect(anchoredHtml).toContain('id="乙-2"')
+
+    const plain = mount(MarkdownRenderer, {
+      props: { content: '# 甲' },
+    })
+    expect(plain.html()).not.toContain('id="甲"')
+  })
 })

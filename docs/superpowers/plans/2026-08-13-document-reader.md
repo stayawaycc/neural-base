@@ -624,7 +624,6 @@ Expected: FAIL — 找不到 `@/utils/outline` 模块
 
 ```ts
 import MarkdownIt from 'markdown-it'
-import type { Token } from 'markdown-it'
 
 export interface OutlineItem {
   text: string
@@ -642,8 +641,9 @@ export function slugify(text: string): string {
   return base || 'section'
 }
 
-/** 标题 token 的纯文本(含链接/代码时取 children 的 text/code_inline,而非原始 markdown 源码)。 */
-function headingText(inline?: Token): string {
+/** 标题 token 的纯文本(含链接/代码时取 children 的 text/code_inline,而非原始 markdown 源码)。
+ * 注:@types/markdown-it 未导出 Token 命名类型,这里用结构化参数类型。 */
+function headingText(inline?: { content?: string; children?: { type: string; content: string }[] | null }): string {
   if (!inline || !inline.children) return inline?.content ?? ''
   return inline.children
     .filter((c) => c.type === 'text' || c.type === 'code_inline')
