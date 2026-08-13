@@ -36,7 +36,7 @@ async function onSubmit() {
     <div class="glass-card w-full max-w-sm !p-8">
       <div class="mb-8 flex flex-col items-center gap-3">
         <span class="h-3 w-3 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400" />
-        <h1 class="text-xl font-semibold tracking-wide text-gray-100">NeuralBase</h1>
+        <h1 class="text-xl font-semibold tracking-wide text-gray-900 dark:text-gray-100">NeuralBase</h1>
         <p class="text-xs text-gray-500">个人 AI 知识中枢</p>
       </div>
       <n-form label-placement="top" @keyup.enter="onSubmit">

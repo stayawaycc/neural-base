@@ -25,7 +25,7 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-lg font-semibold text-gray-100">知识中枢</h1>
+      <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">知识中枢</h1>
       <p class="mt-1 text-xs text-gray-500">上传文档构建知识库,与 AI 对话,自动整理八股文</p>
     </div>
 
@@ -63,17 +63,17 @@ onMounted(async () => {
     <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
       <div class="glass-card">
         <div class="mb-3 flex items-center justify-between">
-          <span class="text-sm text-gray-300">最近会话</span>
-          <RouterLink to="/chat" class="text-xs text-cyan-400 hover:underline">全部 →</RouterLink>
+          <span class="text-sm text-gray-700 dark:text-gray-300">最近会话</span>
+          <RouterLink to="/chat" class="text-xs text-cyan-600 hover:underline dark:text-cyan-400">全部 →</RouterLink>
         </div>
         <div class="space-y-1.5">
-          <div v-for="c in conversations" :key="c.id" class="rounded-lg bg-white/[0.02] px-3 py-2">
-            <div class="truncate text-sm text-gray-200">{{ c.title }}</div>
+          <div v-for="c in conversations" :key="c.id" class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.02]">
+            <div class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</div>
             <div v-if="c.lastMessageContent" class="mt-0.5 truncate text-xs text-gray-500">
               {{ c.lastMessageContent }}
             </div>
           </div>
-          <div v-if="!conversations.length" class="py-6 text-center text-xs text-gray-600">
+          <div v-if="!conversations.length" class="py-6 text-center text-xs text-gray-400 dark:text-gray-600">
             暂无会话
           </div>
         </div>
@@ -81,15 +81,15 @@ onMounted(async () => {
 
       <div class="glass-card">
         <div class="mb-3 flex items-center justify-between">
-          <span class="text-sm text-gray-300">最近文档</span>
-          <RouterLink to="/kb" class="text-xs text-cyan-400 hover:underline">全部 →</RouterLink>
+          <span class="text-sm text-gray-700 dark:text-gray-300">最近文档</span>
+          <RouterLink to="/kb" class="text-xs text-cyan-600 hover:underline dark:text-cyan-400">全部 →</RouterLink>
         </div>
         <div class="space-y-1.5">
-          <div v-for="d in documents" :key="d.id" class="flex items-center justify-between gap-2 rounded-lg bg-white/[0.02] px-3 py-2">
-            <span class="truncate text-sm text-gray-200">{{ d.title }}</span>
-            <span class="shrink-0 text-xs text-gray-600">{{ d.status }}</span>
+          <div v-for="d in documents" :key="d.id" class="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.02]">
+            <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ d.title }}</span>
+            <span class="shrink-0 text-xs text-gray-400 dark:text-gray-600">{{ d.status }}</span>
           </div>
-          <div v-if="!documents.length" class="py-6 text-center text-xs text-gray-600">
+          <div v-if="!documents.length" class="py-6 text-center text-xs text-gray-400 dark:text-gray-600">
             暂无文档
           </div>
         </div>
