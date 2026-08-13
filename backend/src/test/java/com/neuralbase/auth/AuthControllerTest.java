@@ -1,10 +1,12 @@
 package com.neuralbase.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -78,5 +80,29 @@ class AuthControllerTest {
     void protectedEndpointWithoutTokenReturns401() throws Exception {
         mvc.perform(get("/api/kb"))
             .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void loginSetsHttpOnlyCookie() throws Exception {
+        MvcResult r = mvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
+            .andExpect(status().isOk())
+            .andReturn();
+        String setCookie = r.getResponse().getHeader(HttpHeaders.SET_COOKIE);
+        assertThat(setCookie)
+            .contains("nb_token=")
+            .contains("HttpOnly")
+            .contains("SameSite=Lax")
+            .contains("Path=/");
+    }
+
+    @Test
+    void logoutClearsCookie() throws Exception {
+        mvc.perform(post("/api/auth/logout"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(result -> assertThat(
+                result.getResponse().getHeader(HttpHeaders.SET_COOKIE)).contains("Max-Age=0"));
     }
 }
