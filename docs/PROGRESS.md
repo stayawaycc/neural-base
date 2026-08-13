@@ -103,6 +103,9 @@
   - 冒烟发现并修复：① 生产环境 ArticleCrawler 三实现注入歧义（测试 @Primary 掩盖，改为真实爬虫 `@Profile("!test")` + `CompositeCrawler @Primary`）；② Jsoup 壳页面（VuePress 等 JS 渲染站）183 字符正文误判"有实质内容"，兜底阈值 100→500；③ Playwright 渲染超时 15s→45s（重型首屏）；④ 计划中 javaguide URL 已失效（404），冒烟改用有效站点
   - Phase 6（2026-08-13）：登录 cookie 落盘（nb_token HttpOnly）→ 上传 md → PENDING→READY → 删除文档（DB 记录 + 文件均删）→ 退出登录 cookie 清除 ✅；八股文导入：任务状态机 PENDING→PROCESSING→FAILED 与 errorMsg 落库验证通过，但 **SUCCESS 未能在本机复现**——brief 的 287 期 URL 已 404（站点改版，Chrome UA 实测 404），当前最新 407 期被 Cloudflare 指纹拦截，且本机 Playwright 浏览器二进制安装停滞（驱动进程疑似被本地安全软件阻断，curl 同源下载 12MB/s 正常）→ 导入 SUCCESS、收藏、RAG 命中问答对等项留待浏览器/换网络验证（管线代码自 Phase 4 未变，2026-08-12 已真实冒烟通过）
   - Phase 6 终审与修复（2026-08-13）：全分支终审（19 commits）判定 **Ready to complete**，3 个 MUST-FIX 已修复——① `process()` 删除竞态双防护 + 回归测试（删除后迟到的处理回调不再重插向量，杜绝"幽灵向量"：不可删 + RAG 命中 title 为 null，commit `a137558`）② `feedback.ts` discrete API 注入 `darkTheme`（此前 message/dialog 弹层为默认亮色，commit `8df7144`）③ glass-card 修饰类全局化（BaguwenView 卡片 hover 提升生效，同 commit）；另有 20+ 项 DEFER 类 Minor 有意保留（见五）
+- **真机冒烟(浏览器 CDP,2026-08-13)发现并修复 4 个真实缺陷**(commit `dff8316`):① **App.vue `<transition mode="out-in">` + 懒加载路由组件 → SPA 跳转后内容区空白**(全站级,非阅读器问题;修复:移除 transition 包裹,切换动画留待「动画打磨」用带 key 方式重做)② **存量文档(用户全部数据)content 为 NULL → 阅读器全报「内容缺失」**(修复:content 接口惰性回填,原文件在磁盘即重提取落库自愈,新增回填测试)③ **PDF iframe 被 Spring Security 默认 `X-Frame-Options: DENY` 阻断**(修复:改为 SAMEORIGIN)④ **知识库页「全部文档」模式点击文档无反应**(修复:入口改用文档自身 kbId)。回归:后端 89/89、前端 50/50 绿。
+- 遗留:用户库中有 2 条历史冒烟残留 FAILED 文档(标题为 "404 - Not Found" / "metadata cannot have null values"),未动,待用户决定清理。
+
 - **运行**：本机 8080 被占用，用 `--server.port=8081`；**本地 PG 密码 `root`**（`export DB_PASSWORD='root'`，yml 默认值同；test 库 `neuralbase_test` 同密码；2026-08-13 实测，旧值 Huangwei990758 已失效）
 
 ---
