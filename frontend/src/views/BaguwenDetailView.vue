@@ -61,10 +61,10 @@ async function onFavoriteConfirm() {
 </script>
 
 <template>
-  <div v-if="loading" class="py-16 text-center text-sm text-gray-600">加载中…</div>
+  <div v-if="loading" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">加载中…</div>
   <div v-else-if="detail" class="mx-auto max-w-3xl space-y-4">
     <div class="flex items-start justify-between gap-3">
-      <h1 class="text-lg font-semibold text-gray-100">{{ detail.title }}</h1>
+      <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ detail.title }}</h1>
       <div class="flex shrink-0 items-center gap-2">
         <n-button quaternary size="small" @click="router.back()">
           <template #icon><Icon icon="mdi:arrow-left" class="h-4 w-4" /></template>
@@ -85,7 +85,7 @@ async function onFavoriteConfirm() {
         :href="detail.url"
         target="_blank"
         rel="noopener"
-        class="text-xs text-cyan-400 hover:underline"
+        class="text-xs text-cyan-600 hover:underline dark:text-cyan-400"
       >
         原文链接 ↗
       </a>
@@ -96,7 +96,7 @@ async function onFavoriteConfirm() {
           <span class="mt-0.5 shrink-0 text-sm text-gray-500">Q{{ i + 1 }}</span>
           <div class="flex-1">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm font-medium text-gray-100">{{ qa.question }}</span>
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
               <n-tag
                 v-if="difficultyMeta[qa.difficulty]"
                 size="tiny"
@@ -106,18 +106,18 @@ async function onFavoriteConfirm() {
                 {{ difficultyMeta[qa.difficulty].label }}
               </n-tag>
             </div>
-            <div class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-400">
+            <div class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
               {{ qa.answer }}
             </div>
           </div>
         </div>
       </div>
-      <div v-if="!detail.qaPairs.length" class="py-8 text-center text-sm text-gray-600">
+      <div v-if="!detail.qaPairs.length" class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
         本文未提取到问答对
       </div>
     </div>
   </div>
-  <div v-else class="py-16 text-center text-sm text-gray-600">文章不存在</div>
+  <div v-else class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">文章不存在</div>
 
   <n-modal
     v-model:show="favoriteModal"

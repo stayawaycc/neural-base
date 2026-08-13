@@ -114,7 +114,7 @@ async function onFavoriteConfirm() {
   <div class="space-y-4">
     <!-- 导入区 -->
     <div class="glass-card space-y-2">
-      <div class="text-sm text-gray-300">导入文章(每行一个 URL,后台异步爬取 + AI 结构化)</div>
+      <div class="text-sm text-gray-700 dark:text-gray-300">导入文章(每行一个 URL,后台异步爬取 + AI 结构化)</div>
       <n-input
         v-model:value="urlText"
         type="textarea"
@@ -135,7 +135,7 @@ async function onFavoriteConfirm() {
         导入任务(处理中 {{ pendingTaskCount }} 个,每 2 秒刷新)
       </div>
       <div v-for="t in baguwenStore.tasks" :key="t.id" class="flex items-center justify-between gap-2 py-1">
-        <span class="min-w-0 flex-1 truncate text-xs text-gray-400">{{ t.url }}</span>
+        <span class="min-w-0 flex-1 truncate text-xs text-gray-600 dark:text-gray-400">{{ t.url }}</span>
         <div class="flex shrink-0 items-center gap-2">
           <n-tag size="small" :type="taskStatusMeta[t.status].type" :bordered="false">
             {{ taskStatusMeta[t.status].label }}
@@ -181,10 +181,10 @@ async function onFavoriteConfirm() {
         @click="router.push({ name: 'baguwen-detail', params: { id: a.id } })"
       >
         <div class="flex items-start justify-between gap-2">
-          <span class="line-clamp-2 text-sm font-medium text-gray-200">{{ a.title }}</span>
+          <span class="line-clamp-2 text-sm font-medium text-gray-800 dark:text-gray-200">{{ a.title }}</span>
           <div class="flex shrink-0 gap-1" @click.stop>
             <span
-              class="cursor-pointer rounded p-1 text-gray-500 transition-colors hover:bg-white/5 hover:text-cyan-400"
+              class="cursor-pointer rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-cyan-600 dark:hover:bg-white/5 dark:hover:text-cyan-400"
               title="收藏到知识库"
               @click="openFavorite(a.id)"
             >
@@ -192,7 +192,7 @@ async function onFavoriteConfirm() {
             </span>
             <n-popconfirm @positive-click="baguwenStore.removeArticle(a.id)">
               <template #trigger>
-                <span class="cursor-pointer rounded p-1 text-gray-500 transition-colors hover:bg-white/5 hover:text-red-400">
+                <span class="cursor-pointer rounded p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-red-400 dark:hover:bg-white/5">
                   <Icon icon="mdi:trash-can-outline" class="h-4 w-4" />
                 </span>
               </template>
@@ -205,11 +205,11 @@ async function onFavoriteConfirm() {
             {{ t }}
           </n-tag>
         </div>
-        <div class="mt-auto text-xs text-gray-600">{{ new Date(a.createdAt).toLocaleDateString() }}</div>
+        <div class="mt-auto text-xs text-gray-400 dark:text-gray-600">{{ new Date(a.createdAt).toLocaleDateString() }}</div>
       </div>
     </div>
 
-    <div v-if="!baguwenStore.articles.length" class="py-12 text-center text-sm text-gray-600">
+    <div v-if="!baguwenStore.articles.length" class="py-12 text-center text-sm text-gray-400 dark:text-gray-600">
       暂无文章,在上方输入 URL 开始导入
     </div>
 

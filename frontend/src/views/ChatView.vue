@@ -67,7 +67,7 @@ async function onOpenConversation(id: number) {
     <!-- 桌面端会话侧栏 -->
     <aside class="hidden w-64 shrink-0 flex-col md:flex">
       <div class="mb-3 flex items-center justify-between">
-        <span class="text-sm text-gray-400">会话</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">会话</span>
         <n-button size="small" quaternary @click="onNewConversation">
           <template #icon><Icon icon="mdi:plus" class="h-4 w-4" /></template>
           新建
@@ -78,14 +78,14 @@ async function onOpenConversation(id: number) {
           v-for="c in chatStore.conversations"
           :key="c.id"
           class="glass-card w-full !p-3 text-left transition-colors"
-          :class="c.id === chatStore.currentId ? '!border-cyan-400/40' : 'hover:!border-white/10'"
+          :class="c.id === chatStore.currentId ? '!border-cyan-500/50 dark:!border-cyan-400/40' : 'hover:!border-gray-300 dark:hover:!border-white/10'"
           @click="onOpenConversation(c.id)"
         >
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-sm text-gray-200">{{ c.title }}</span>
+            <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>
             <n-popconfirm @positive-click="chatStore.removeConversation(c.id)">
               <template #trigger>
-                <span class="text-gray-600 hover:text-red-400">
+                <span class="text-gray-400 hover:text-red-400 dark:text-gray-600">
                   <Icon icon="mdi:trash-can-outline" class="h-4 w-4" />
                 </span>
               </template>
@@ -96,7 +96,7 @@ async function onOpenConversation(id: number) {
             {{ c.lastMessageContent }}
           </div>
         </button>
-        <div v-if="!chatStore.conversations.length" class="py-8 text-center text-xs text-gray-600">
+        <div v-if="!chatStore.conversations.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
           暂无会话,直接提问即可创建
         </div>
       </div>
@@ -110,12 +110,12 @@ async function onOpenConversation(id: number) {
             v-for="c in chatStore.conversations"
             :key="c.id"
             class="glass-card w-full !p-3 text-left"
-            :class="c.id === chatStore.currentId ? '!border-cyan-400/40' : ''"
+            :class="c.id === chatStore.currentId ? '!border-cyan-500/50 dark:!border-cyan-400/40' : ''"
             @click="onOpenConversation(c.id)"
           >
-            <span class="truncate text-sm text-gray-200">{{ c.title }}</span>
+            <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>
           </button>
-          <div v-if="!chatStore.conversations.length" class="py-8 text-center text-xs text-gray-600">
+          <div v-if="!chatStore.conversations.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
             暂无会话
           </div>
         </div>
@@ -160,7 +160,7 @@ async function onOpenConversation(id: number) {
           :sources="m.sources"
           :streaming="m.streaming"
         />
-        <div v-if="chatStore.streamError" class="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+        <div v-if="chatStore.streamError" class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300">
           ⚠️ {{ chatStore.streamError }}(已生成内容保留)
         </div>
       </div>
