@@ -16,7 +16,7 @@ withDefaults(
 
 <template>
   <RouterLink :to="to" class="block">
-    <GlassCard :accent="accent" hoverable class="h-full">
+    <GlassCard :accent="accent" hoverable class="btn-press h-full">
       <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/[0.03]">
         <Icon :icon="icon" class="h-5 w-5" :style="{ color: `var(--nb-accent)` }" />
       </div>

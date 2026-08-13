@@ -52,7 +52,7 @@ async function onUserSelect(key: string) {
       </nav>
       <div class="ml-auto flex items-center">
         <button
-          class="theme-toggle mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
+          class="theme-toggle btn-press mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
           title="切换主题"
           @click="themeStore.toggleTheme()"
         >

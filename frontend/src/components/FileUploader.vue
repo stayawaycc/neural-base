@@ -31,7 +31,7 @@ async function onUpload({ file, onFinish, onError, onProgress }: UploadCustomReq
     accept=".pdf,.doc,.docx,.md,.txt,.markdown"
     :disabled="uploading"
   >
-    <n-upload-dragger class="glass-card !border-dashed">
+    <n-upload-dragger class="glass-card upload-ripple !border-dashed">
       <div class="flex flex-col items-center gap-2 py-2">
         <n-icon size="28" :color="uploading ? '#9ca3af' : '#22d3ee'">
           <Icon :icon="uploading ? 'mdi:loading' : 'mdi:cloud-upload-outline'" />

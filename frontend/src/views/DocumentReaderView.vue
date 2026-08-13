@@ -148,7 +148,7 @@ watch(
         <button
           v-for="d in docStore.documents"
           :key="d.id"
-          class="doc-item glass-card w-full !p-3 text-left"
+          class="doc-item btn-press glass-card w-full !p-3 text-left"
           :class="[
             currentDoc?.id === d.id ? 'glass-card--selected' : '',
             d.status !== 'READY' ? 'cursor-not-allowed opacity-50' : 'glass-card--hover',
@@ -207,7 +207,7 @@ watch(
       <div ref="readerPane" class="relative flex-1 overflow-y-auto" @scroll="onPaneScroll">
         <button
           v-if="kind === 'markdown'"
-          class="outline-trigger absolute right-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-full border border-gray-200 bg-white/90 px-3 text-xs text-gray-600 backdrop-blur hover:text-cyan-600 dark:border-white/10 dark:bg-[#15151f]/90 dark:text-gray-300 dark:hover:text-cyan-300"
+          class="outline-trigger btn-press absolute right-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-full border border-gray-200 bg-white/90 px-3 text-xs text-gray-600 backdrop-blur hover:text-cyan-600 dark:border-white/10 dark:bg-[#15151f]/90 dark:text-gray-300 dark:hover:text-cyan-300"
           @click="showOutline = true"
         >
           <span class="text-sm leading-none">☰</span> 目录
@@ -234,7 +234,7 @@ watch(
           <button
             v-for="o in outlineItems"
             :key="o.id"
-            class="outline-item block w-full rounded px-2 py-1.5 text-left text-sm transition-colors"
+            class="outline-item btn-press block w-full rounded px-2 py-1.5 text-left text-sm transition-colors"
             :class="[
               o.level === 2 ? 'pl-4' : o.level === 3 ? 'pl-8' : '',
               o.id === activeId

@@ -185,7 +185,7 @@ async function onFavoriteConfirm() {
       <div
         v-for="a in baguwenStore.articles"
         :key="a.id"
-        class="glass-card glass-card--hover flex cursor-pointer flex-col gap-2"
+        class="glass-card glass-card--hover btn-press flex cursor-pointer flex-col gap-2"
         @click="router.push({ name: 'baguwen-detail', params: { id: a.id } })"
       >
         <div class="flex items-start justify-between gap-2">

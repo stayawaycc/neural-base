@@ -94,7 +94,7 @@ function openReader(d: DocumentItem) {
       </div>
       <div class="flex-1 space-y-1.5 overflow-y-auto pr-1">
         <button
-          class="glass-card w-full !p-3 text-left"
+          class="glass-card btn-press w-full !p-3 text-left"
           :class="docStore.currentKbId === null ? 'glass-card--selected' : ''"
           @click="docStore.selectKb(null)"
         >
@@ -103,7 +103,7 @@ function openReader(d: DocumentItem) {
         <button
           v-for="k in docStore.kbs"
           :key="k.id"
-          class="glass-card w-full !p-3 text-left"
+          class="glass-card btn-press w-full !p-3 text-left"
           :class="docStore.currentKbId === k.id ? 'glass-card--selected' : ''"
           @click="docStore.selectKb(k.id)"
         >

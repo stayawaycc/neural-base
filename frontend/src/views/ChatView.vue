@@ -77,7 +77,7 @@ async function onOpenConversation(id: number) {
         <button
           v-for="c in chatStore.conversations"
           :key="c.id"
-          class="glass-card w-full !p-3 text-left transition-colors"
+          class="glass-card btn-press w-full !p-3 text-left transition-colors"
           :class="c.id === chatStore.currentId ? 'glass-card--selected' : 'hover:!border-gray-300 dark:hover:!border-white/10'"
           @click="onOpenConversation(c.id)"
         >
@@ -109,7 +109,7 @@ async function onOpenConversation(id: number) {
           <button
             v-for="c in chatStore.conversations"
             :key="c.id"
-            class="glass-card w-full !p-3 text-left"
+            class="glass-card btn-press w-full !p-3 text-left"
             :class="c.id === chatStore.currentId ? 'glass-card--selected' : ''"
             @click="onOpenConversation(c.id)"
           >
