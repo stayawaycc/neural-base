@@ -41,6 +41,7 @@ class DocumentProcessTest {
         assertThat(after.getStatus()).isEqualTo("READY");
         assertThat(after.getChunkCount()).isGreaterThan(0);
         assertThat(after.getFilePath()).isNotBlank();
+        assertThat(after.getContent()).contains("Java 虚拟线程详解内容");
 
         Integer stored = jdbcTemplate.queryForObject(
             "SELECT count(*) FROM vector_store WHERE metadata->>'docId' = ?",

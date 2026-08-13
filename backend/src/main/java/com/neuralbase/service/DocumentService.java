@@ -106,6 +106,7 @@ public class DocumentService {
             }
             doc.setStatus("READY");
             doc.setChunkCount(chunks.size());
+            doc.setContent(text);
             documentMapper.updateById(doc);
         }
     }

@@ -19,6 +19,7 @@ public class Document {
     private String sourceUrl;
     private String status;
     private Integer chunkCount;
+    private String content;
     private String error;
     private OffsetDateTime createdAt;
 }
