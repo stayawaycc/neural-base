@@ -34,10 +34,10 @@ function mountView() {
   return mount(DocumentReaderView, {
     global: {
       stubs: {
+        // NDrawer 内容走 teleport(wrapper 之外),测试里内联渲染才能被 findAll 找到
+        teleport: true,
         'n-select': true,
         'n-tag': { template: '<span><slot /></span>' },
-        'n-drawer': { template: '<div><slot /></div>' },
-        'n-drawer-content': { template: '<div><slot /></div>' },
         'n-button': true,
       },
     },
@@ -131,5 +131,33 @@ describe('DocumentReaderView 外壳', () => {
     expect(mockReplace).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'kb-reader', params: { kbId: '1' } }),
     )
+  })
+
+  it('md 文档显示目录按钮,打开抽屉列出大纲并可点击跳转', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const wrapper = mountView()
+    await flushPromises()
+    const btn = wrapper.find('button.outline-trigger')
+    expect(btn.exists()).toBe(true)
+    await btn.trigger('click')
+    await flushPromises()
+    const items = wrapper.findAll('button.outline-item')
+    expect(items.map((n) => n.text())).toEqual(['甲'])
+    await items[0].trigger('click')
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('非 md 文档不显示目录按钮', async () => {
+    routeParams.docId = '41'
+    vi.mocked(getDocumentContent).mockResolvedValue({
+      id: 41, title: 'n.txt', fileType: 'txt', content: '纯文本',
+    })
+    vi.mocked(listDocuments).mockResolvedValue([
+      { id: 41, kbId: 1, title: 'n.txt', fileType: 'txt', status: 'READY' as const, createdAt: '' },
+    ])
+    const wrapper = mountView()
+    await flushPromises()
+    expect(wrapper.find('button.outline-trigger').exists()).toBe(false)
   })
 })

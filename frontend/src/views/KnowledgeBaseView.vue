@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { NButton, NInput, NModal, NPopconfirm, NTag } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useDocumentStore } from '@/stores/document'
 import { dialog, message } from '@/utils/feedback'
 import FileUploader from '@/components/FileUploader.vue'
-import type { DocumentStatus } from '@/types'
+import type { DocumentItem, DocumentStatus } from '@/types'
 
+const router = useRouter()
 const docStore = useDocumentStore()
 
 const kbModal = ref(false)
@@ -67,6 +69,11 @@ function confirmDeleteKb(id: number, name: string) {
     negativeText: '取消',
     onPositiveClick: () => void docStore.removeKb(id),
   })
+}
+
+function openReader(d: DocumentItem) {
+  if (d.status !== 'READY' || docStore.currentKbId == null) return
+  void router.push({ name: 'kb-reader', params: { kbId: String(docStore.currentKbId), docId: String(d.id) } })
 }
 </script>
 
@@ -148,7 +155,11 @@ function confirmDeleteKb(id: number, name: string) {
         <div class="space-y-2">
           <div v-for="d in docStore.documents" :key="d.id" class="glass-card !p-3">
             <div class="flex items-center justify-between gap-2">
-              <span class="truncate text-sm text-gray-200">{{ d.title }}</span>
+              <span
+                class="truncate text-sm text-gray-200"
+                :class="d.status === 'READY' && docStore.currentKbId != null ? 'cursor-pointer hover:text-cyan-300' : ''"
+                @click="openReader(d)"
+              >{{ d.title }}</span>
               <div class="flex shrink-0 items-center gap-2">
                 <n-tag size="small" :type="statusMeta[d.status].type" :bordered="false">
                   {{ statusMeta[d.status].label }}<template v-if="d.chunkCount"> · {{ d.chunkCount }} 块</template>

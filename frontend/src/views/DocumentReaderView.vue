@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NSelect, NTag } from 'naive-ui'
+import { NDrawer, NDrawerContent, NSelect, NTag } from 'naive-ui'
 import { useDocumentStore } from '@/stores/document'
 import { getDocumentContent, documentFileUrl } from '@/api/document'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import { buildOutline, computeActiveId } from '@/utils/outline'
 import { message } from '@/utils/feedback'
 import type { DocumentContent, DocumentStatus } from '@/types'
 
@@ -30,6 +31,46 @@ function renderKind(ft: string): RenderKind {
 }
 const kind = computed<RenderKind | null>(() => (content.value ? renderKind(content.value.fileType) : null))
 const hasOriginal = computed(() => !!currentDoc.value && currentDoc.value.fileType !== 'BAGUWEN')
+
+// 大纲(仅 md):目录抽屉 + 滚动高亮
+const showOutline = ref(false)
+const activeId = ref<string | null>(null)
+const readerPane = ref<HTMLElement>()
+const outlineItems = computed(() =>
+  kind.value === 'markdown' && content.value ? buildOutline(content.value.content) : [],
+)
+let rafPending = false
+
+function headingsInPane(): HTMLElement[] {
+  const pane = readerPane.value
+  return pane ? Array.from(pane.querySelectorAll<HTMLElement>('h1,h2,h3')) : []
+}
+
+function updateActive() {
+  rafPending = false
+  const pane = readerPane.value
+  if (!pane) return
+  const paneRect = pane.getBoundingClientRect()
+  const headings = headingsInPane().map((h) => ({
+    id: h.id,
+    top: h.getBoundingClientRect().top - paneRect.top,
+  }))
+  activeId.value = computeActiveId(headings, 120)
+}
+
+function onPaneScroll() {
+  if (rafPending) return
+  rafPending = true
+  requestAnimationFrame(updateActive)
+}
+
+function jumpTo(id: string) {
+  // 在 pane 内按 id 找标题(挂载测试中组件树不 attach 到 document,不能用 getElementById)
+  headingsInPane().find((h) => h.id === id)?.scrollIntoView({ behavior: 'smooth' })
+  showOutline.value = false
+}
+
+watch([content, kind], updateActive, { flush: 'post' }) // DOM 更新后再读标题位置
 
 const statusMeta: Record<DocumentStatus, { type: 'default' | 'info' | 'success' | 'error'; label: string }> = {
   PENDING: { type: 'default', label: '排队中' },
@@ -149,7 +190,14 @@ watch(
           >查看原文</a>
         </div>
       </header>
-      <div class="relative flex-1 overflow-y-auto">
+      <div ref="readerPane" class="relative flex-1 overflow-y-auto" @scroll="onPaneScroll">
+        <button
+          v-if="kind === 'markdown'"
+          class="outline-trigger absolute right-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-full border border-white/10 bg-[#15151f]/90 px-3 text-xs text-gray-300 backdrop-blur hover:text-cyan-300"
+          @click="showOutline = true"
+        >
+          <span class="text-sm leading-none">☰</span> 目录
+        </button>
         <div v-if="loading" class="py-20 text-center text-sm text-gray-500">加载中…</div>
         <div v-else-if="loadError" class="py-20 text-center text-sm text-gray-500">
           <p class="text-red-400">{{ loadError }}</p>
@@ -164,5 +212,26 @@ watch(
         </template>
       </div>
     </main>
+
+    <!-- 目录抽屉(md 文档) -->
+    <n-drawer v-model:show="showOutline" :width="280" placement="right">
+      <n-drawer-content title="目录" closable>
+        <div class="space-y-1">
+          <button
+            v-for="o in outlineItems"
+            :key="o.id"
+            class="outline-item block w-full rounded px-2 py-1.5 text-left text-sm transition-colors"
+            :class="[
+              o.level === 2 ? 'pl-4' : o.level === 3 ? 'pl-8' : '',
+              o.id === activeId ? 'bg-cyan-400/10 text-cyan-300' : 'text-gray-400 hover:text-gray-200',
+            ]"
+            @click="jumpTo(o.id)"
+          >
+            {{ o.text }}
+          </button>
+          <div v-if="!outlineItems.length" class="py-8 text-center text-xs text-gray-600">本文档没有标题</div>
+        </div>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>

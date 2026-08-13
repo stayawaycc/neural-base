@@ -112,7 +112,7 @@
 - `MarkdownRenderer` 加**可选** prop `anchor-headings`(默认 false,Chat 现有用法零影响):开启时用同一 `slugify` 给标题注入 id(DOMPurify 保留 id)
 - 顶部悬浮「目录」按钮(阅读区右上)→ Naive UI `Drawer` 右侧抽屉:标题列表按层级缩进,当前章节高亮
 - 点击标题:`scrollIntoView({behavior:'smooth'})` + 关闭抽屉
-- **滚动高亮**:IntersectionObserver 观察渲染容器内 h1~h3,取当前可见标题(视口上部带偏移 rootMargin),更新抽屉高亮
+- **滚动高亮**:滚动监听(rAF 节流)+ `computeActiveId` 纯函数:取 top 不超过基准线(容器顶 +120px)的最后一个标题,更新抽屉高亮
 
 ## 六、数据流
 
