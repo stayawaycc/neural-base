@@ -24,7 +24,9 @@ export const useChatStore = defineStore('chat', () => {
     conversations.value = await conversationApi.list()
   }
 
+  // 加载历史消息;先停掉进行中的流避免串台
   async function openConversation(id: number) {
+    stopStream()
     currentId.value = id
     const history = await conversationApi.messages(id)
     messages.value = history.map((m) => ({
@@ -35,6 +37,7 @@ export const useChatStore = defineStore('chat', () => {
     streamError.value = null
   }
 
+  // 新建会话前停掉进行中的流
   function newConversation() {
     stopStream()
     currentId.value = null
@@ -42,6 +45,7 @@ export const useChatStore = defineStore('chat', () => {
     streamError.value = null
   }
 
+  // 发送:本地先加 USER+空 ASSISTANT,流式回调更新;AbortError 不算错误
   async function send(question: string, kbId?: number) {
     if (streaming.value || !question.trim()) return
     streamError.value = null
@@ -56,7 +60,7 @@ export const useChatStore = defineStore('chat', () => {
         {
           onMeta: (meta) => {
             currentId.value = meta.conversationId
-            void loadConversations()
+            void loadConversations().catch(() => {})
           },
           onSources: (sources) => {
             assistant.sources = sources
@@ -81,6 +85,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // 中止当前流(AbortController)
   function stopStream() {
     abortController?.abort()
   }
@@ -91,6 +96,7 @@ export const useChatStore = defineStore('chat', () => {
     await loadConversations()
   }
 
+  // 取末尾助手消息(流式回调的目标对象)
   function lastAssistant(): ChatUiMessage {
     const last = messages.value[messages.value.length - 1]
     if (last.role !== 'ASSISTANT') throw new Error('最后一条消息不是助手消息')

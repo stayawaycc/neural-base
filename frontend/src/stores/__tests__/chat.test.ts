@@ -69,6 +69,15 @@ describe('chat store', () => {
     expect(store.messages[1].content).toBe('部分')
   })
 
+  it('非 Abort 异常写入 streamError', async () => {
+    streamChatMock.mockRejectedValue(new Error('网络错误'))
+    const store = useChatStore()
+    await store.send('hi')
+    expect(store.streamError).toBe('网络错误')
+    expect(store.streaming).toBe(false)
+    expect(store.messages).toHaveLength(2)
+  })
+
   it('加载历史消息与删除会话', async () => {
     vi.mocked(list).mockResolvedValue([
       { id: 1, title: '旧会话', createdAt: '', updatedAt: '' },
