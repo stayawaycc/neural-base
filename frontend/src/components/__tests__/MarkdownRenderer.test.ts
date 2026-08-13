@@ -1,8 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
 describe('MarkdownRenderer', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
   it('渲染加粗与转义原始 HTML(消毒)', () => {
     const wrapper = mount(MarkdownRenderer, {
       props: { content: '**加粗** <script>alert(1)</script>' },

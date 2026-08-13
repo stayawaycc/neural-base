@@ -3,9 +3,24 @@ import { nextTick, onMounted, ref, watch } from 'vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import DOMPurify from 'dompurify'
-import 'highlight.js/styles/github-dark.css'
 import { message } from '@/utils/feedback'
 import { buildOutline, type OutlineItem } from '@/utils/outline'
+import { useThemeStore } from '@/stores/theme'
+
+const themeStore = useThemeStore()
+let appliedHighlightTheme: 'light' | 'dark' | null = null
+
+// 两套 hljs 样式都注入时会互相覆盖:按需 import,后注入者生效(vite 运行时注入 style)
+async function applyHighlightTheme() {
+  const target = themeStore.isDark ? 'dark' : 'light'
+  if (appliedHighlightTheme === target) return
+  appliedHighlightTheme = target
+  if (target === 'dark') await import('highlight.js/styles/github-dark.css')
+  else await import('highlight.js/styles/github.css')
+}
+
+void applyHighlightTheme()
+watch(() => themeStore.isDark, () => void applyHighlightTheme())
 
 const props = defineProps<{ content: string; anchorHeadings?: boolean }>()
 
