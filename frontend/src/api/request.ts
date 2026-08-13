@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 import router from '@/router'
+import { useUserStore } from '@/stores/user'
 import type { Result } from '@/types'
 
 // 统一拦截器:解 Result 壳 + 401 跳登录(spec 第八节)
@@ -18,8 +19,11 @@ client.interceptors.response.use(
   (error) => {
     const status = error.response?.status
     const message = error.response?.data?.message
-    if (status === 401 && router.currentRoute.value.name !== 'login') {
-      void router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+    if (status === 401) {
+      useUserStore().user = null
+      if (router.currentRoute.value.name !== 'login') {
+        void router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+      }
     }
     return Promise.reject(new Error(message || error.message || '网络错误'))
   },

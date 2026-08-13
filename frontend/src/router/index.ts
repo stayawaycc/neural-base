@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -11,6 +12,15 @@ const router = createRouter({
     { path: '/baguwen/:id', name: 'baguwen-detail', component: () => import('@/views/BaguwenDetailView.vue') },
     { path: '/news', name: 'news', component: () => import('@/views/DailyNewsView.vue') },
   ],
+})
+
+router.beforeEach(async (to) => {
+  const userStore = useUserStore()
+  if (!userStore.initialized) await userStore.fetchMe()
+  if (to.name !== 'login' && !userStore.user) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.name === 'login' && userStore.user) return { name: 'dashboard' }
 })
 
 export default router
