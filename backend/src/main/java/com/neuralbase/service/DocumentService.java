@@ -146,6 +146,17 @@ public class DocumentService {
         return new DocumentContentView(doc.getId(), doc.getTitle(), doc.getFileType(), doc.getContent());
     }
 
+    public Document fileDocument(Long documentId) {
+        Document doc = documentMapper.selectById(documentId);
+        if (doc == null) {
+            throw new IllegalArgumentException("文档不存在: " + documentId);
+        }
+        if (doc.getFilePath() == null || doc.getFilePath().isBlank()) {
+            throw new IllegalArgumentException("该文档无原文件");
+        }
+        return doc;
+    }
+
     public List<SearchResult> search(String query, Long kbId, Integer topK) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("query 不能为空");
