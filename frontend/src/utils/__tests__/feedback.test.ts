@@ -15,4 +15,13 @@ describe('feedback theme', () => {
       expect(document.body.textContent).toContain('ok')
     })
   })
+
+  it('多次切换不累积 discrete 容器(旧实例已 unmount)', () => {
+    const containers = () => document.body.querySelectorAll('.n-discrete-container, [data-discrete]').length
+    const before = containers()
+    applyFeedbackTheme(true)
+    applyFeedbackTheme(false)
+    applyFeedbackTheme(true)
+    expect(containers()).toBeLessThanOrEqual(before + 1)
+  })
 })

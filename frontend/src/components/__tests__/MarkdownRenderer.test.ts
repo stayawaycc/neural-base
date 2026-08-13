@@ -2,10 +2,28 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import { useThemeStore } from '@/stores/theme'
+
+// vitest 默认不处理 CSS,?inline 导入返回空串;用带标记的假内容驱动切换断言
+vi.mock('highlight.js/styles/github.css?inline', () => ({
+  default: '.hljs{color:black}/* Theme: Git */',
+}))
+vi.mock('highlight.js/styles/github-dark.css?inline', () => ({
+  default: '.hljs{color:white}/* Theme: GitHub Dark */',
+}))
+
+function hljsStyleContent(): string {
+  const styles = Array.from(document.querySelectorAll('style'))
+  const el = styles.find((s) => (s.textContent ?? '').includes('.hljs'))
+  return el?.textContent ?? ''
+}
 
 describe('MarkdownRenderer', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    document.querySelectorAll('style').forEach((s) => {
+      if ((s.textContent ?? '').includes('.hljs')) s.remove()
+    })
   })
 
   it('渲染加粗与转义原始 HTML(消毒)', () => {
@@ -45,6 +63,24 @@ describe('MarkdownRenderer', () => {
       props: { content: '# 甲' },
     })
     expect(plain.html()).not.toContain('id="甲"')
+  })
+
+  it('高亮样式随主题多轮切换(亮→暗→亮)且仅注入一套', async () => {
+    mount(MarkdownRenderer, { props: { content: '```js\nconst a = 1\n```' } })
+    const themeStore = useThemeStore()
+    const lightMarker = 'color:black'
+    const darkMarker = 'color:white'
+
+    expect(hljsStyleContent()).toContain(lightMarker)
+    expect(hljsStyleContent()).not.toContain(darkMarker)
+
+    themeStore.toggleTheme() // → dark
+    await vi.waitFor(() => expect(hljsStyleContent()).toContain(darkMarker))
+    expect(hljsStyleContent()).not.toContain(lightMarker)
+
+    themeStore.toggleTheme() // → light(此前动态 import 缓存导致此处滞留 dark)
+    await vi.waitFor(() => expect(hljsStyleContent()).toContain(lightMarker))
+    expect(hljsStyleContent()).not.toContain(darkMarker)
   })
 
   it('含 h4+ 的文档锚点不错位(h4 跳过,后续标题拿到自己的 id)', () => {

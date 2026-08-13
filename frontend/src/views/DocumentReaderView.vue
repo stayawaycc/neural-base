@@ -150,7 +150,7 @@ watch(
           :key="d.id"
           class="doc-item glass-card w-full !p-3 text-left"
           :class="[
-            currentDoc?.id === d.id ? '!border-cyan-500/50 dark:!border-cyan-400/40' : '',
+            currentDoc?.id === d.id ? 'glass-card--selected' : '',
             d.status !== 'READY' ? 'cursor-not-allowed opacity-50' : 'glass-card--hover',
           ]"
           :disabled="d.status !== 'READY'"

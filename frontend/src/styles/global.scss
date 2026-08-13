@@ -15,6 +15,11 @@
   --nb-hover-shadow: 0 4px 16px -8px var(--nb-accent);
   --nb-scrollbar: rgba(17, 24, 39, 0.15);
   --nb-selection: rgba(34, 211, 238, 0.25);
+  /* 模块强调色:亮色下压暗一档保证白底对比度(规格 3.3) */
+  --nb-accent-cyan: #0891b2;
+  --nb-accent-violet: #7c3aed;
+  --nb-accent-amber: #d97706;
+  --nb-accent-emerald: #059669;
 }
 
 .dark {
@@ -29,6 +34,10 @@
   --nb-hover-shadow: 0 8px 32px -8px var(--nb-accent);
   --nb-scrollbar: rgba(255, 255, 255, 0.12);
   --nb-selection: rgba(34, 211, 238, 0.3);
+  --nb-accent-cyan: #22d3ee;
+  --nb-accent-violet: #a78bfa;
+  --nb-accent-amber: #fbbf24;
+  --nb-accent-emerald: #34d399;
 }
 
 /* 玻璃卡片基础样式(全局:GlassCard.vue 组件与裸 class="glass-card" 使用方共用) */
@@ -52,16 +61,20 @@
   box-shadow: var(--nb-hover-shadow);
 }
 .glass-card--cyan {
-  --nb-accent: #22d3ee;
+  --nb-accent: var(--nb-accent-cyan);
 }
 .glass-card--violet {
-  --nb-accent: #a78bfa;
+  --nb-accent: var(--nb-accent-violet);
 }
 .glass-card--amber {
-  --nb-accent: #fbbf24;
+  --nb-accent: var(--nb-accent-amber);
 }
 .glass-card--emerald {
-  --nb-accent: #34d399;
+  --nb-accent: var(--nb-accent-emerald);
+}
+/* 选中态卡片(替代散落的 !border-cyan-* 字面量) */
+.glass-card--selected {
+  border-color: var(--nb-accent-cyan);
 }
 
 html,
@@ -113,11 +126,24 @@ body {
   height: 1em;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background: #a78bfa;
+  background: var(--nb-accent-violet);
   animation: nb-blink 1s infinite;
 }
 
-/* 页面切换动画暂移除(见 App.vue 注释),此段保留供「动画打磨」子项目使用 */
+/* 页面切换动画:App.vue 目前未包 <transition>(见其注释),此段供「动画打磨」子项目使用 */
+.page-enter-active,
+.page-leave-active {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-leave-to {
+  opacity: 0;
+}
 
 /* 尊重系统减弱动效设置(仅减弱动画,不改变任何视觉 token) */
 @media (prefers-reduced-motion: reduce) {

@@ -78,7 +78,7 @@ async function onOpenConversation(id: number) {
           v-for="c in chatStore.conversations"
           :key="c.id"
           class="glass-card w-full !p-3 text-left transition-colors"
-          :class="c.id === chatStore.currentId ? '!border-cyan-500/50 dark:!border-cyan-400/40' : 'hover:!border-gray-300 dark:hover:!border-white/10'"
+          :class="c.id === chatStore.currentId ? 'glass-card--selected' : 'hover:!border-gray-300 dark:hover:!border-white/10'"
           @click="onOpenConversation(c.id)"
         >
           <div class="flex items-center justify-between gap-2">
@@ -110,7 +110,7 @@ async function onOpenConversation(id: number) {
             v-for="c in chatStore.conversations"
             :key="c.id"
             class="glass-card w-full !p-3 text-left"
-            :class="c.id === chatStore.currentId ? '!border-cyan-500/50 dark:!border-cyan-400/40' : ''"
+            :class="c.id === chatStore.currentId ? 'glass-card--selected' : ''"
             @click="onOpenConversation(c.id)"
           >
             <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>

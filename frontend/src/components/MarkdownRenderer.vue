@@ -3,24 +3,28 @@ import { nextTick, onMounted, ref, watch } from 'vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import DOMPurify from 'dompurify'
+import lightHljsCss from 'highlight.js/styles/github.css?inline'
+import darkHljsCss from 'highlight.js/styles/github-dark.css?inline'
 import { message } from '@/utils/feedback'
 import { buildOutline, type OutlineItem } from '@/utils/outline'
 import { useThemeStore } from '@/stores/theme'
 
 const themeStore = useThemeStore()
-let appliedHighlightTheme: 'light' | 'dark' | null = null
+let hljsStyleEl: HTMLStyleElement | null = null
 
-// 两套 hljs 样式都注入时会互相覆盖:按需 import,后注入者生效(vite 运行时注入 style)
-async function applyHighlightTheme() {
-  const target = themeStore.isDark ? 'dark' : 'light'
-  if (appliedHighlightTheme === target) return
-  appliedHighlightTheme = target
-  if (target === 'dark') await import('highlight.js/styles/github-dark.css')
-  else await import('highlight.js/styles/github.css')
+// 代码高亮样式:两套 css 文本随主题切换注入/移除单个 <style>(动态 import 有模块缓存,
+// 二次 import 不会重注入,多轮切换会滞留旧主题,故用 ?inline 取文本手动管理)
+function applyHighlightTheme() {
+  const css = themeStore.isDark ? darkHljsCss : lightHljsCss
+  if (hljsStyleEl?.textContent === css) return
+  hljsStyleEl?.remove()
+  hljsStyleEl = document.createElement('style')
+  hljsStyleEl.textContent = css
+  document.head.appendChild(hljsStyleEl)
 }
 
-void applyHighlightTheme()
-watch(() => themeStore.isDark, () => void applyHighlightTheme())
+applyHighlightTheme()
+watch(() => themeStore.isDark, applyHighlightTheme)
 
 const props = defineProps<{ content: string; anchorHeadings?: boolean }>()
 

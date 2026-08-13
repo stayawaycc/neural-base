@@ -93,7 +93,7 @@ function openReader(d: DocumentItem) {
       <div class="flex-1 space-y-1.5 overflow-y-auto pr-1">
         <button
           class="glass-card w-full !p-3 text-left"
-          :class="docStore.currentKbId === null ? '!border-cyan-500/50 dark:!border-cyan-400/40' : ''"
+          :class="docStore.currentKbId === null ? 'glass-card--selected' : ''"
           @click="docStore.selectKb(null)"
         >
           <span class="text-sm text-gray-800 dark:text-gray-200">全部文档</span>
@@ -102,7 +102,7 @@ function openReader(d: DocumentItem) {
           v-for="k in docStore.kbs"
           :key="k.id"
           class="glass-card w-full !p-3 text-left"
-          :class="docStore.currentKbId === k.id ? '!border-cyan-500/50 dark:!border-cyan-400/40' : ''"
+          :class="docStore.currentKbId === k.id ? 'glass-card--selected' : ''"
           @click="docStore.selectKb(k.id)"
         >
           <div class="flex items-center gap-2">
