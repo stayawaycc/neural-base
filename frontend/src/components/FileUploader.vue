@@ -36,10 +36,10 @@ async function onUpload({ file, onFinish, onError, onProgress }: UploadCustomReq
         <n-icon size="28" :color="uploading ? '#9ca3af' : '#22d3ee'">
           <Icon :icon="uploading ? 'mdi:loading' : 'mdi:cloud-upload-outline'" />
         </n-icon>
-        <span class="text-sm text-gray-300">
+        <span class="text-sm text-gray-700 dark:text-gray-300">
           {{ uploading ? '上传中…' : '点击或拖拽文件到此处上传' }}
         </span>
-        <span class="text-xs text-gray-600">支持 PDF / Word / Markdown / TXT</span>
+        <span class="text-xs text-gray-400 dark:text-gray-600">支持 PDF / Word / Markdown / TXT</span>
       </div>
     </n-upload-dragger>
   </n-upload>

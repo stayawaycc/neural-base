@@ -15,7 +15,7 @@ defineProps<{
     <div class="max-w-[88%] md:max-w-[75%]">
       <div
         v-if="role === 'USER'"
-        class="whitespace-pre-wrap rounded-2xl rounded-br-sm border border-white/10 bg-gradient-to-br from-cyan-500/15 to-purple-500/15 px-4 py-2.5 text-[15px] leading-relaxed text-gray-100"
+        class="whitespace-pre-wrap rounded-2xl rounded-br-sm border border-gray-200 bg-gradient-to-br from-cyan-500/10 to-purple-500/10 px-4 py-2.5 text-[15px] leading-relaxed text-gray-900 dark:border-white/10 dark:from-cyan-500/15 dark:to-purple-500/15 dark:text-gray-100"
       >
         {{ content }}
       </div>
@@ -25,13 +25,13 @@ defineProps<{
           <div
             v-for="(s, i) in sources"
             :key="i"
-            class="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2"
+            class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 dark:border-white/5 dark:bg-white/[0.02]"
           >
-            <div class="text-xs text-gray-300">{{ s.title }}</div>
+            <div class="text-xs text-gray-700 dark:text-gray-300">{{ s.title }}</div>
             <div class="mt-1 line-clamp-2 text-xs text-gray-500">{{ s.content }}</div>
           </div>
         </div>
-        <div class="text-[15px] leading-relaxed text-gray-100">
+        <div class="text-[15px] leading-relaxed text-gray-900 dark:text-gray-100">
           <MarkdownRenderer :content="content" />
           <span v-if="streaming" class="nb-cursor" />
         </div>
