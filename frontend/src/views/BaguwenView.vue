@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton, NInput, NModal, NPopconfirm, NPagination, NSelect, NTag } from 'naive-ui'
+import { NButton, NInput, NModal, NPopconfirm, NPagination, NSelect, NSkeleton, NTag } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useBaguwenStore } from '@/stores/baguwen'
 import { listKbs } from '@/api/kb'
@@ -14,6 +14,7 @@ const router = useRouter()
 const urlText = ref('')
 const importing = ref(false)
 const searchKeyword = ref('')
+const listLoading = ref(true)
 
 const favoriteModal = ref(false)
 const favoriteArticleId = ref<number | null>(null)
@@ -36,6 +37,7 @@ onMounted(async () => {
   await baguwenStore.loadArticles()
   await baguwenStore.loadTags()
   await baguwenStore.refreshTasks()
+  listLoading.value = false
   if (pendingTaskCount.value) baguwenStore.startPolling()
 })
 
@@ -173,7 +175,13 @@ async function onFavoriteConfirm() {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div v-if="listLoading" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div v-for="i in 3" :key="i" class="glass-card space-y-3 !p-4">
+        <n-skeleton text :repeat="2" />
+        <n-skeleton text style="width: 40%" />
+      </div>
+    </div>
+    <div v-else class="fade-in grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
       <div
         v-for="a in baguwenStore.articles"
         :key="a.id"

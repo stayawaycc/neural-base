@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { NButton, NInput, NModal, NPopconfirm, NTag } from 'naive-ui'
+import { NButton, NInput, NModal, NPopconfirm, NSkeleton, NTag } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useDocumentStore } from '@/stores/document'
 import { dialog, message } from '@/utils/feedback'
@@ -17,6 +17,7 @@ const kbPalette = ['#22d3ee', '#a78bfa', '#fbbf24', '#34d399', '#60a5fa', '#f472
 
 const query = ref('')
 const searching = ref(false)
+const listLoading = ref(true)
 
 const statusMeta: Record<DocumentStatus, { type: 'default' | 'info' | 'success' | 'error'; label: string }> = {
   PENDING: { type: 'default', label: '排队中' },
@@ -32,6 +33,7 @@ const hasProcessing = computed(() =>
 onMounted(async () => {
   await docStore.loadKbs()
   await docStore.loadDocuments()
+  listLoading.value = false
   if (hasProcessing.value) docStore.startPolling()
 })
 
@@ -154,7 +156,13 @@ function openReader(d: DocumentItem) {
         <div v-if="hasProcessing" class="text-xs text-gray-500">
           有文档处理中,每 2 秒自动刷新…
         </div>
-        <div class="space-y-2">
+        <div v-if="listLoading" class="space-y-2">
+          <div v-for="i in 3" :key="i" class="glass-card flex items-center gap-3 !p-3">
+            <n-skeleton text style="width: 60%" />
+            <n-skeleton text style="width: 20%" />
+          </div>
+        </div>
+        <div v-else class="fade-in space-y-2">
           <div v-for="d in docStore.documents" :key="d.id" class="glass-card !p-3">
             <div class="flex items-center justify-between gap-2">
               <span
