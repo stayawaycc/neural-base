@@ -27,10 +27,18 @@ export interface DocumentItem {
   kbId?: number
   title: string
   fileType: string
+  sourceUrl?: string
   status: DocumentStatus
   chunkCount?: number
   error?: string
   createdAt: string
+}
+
+export interface DocumentContent {
+  id: number
+  title: string
+  fileType: string
+  content: string
 }
 
 export interface SearchResult {

@@ -1,5 +1,5 @@
 import http from './request'
-import type { DocumentItem, SearchResult } from '@/types'
+import type { DocumentContent, DocumentItem, SearchResult } from '@/types'
 
 export const uploadDocument = (
   file: File,
@@ -23,3 +23,9 @@ export const listDocuments = (kbId?: number) =>
   http.get<DocumentItem[]>('/document', kbId != null ? { kbId } : undefined)
 
 export const deleteDocument = (id: number) => http.del<null>(`/document/${id}`)
+
+export const getDocumentContent = (id: number) =>
+  http.get<DocumentContent>(`/document/${id}/content`)
+
+// iframe 与下载链接用的同源相对路径(cookie 自动携带;dev 走 vite 代理)
+export const documentFileUrl = (id: number) => `/api/document/${id}/file`

@@ -901,7 +901,7 @@ describe('DocumentReaderView 外壳', () => {
     expect(listKbs).toHaveBeenCalled()
     expect(listDocuments).toHaveBeenCalled()
     expect(wrapper.text()).toContain('a.md')
-    expect(wrapper.text()).toContain('处理中') // PENDING 徽标
+    expect(wrapper.text()).toContain('排队中') // PENDING 徽标
   })
 
   it('点击 READY 文档以 router.replace 切换 docId,非 READY 不响应', async () => {
