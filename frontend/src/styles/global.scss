@@ -145,10 +145,64 @@ body {
   opacity: 0;
 }
 
+/* 按钮按压反馈(自绘元素专用,naive-ui 按钮自带动效不叠加) */
+.btn-press {
+  transition: transform 0.1s ease;
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* 上传拖拽区涟漪:悬停轻微放大 + 边框呼吸 */
+.upload-ripple {
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+.upload-ripple:hover {
+  transform: scale(1.01);
+  animation: nb-border-pulse 1.2s ease-in-out infinite;
+}
+@keyframes nb-border-pulse {
+  0%,
+  100% {
+    border-color: var(--nb-accent-cyan);
+  }
+  50% {
+    border-color: var(--nb-border);
+  }
+}
+
+/* 内容渐显(骨架屏替换后) */
+.fade-in {
+  animation: nb-fade-in 0.2s ease;
+}
+@keyframes nb-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* 尊重系统减弱动效设置(仅减弱动画,不改变任何视觉 token) */
 @media (prefers-reduced-motion: reduce) {
   .nb-cursor {
     animation: none;
     opacity: 1;
+  }
+  .btn-press {
+    transition: none;
+  }
+  .btn-press:active {
+    transform: none;
+  }
+  .upload-ripple:hover {
+    transform: none;
+    animation: none;
+  }
+  .fade-in {
+    animation: none;
   }
 }
