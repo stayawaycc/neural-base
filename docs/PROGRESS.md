@@ -92,7 +92,7 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：后端 **89/89 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 56/56 绿** + typecheck 无输出 + build 成功（2026-08-13，亮色模式后更新）
+- **自动化测试**：后端 **89/89 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 58/58 绿** + typecheck 无输出 + build 成功（2026-08-13，亮色模式 review 修复后更新）
   - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除/竞态防护(11)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
   - 后端 Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
   - 前端：GlassCard(2)、user(3)、sse(7)、chat(5)、MarkdownRenderer(2)、ChatMessage(3)、document(5)、baguwen(3)
