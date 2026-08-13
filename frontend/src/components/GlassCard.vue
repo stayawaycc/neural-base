@@ -23,16 +23,7 @@ withDefaults(
 </template>
 
 <style scoped>
-.glass-card {
-  background: var(--nb-card-bg);
-  border: 1px solid var(--nb-border);
-  border-radius: 12px;
-  backdrop-filter: blur(12px);
-  transition:
-    transform 0.3s ease,
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-}
+/* 基础 .glass-card 规则已全局化至 src/styles/global.scss(与裸 class 使用方共用) */
 .glass-card--padded {
   padding: 16px;
 }

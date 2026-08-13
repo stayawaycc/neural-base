@@ -65,6 +65,9 @@ describe('document store', () => {
     await vi.advanceTimersByTimeAsync(2000)
     expect(listDocuments).toHaveBeenCalledTimes(2) // 轮询一次发现 READY,自动停止
     expect(store.documents.every((d) => d.status === 'READY')).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(listDocuments).toHaveBeenCalledTimes(2) // 自动停止生效,不再轮询
     store.stopPolling()
   })
 
@@ -90,5 +93,19 @@ describe('document store', () => {
     expect(createKb).toHaveBeenCalledWith({ name: '新库' })
     await store.removeKb(1)
     expect(deleteKb).toHaveBeenCalledWith(1)
+  })
+
+  it('删除当前选中的知识库后回退到全部文档', async () => {
+    vi.mocked(listKbs).mockResolvedValue([kb])
+    vi.mocked(deleteKb).mockResolvedValue(null)
+    vi.mocked(listDocuments).mockResolvedValue([])
+    const store = useDocumentStore()
+
+    store.selectKb(1)
+    expect(store.currentKbId).toBe(1)
+
+    await store.removeKb(1)
+    expect(deleteKb).toHaveBeenCalledWith(1)
+    expect(store.currentKbId).toBeNull()
   })
 })

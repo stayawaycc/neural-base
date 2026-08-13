@@ -99,6 +99,13 @@ function confirmDeleteKb(id: number, name: string) {
           <div class="flex items-center gap-2">
             <span v-if="k.color" class="h-2.5 w-2.5 rounded-full" :style="{ background: k.color }" />
             <span class="truncate text-sm text-gray-200">{{ k.name }}</span>
+            <span
+              class="ml-auto cursor-pointer text-gray-600 hover:text-red-400"
+              title="删除知识库"
+              @click.stop="confirmDeleteKb(k.id, k.name)"
+            >
+              <Icon icon="mdi:trash-can-outline" class="h-4 w-4" />
+            </span>
           </div>
         </button>
         <div v-if="!docStore.kbs.length" class="py-8 text-center text-xs text-gray-600">
