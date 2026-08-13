@@ -1,7 +1,7 @@
 import type { GlobalThemeOverrides } from 'naive-ui'
 
 // 深色玻璃拟态主题覆盖(设计文档 5.3)
-export const themeOverrides: GlobalThemeOverrides = {
+export const darkThemeOverrides: GlobalThemeOverrides = {
   common: {
     bodyColor: '#0a0a0f',
     cardColor: 'rgba(255, 255, 255, 0.02)',
@@ -35,5 +35,43 @@ export const themeOverrides: GlobalThemeOverrides = {
     errorColorPressed: '#dc2626',
     errorColorSuppl: '#fca5a5',
     inputColor: 'rgba(255, 255, 255, 0.03)',
+  },
+}
+
+// 亮色主题覆盖(规格 3.3:浅灰底 + 白卡片,强调色压暗一档保证白底对比度)
+export const lightThemeOverrides: GlobalThemeOverrides = {
+  common: {
+    bodyColor: '#f5f6f8',
+    cardColor: '#ffffff',
+    modalColor: '#ffffff',
+    popoverColor: '#ffffff',
+    borderColor: '#e5e7eb',
+    dividerColor: '#f3f4f6',
+    borderRadius: '8px',
+    textColorBase: '#111827',
+    textColor1: '#111827',
+    textColor2: '#4b5563',
+    textColor3: '#9ca3af',
+    primaryColor: '#0891b2',
+    primaryColorHover: '#06b6d4',
+    primaryColorPressed: '#0e7490',
+    primaryColorSuppl: '#06b6d4',
+    infoColor: '#7c3aed',
+    infoColorHover: '#8b5cf6',
+    infoColorPressed: '#6d28d9',
+    infoColorSuppl: '#8b5cf6',
+    successColor: '#059669',
+    successColorHover: '#10b981',
+    successColorPressed: '#047857',
+    successColorSuppl: '#10b981',
+    warningColor: '#d97706',
+    warningColorHover: '#f59e0b',
+    warningColorPressed: '#b45309',
+    warningColorSuppl: '#f59e0b',
+    errorColor: '#dc2626',
+    errorColorHover: '#ef4444',
+    errorColorPressed: '#b91c1c',
+    errorColorSuppl: '#ef4444',
+    inputColor: '#f9fafb',
   },
 }

@@ -1,12 +1,34 @@
-@use './variables' as *;
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* 亮色(默认)/深色(.dark)两套设计 token(规格 3.4) */
 :root {
-  --nb-card-bg: #{$card-bg};
-  --nb-border: #{$border-subtle};
+  --nb-bg: #f5f6f8;
+  --nb-card-bg: #ffffff;
+  --nb-border: #e5e7eb;
+  --nb-text-primary: #111827;
+  --nb-text-secondary: #4b5563;
+  --nb-text-faint: #9ca3af;
+  --nb-header-bg: rgba(255, 255, 255, 0.85);
+  --nb-nav-active-bg: rgba(17, 24, 39, 0.06);
+  --nb-hover-shadow: 0 4px 16px -8px var(--nb-accent);
+  --nb-scrollbar: rgba(17, 24, 39, 0.15);
+  --nb-selection: rgba(34, 211, 238, 0.25);
+}
+
+.dark {
+  --nb-bg: #0a0a0f;
+  --nb-card-bg: rgba(255, 255, 255, 0.02);
+  --nb-border: rgba(255, 255, 255, 0.05);
+  --nb-text-primary: #f3f4f6;
+  --nb-text-secondary: #9ca3af;
+  --nb-text-faint: #4b5563;
+  --nb-header-bg: rgba(10, 10, 15, 0.72);
+  --nb-nav-active-bg: rgba(255, 255, 255, 0.05);
+  --nb-hover-shadow: 0 8px 32px -8px var(--nb-accent);
+  --nb-scrollbar: rgba(255, 255, 255, 0.12);
+  --nb-selection: rgba(34, 211, 238, 0.3);
 }
 
 /* 玻璃卡片基础样式(全局:GlassCard.vue 组件与裸 class="glass-card" 使用方共用) */
@@ -27,7 +49,7 @@
 .glass-card--hover:hover {
   transform: translateY(-2px);
   border-color: var(--nb-accent);
-  box-shadow: 0 8px 32px -8px var(--nb-accent);
+  box-shadow: var(--nb-hover-shadow);
 }
 .glass-card--cyan {
   --nb-accent: #22d3ee;
@@ -49,9 +71,12 @@ body,
 }
 
 body {
-  background: $bg-base;
-  color: $text-primary;
+  background: var(--nb-bg);
+  color: var(--nb-text-primary);
   font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* 滚动条 */
@@ -60,7 +85,7 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--nb-scrollbar);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-track {
@@ -68,7 +93,7 @@ body {
 }
 
 ::selection {
-  background: rgba(34, 211, 238, 0.3);
+  background: var(--nb-selection);
 }
 
 /* AI 打字光标(设计文档: cursor blink 1s) */
@@ -88,31 +113,16 @@ body {
   height: 1em;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background: $accent-chat;
+  background: #a78bfa;
   animation: nb-blink 1s infinite;
 }
 
-/* 页面切换(设计文档: 淡入 + 上滑 300ms) */
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-.page-leave-to {
-  opacity: 0;
-}
+/* 页面切换动画暂移除(见 App.vue 注释),此段保留供「动画打磨」子项目使用 */
 
 /* 尊重系统减弱动效设置(仅减弱动画,不改变任何视觉 token) */
 @media (prefers-reduced-motion: reduce) {
   .nb-cursor {
     animation: none;
     opacity: 1;
-  }
-  .page-enter-active,
-  .page-leave-active {
-    transition: opacity 0.1s ease;
   }
 }
