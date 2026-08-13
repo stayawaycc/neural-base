@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { applyFeedbackTheme, message } from '@/utils/feedback'
 
 describe('feedback theme', () => {
@@ -9,8 +9,10 @@ describe('feedback theme', () => {
     expect(dark).not.toBe(before)
     applyFeedbackTheme(false)
     expect(message).not.toBe(dark)
-    // 切换后调用不抛错(happy-dom 下 naive-ui message 正常渲染)
+    // 切换后调用不抛错(naive-ui message 异步挂载,等待其渲染)
     message.success('ok')
-    expect(document.body.textContent).toContain('ok')
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain('ok')
+    })
   })
 })
