@@ -1,6 +1,7 @@
 package com.neuralbase.controller;
 
 import com.neuralbase.common.Result;
+import com.neuralbase.dto.DocumentContentView;
 import com.neuralbase.dto.SearchQuery;
 import com.neuralbase.dto.SearchResult;
 import com.neuralbase.entity.Document;
@@ -45,6 +46,11 @@ public class DocumentController {
     @GetMapping
     public Result<List<Document>> list(@RequestParam(value = "kbId", required = false) Long kbId) {
         return Result.ok(documentService.list(kbId));
+    }
+
+    @GetMapping("/{id}/content")
+    public Result<DocumentContentView> content(@PathVariable Long id) {
+        return Result.ok(documentService.content(id));
     }
 
     @DeleteMapping("/{id}")

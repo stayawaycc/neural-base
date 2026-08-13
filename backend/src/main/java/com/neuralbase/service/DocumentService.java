@@ -1,5 +1,6 @@
 package com.neuralbase.service;
 
+import com.neuralbase.dto.DocumentContentView;
 import com.neuralbase.dto.SearchResult;
 import com.neuralbase.entity.Document;
 import com.neuralbase.mapper.DocumentMapper;
@@ -127,6 +128,22 @@ public class DocumentService {
             }
         }
         documentMapper.deleteById(documentId);
+    }
+
+    public DocumentContentView content(Long documentId) {
+        Document doc = documentMapper.selectById(documentId);
+        if (doc == null) {
+            throw new IllegalArgumentException("文档不存在: " + documentId);
+        }
+        if (!"READY".equals(doc.getStatus())) {
+            throw new IllegalArgumentException("FAILED".equals(doc.getStatus())
+                ? "文档处理失败: " + (doc.getError() == null ? "未知原因" : doc.getError())
+                : "文档尚未处理完成");
+        }
+        if (doc.getContent() == null || doc.getContent().isBlank()) {
+            throw new IllegalArgumentException("文档内容缺失,请重新上传");
+        }
+        return new DocumentContentView(doc.getId(), doc.getTitle(), doc.getFileType(), doc.getContent());
     }
 
     public List<SearchResult> search(String query, Long kbId, Integer topK) {
