@@ -58,4 +58,21 @@ class DocumentDeleteTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("文档不存在");
     }
+
+    @Test
+    void deleteThenProcessLeavesNoVectors() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+            "file", "race.md", "text/markdown",
+            ("竞态测试内容。".repeat(200)).getBytes());
+        Document doc = documentService.upload(file, 1L);
+        documentService.delete(doc.getId()); // 模拟处理中删除
+
+        documentService.process(doc.getId()); // 迟到的处理回调
+
+        assertThat(documentMapper.selectById(doc.getId())).isNull();
+        Integer vectors = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM vector_store WHERE metadata->>'docId' = ?",
+            Integer.class, String.valueOf(doc.getId()));
+        assertThat(vectors).isZero();
+    }
 }

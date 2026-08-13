@@ -79,12 +79,16 @@ public class DocumentService {
     public void process(Long documentId) throws IOException, TikaException {
         Document doc = documentMapper.selectById(documentId);
         if (doc == null) {
-            throw new IllegalArgumentException("文档不存在: " + documentId);
+            return; // 文档已被删除(或不存在),放弃入库
         }
         doc.setStatus("PROCESSING");
         documentMapper.updateById(doc);
         try (var in = Files.newInputStream(Path.of(doc.getFilePath()))) {
             String text = textExtractorService.extract(in, doc.getTitle());
+            // 竞态防护:处理期间文档被删除,复查存在性,避免幽灵向量重新入库(不可删且 RAG 命中 title 为 null)
+            if (documentMapper.selectById(documentId) == null) {
+                return; // 文档已被删除,放弃入库
+            }
             List<String> chunks = textChunker.chunk(text);
             List<org.springframework.ai.document.Document> docs = new ArrayList<>();
             for (int i = 0; i < chunks.size(); i++) {
