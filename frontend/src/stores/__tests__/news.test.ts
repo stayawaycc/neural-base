@@ -9,9 +9,13 @@ vi.mock('@/api/news', () => ({
   markRead: vi.fn(),
   markAllRead: vi.fn(),
   favoriteNews: vi.fn(),
+  listSources: vi.fn(),
+  createSource: vi.fn(),
+  updateSource: vi.fn(),
+  deleteSource: vi.fn(),
 }))
 
-import { listNews, latestTask, markRead, triggerCrawl } from '@/api/news'
+import { listNews, latestTask, markRead, triggerCrawl, listSources, createSource } from '@/api/news'
 
 const item = {
   id: 1, title: 'cool', url: 'https://x', category: '工具',
@@ -57,5 +61,31 @@ describe('news store', () => {
     await store.markRead(1, true)
     expect(markRead).toHaveBeenCalledWith(1, true)
     expect(store.items[0].isRead).toBe(true)
+  })
+
+  it('sort 与 sourceFilter 变化触发带参 load', async () => {
+    vi.mocked(listNews).mockResolvedValue([item])
+    const store = useNewsStore()
+    await store.load()
+    store.sort = 'source'
+    await vi.advanceTimersByTimeAsync(0)
+    expect(listNews).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'source' }))
+    store.sourceFilter = 1
+    await vi.advanceTimersByTimeAsync(0)
+    expect(listNews).toHaveBeenLastCalledWith(expect.objectContaining({ sourceId: 1 }))
+  })
+
+  it('来源 CRUD 调用接口', async () => {
+    vi.mocked(listSources).mockResolvedValue([
+      { id: 1, name: 'InfoQ', url: 'https://x', type: 'html', enabled: true },
+    ])
+    vi.mocked(createSource).mockResolvedValue({
+      id: 9, name: '新源', url: 'https://y', type: 'html', selector: 'ul a', enabled: true,
+    })
+    const store = useNewsStore()
+    await store.loadSources()
+    expect(store.sources).toHaveLength(1)
+    await store.createSource({ name: '新源', url: 'https://y', selector: 'ul a' })
+    expect(createSource).toHaveBeenCalled()
   })
 })

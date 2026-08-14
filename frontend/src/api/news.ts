@@ -1,7 +1,7 @@
 import http from './request'
-import type { NewsItem, NewsTask } from '@/types'
+import type { NewsItem, NewsSort, NewsSource, NewsTask } from '@/types'
 
-export const listNews = (params?: { category?: string; unreadOnly?: boolean }) =>
+export const listNews = (params?: { category?: string; unreadOnly?: boolean; sourceId?: number; sort?: NewsSort }) =>
   http.get<NewsItem[]>('/news', params)
 
 export const triggerCrawl = () => http.post<null>('/news/crawl')
@@ -15,3 +15,13 @@ export const markAllRead = () => http.put<null>('/news/read-all')
 
 export const favoriteNews = (id: number, kbId: number) =>
   http.post<null>(`/news/${id}/favorite`, { kbId })
+
+export const listSources = () => http.get<NewsSource[]>('/news/source')
+
+export const createSource = (payload: { name: string; url: string; selector?: string; enabled?: boolean }) =>
+  http.post<NewsSource>('/news/source', payload)
+
+export const updateSource = (id: number, payload: { name?: string; url?: string; selector?: string; enabled?: boolean }) =>
+  http.put<NewsSource>(`/news/source/${id}`, payload)
+
+export const deleteSource = (id: number) => http.del<null>(`/news/source/${id}`)

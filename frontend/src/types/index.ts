@@ -156,3 +156,14 @@ export interface NewsTask {
   error?: string
   createdAt: string
 }
+
+export type NewsSort = 'created_desc' | 'created_asc' | 'source' | 'category'
+
+export interface NewsSource {
+  id: number
+  name: string
+  url: string
+  type: string
+  selector?: string
+  enabled: boolean
+}
