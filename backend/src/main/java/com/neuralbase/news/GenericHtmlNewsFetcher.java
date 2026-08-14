@@ -4,6 +4,8 @@ import com.neuralbase.entity.CrawlerSource;
 import com.neuralbase.mapper.CrawlerSourceMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -17,6 +19,8 @@ import java.util.List;
 /** 用户自建静态源:读 crawler_source(enabled、type=html、非内置名单),按 selector 提取链接列表。 */
 @Component
 public class GenericHtmlNewsFetcher implements NewsFetcher {
+
+    private static final Logger log = LoggerFactory.getLogger(GenericHtmlNewsFetcher.class);
 
     private static final List<String> BUILTIN = List.of(
         "GitHub Trending", "Hacker News", "Papers with Code", "机器之心", "InfoQ", "GitHub Star AI");
@@ -54,7 +58,7 @@ public class GenericHtmlNewsFetcher implements NewsFetcher {
                     items.add(new NewsItem(item.title(), item.url(), s.getName()));
                 }
             } catch (Exception e) {
-                // 单源失败跳过,由 service 汇总日志
+                log.warn("自建源爬取失败 {}: {}", s.getName(), e.getMessage());
             }
         }
         return items;
