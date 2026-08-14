@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import type { RagSource } from '@/types'
 
@@ -44,20 +45,20 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
         </div>
         <div v-if="role === 'ASSISTANT' && !streaming" class="mt-1.5 flex items-center gap-2">
           <button
-            class="fb-like btn-press rounded p-1 text-xs transition-colors"
+            class="fb-like btn-press rounded p-1 transition-colors"
             :class="feedback === 'LIKE' ? 'fb-active text-cyan-600 dark:text-cyan-300' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
             title="赞"
             @click="onFeedback('LIKE')"
           >
-            <span class="text-sm leading-none">👍</span>
+            <Icon :icon="feedback === 'LIKE' ? 'mdi:thumb-up' : 'mdi:thumb-up-outline'" class="h-4 w-4" />
           </button>
           <button
-            class="fb-dislike btn-press rounded p-1 text-xs transition-colors"
+            class="fb-dislike btn-press rounded p-1 transition-colors"
             :class="feedback === 'DISLIKE' ? 'fb-active text-red-500 dark:text-red-300' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
             title="踩"
             @click="onFeedback('DISLIKE')"
           >
-            <span class="text-sm leading-none">👎</span>
+            <Icon :icon="feedback === 'DISLIKE' ? 'mdi:thumb-down' : 'mdi:thumb-down-outline'" class="h-4 w-4" />
           </button>
         </div>
       </div>

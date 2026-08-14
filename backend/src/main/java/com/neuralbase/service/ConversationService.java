@@ -94,8 +94,9 @@ public class ConversationService {
         c.setTitle(title);
         c.setUpdatedAt(OffsetDateTime.now());
         conversationMapper.updateById(c);
-        return list().stream().filter(v -> v.id().equals(id)).findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("会话不存在: " + id));
+        // 前端只消费 title,直接构造视图,避免为单行重跑全量 list()
+        return new ConversationView(c.getId(), c.getTitle(), c.getKbId(), c.getFavorite(),
+            c.getCreatedAt(), c.getUpdatedAt(), null);
     }
 
     public boolean toggleFavorite(Long id) {

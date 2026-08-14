@@ -71,12 +71,14 @@ export interface ConversationView {
   lastMessageContent?: string
 }
 
+export type MessageFeedback = 'LIKE' | 'DISLIKE' | null
+
 export interface MessageView {
   id: number
   role: 'USER' | 'ASSISTANT'
   content: string
   sources?: RagSource[]
-  feedback?: 'LIKE' | 'DISLIKE' | null
+  feedback?: MessageFeedback
   createdAt: string
 }
 

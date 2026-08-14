@@ -1,5 +1,5 @@
 import http from './request'
-import type { ConversationView, MessageView } from '@/types'
+import type { ConversationView, MessageFeedback, MessageView } from '@/types'
 
 export const create = (title?: string, kbId?: number) =>
   http.post<ConversationView>('/conversation', { title, kbId })
@@ -16,5 +16,5 @@ export const renameConversation = (id: number, title: string) =>
 export const toggleFavorite = (id: number) =>
   http.put<boolean>(`/conversation/${id}/favorite`)
 
-export const setMessageFeedback = (id: number, feedback: 'LIKE' | 'DISLIKE' | null) =>
+export const setMessageFeedback = (id: number, feedback: MessageFeedback) =>
   http.post<null>(`/message/${id}/feedback`, { feedback })

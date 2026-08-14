@@ -40,12 +40,19 @@ function startRename(c: ConversationView) {
 
 async function commitRename(c: ConversationView) {
   const title = renameText.value.trim()
-  renamingId.value = null
-  if (!title || title === c.title) return
+  if (!title) {
+    renamingId.value = null
+    return
+  }
+  if (title === c.title) {
+    renamingId.value = null
+    return
+  }
   try {
     await chatStore.renameConversation(c.id, title)
+    renamingId.value = null
   } catch (e) {
-    message.error((e as Error).message)
+    message.error((e as Error).message) // 保持编辑态,输入不丢
   }
 }
 
@@ -106,7 +113,7 @@ async function onOpenConversation(id: number) {
         <button
           v-for="c in visibleConversations"
           :key="c.id"
-          class="glass-card btn-press w-full !p-3 text-left transition-colors"
+          class="group glass-card btn-press w-full !p-3 text-left transition-colors"
           :class="c.id === chatStore.currentId ? 'glass-card--selected' : 'hover:!border-gray-300 dark:hover:!border-white/10'"
           @click="onOpenConversation(c.id)"
         >
@@ -115,6 +122,7 @@ async function onOpenConversation(id: number) {
               v-if="renamingId === c.id"
               v-model:value="renameText"
               size="tiny"
+              autofocus
               class="min-w-0 flex-1"
               @keyup.enter="commitRename(c)"
               @keyup.esc="renamingId = null"
@@ -122,22 +130,23 @@ async function onOpenConversation(id: number) {
             />
             <span v-else class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>
             <div class="flex shrink-0 items-center gap-1">
-              <button
-                class="btn-press rounded p-0.5 transition-colors"
+              <!-- 内层用 span + .stop:button 嵌套 button 非法且点击会冒泡误开会话 -->
+              <span
+                class="btn-press cursor-pointer rounded p-0.5 transition-colors"
                 :class="c.favorite ? 'text-amber-400' : 'text-gray-400 hover:text-amber-400 dark:text-gray-600'"
                 title="收藏"
-                @click="chatStore.toggleFavorite(c.id)"
+                @click.stop="chatStore.toggleFavorite(c.id)"
               >
                 <Icon :icon="c.favorite ? 'mdi:star' : 'mdi:star-outline'" class="h-4 w-4" />
-              </button>
-              <button
+              </span>
+              <span
                 v-if="renamingId !== c.id"
-                class="btn-press rounded p-0.5 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300"
+                class="btn-press cursor-pointer rounded p-0.5 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300"
                 title="重命名"
-                @click="startRename(c)"
+                @click.stop="startRename(c)"
               >
                 <Icon icon="mdi:pencil-outline" class="h-4 w-4" />
-              </button>
+              </span>
               <n-popconfirm @positive-click="chatStore.removeConversation(c.id)">
                 <template #trigger>
                   <span class="text-gray-400 hover:text-red-400 dark:text-gray-600">
@@ -161,18 +170,52 @@ async function onOpenConversation(id: number) {
     <!-- 移动端会话抽屉 -->
     <n-drawer v-model:show="drawerOpen" placement="left" :width="280">
       <n-drawer-content title="会话">
+        <div class="mb-3 flex items-center justify-between">
+          <span class="text-xs text-gray-500">仅看收藏</span>
+          <n-switch v-model:value="onlyFavorites" size="small" />
+        </div>
         <div class="space-y-1.5">
           <button
-            v-for="c in chatStore.conversations"
+            v-for="c in visibleConversations"
             :key="c.id"
             class="glass-card btn-press w-full !p-3 text-left"
             :class="c.id === chatStore.currentId ? 'glass-card--selected' : ''"
             @click="onOpenConversation(c.id)"
           >
-            <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>
+            <div class="flex items-center justify-between gap-2">
+              <n-input
+                v-if="renamingId === c.id"
+                v-model:value="renameText"
+                size="tiny"
+                autofocus
+                class="min-w-0 flex-1"
+                @keyup.enter="commitRename(c)"
+                @keyup.esc="renamingId = null"
+                @blur="commitRename(c)"
+              />
+              <span v-else class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>
+              <div class="flex shrink-0 items-center gap-1">
+                <span
+                  class="btn-press cursor-pointer rounded p-0.5 transition-colors"
+                  :class="c.favorite ? 'text-amber-400' : 'text-gray-400 hover:text-amber-400 dark:text-gray-600'"
+                  title="收藏"
+                  @click.stop="chatStore.toggleFavorite(c.id)"
+                >
+                  <Icon :icon="c.favorite ? 'mdi:star' : 'mdi:star-outline'" class="h-4 w-4" />
+                </span>
+                <span
+                  v-if="renamingId !== c.id"
+                  class="btn-press cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300"
+                  title="重命名"
+                  @click.stop="startRename(c)"
+                >
+                  <Icon icon="mdi:pencil-outline" class="h-4 w-4" />
+                </span>
+              </div>
+            </div>
           </button>
-          <div v-if="!chatStore.conversations.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
-            暂无会话
+          <div v-if="!visibleConversations.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
+            {{ onlyFavorites ? '没有收藏的会话' : '暂无会话' }}
           </div>
         </div>
       </n-drawer-content>

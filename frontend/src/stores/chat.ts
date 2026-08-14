@@ -2,14 +2,17 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { streamChat } from '@/utils/sse'
 import * as conversationApi from '@/api/conversation'
-import type { ConversationView, RagSource } from '@/types'
+import type { ConversationView, MessageFeedback, RagSource } from '@/types'
+
+/** 流式期间本地新消息的占位 id:尚无服务端 id,不支持反馈 */
+const NEW_MESSAGE_ID = 0
 
 export interface ChatUiMessage {
   id: number
   role: 'USER' | 'ASSISTANT'
   content: string
   sources?: RagSource[]
-  feedback?: 'LIKE' | 'DISLIKE' | null
+  feedback?: MessageFeedback
   streaming?: boolean
 }
 
@@ -53,11 +56,12 @@ export const useChatStore = defineStore('chat', () => {
   async function send(question: string, kbId?: number) {
     if (streaming.value || !question.trim()) return
     streamError.value = null
-    messages.value.push({ id: 0, role: 'USER', content: question })
-    messages.value.push({ id: 0, role: 'ASSISTANT', content: '', streaming: true })
+    messages.value.push({ id: NEW_MESSAGE_ID, role: 'USER', content: question })
+    messages.value.push({ id: NEW_MESSAGE_ID, role: 'ASSISTANT', content: '', streaming: true })
     streaming.value = true
     abortController = new AbortController()
     const assistant = lastAssistant()
+    let aborted = false
     try {
       await streamChat(
         { conversationId: currentId.value ?? undefined, kbId, question },
@@ -79,13 +83,20 @@ export const useChatStore = defineStore('chat', () => {
         abortController.signal,
       )
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
+      if ((err as Error).name === 'AbortError') {
+        aborted = true
+      } else {
         streamError.value = (err as Error).message
       }
     } finally {
       assistant.streaming = false
       streaming.value = false
       abortController = null
+      // 成功流式结束后,本地占位消息回填服务端真实 id,否则 👍👎 永远不可用
+      if (!aborted && !streamError.value && currentId.value != null &&
+          messages.value.some((m) => m.id === NEW_MESSAGE_ID)) {
+        await openConversation(currentId.value)
+      }
     }
   }
 
@@ -112,9 +123,9 @@ export const useChatStore = defineStore('chat', () => {
     if (target) target.favorite = next
   }
 
-  async function setFeedback(index: number, feedback: 'LIKE' | 'DISLIKE' | null) {
+  async function setFeedback(index: number, feedback: MessageFeedback) {
     const msg = messages.value[index]
-    if (!msg || msg.id === 0) return // 流式中的本地消息尚无服务端 id,不支持反馈
+    if (!msg || msg.id === NEW_MESSAGE_ID) return // 流式中的本地消息尚无服务端 id,不支持反馈
     await conversationApi.setMessageFeedback(msg.id, feedback)
     msg.feedback = feedback
   }

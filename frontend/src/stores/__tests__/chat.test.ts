@@ -22,7 +22,7 @@ describe('chat store', () => {
     vi.clearAllMocks()
   })
 
-  it('send 流式追加:meta 回填会话、delta 累积、结束 streaming=false', async () => {
+  it('send 流式追加:meta 回填会话、delta 累积、结束回填真实 id', async () => {
     streamChatMock.mockImplementation(async (_payload, handlers) => {
       handlers.onMeta?.({ conversationId: 9 })
       handlers.onDelta?.('你')
@@ -30,16 +30,20 @@ describe('chat store', () => {
       handlers.onDone?.()
     })
     vi.mocked(list).mockResolvedValue([])
+    vi.mocked(messages).mockResolvedValue([
+      { id: 91, role: 'USER', content: '问题', createdAt: '' },
+      { id: 92, role: 'ASSISTANT', content: '你好', createdAt: '' },
+    ])
     const store = useChatStore()
 
     await store.send('问题', undefined)
 
     expect(store.currentId).toBe(9)
+    expect(messages).toHaveBeenCalledWith(9) // 流式结束回填服务端真实 id
     expect(store.messages.map((m) => m.role)).toEqual(['USER', 'ASSISTANT'])
     expect(store.messages[1].content).toBe('你好')
+    expect(store.messages[0].id).toBe(91)
     expect(store.streaming).toBe(false)
-    expect(store.messages[1].streaming).toBe(false)
-    expect(store.messages[0].content).toBe('问题')
   })
 
   it('中止不视为错误且保留已生成内容', async () => {
