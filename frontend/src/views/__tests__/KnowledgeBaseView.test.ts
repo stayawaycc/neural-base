@@ -23,6 +23,7 @@ vi.mock('@/components/FileUploader.vue', () => ({
 
 import { listKbs } from '@/api/kb'
 import { listDocuments } from '@/api/document'
+import type { DocumentItem } from '@/types'
 
 function mountView() {
   return mount(KnowledgeBaseView, {
@@ -49,9 +50,9 @@ describe('KnowledgeBaseView 骨架屏', () => {
 
   it('文档列表加载中显示骨架,数据到达后消失并渲染列表', async () => {
     vi.mocked(listKbs).mockResolvedValue([{ id: 1, name: 'kb', createdAt: '' }])
-    let resolveDocs!: (v: unknown) => void
+    let resolveDocs!: (v: DocumentItem[]) => void
     vi.mocked(listDocuments).mockImplementation(
-      () => new Promise((r) => (resolveDocs = r)),
+      () => new Promise<DocumentItem[]>((r) => (resolveDocs = r)),
     )
     const wrapper = mountView()
     await flushPromises()
