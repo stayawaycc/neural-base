@@ -90,6 +90,15 @@ class DailyNewsControllerTest {
     }
 
     @Test
+    void crawlRejectedWhileRunning() throws Exception {
+        String tk = token();
+        service.startCrawl(); // 制造 RUNNING 任务
+        mvc.perform(post("/api/news/crawl").header("Authorization", "Bearer " + tk))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("进行中")));
+    }
+
+    @Test
     void newsEndpointsRequireAuth() throws Exception {
         mvc.perform(get("/api/news")).andExpect(status().isUnauthorized());
     }

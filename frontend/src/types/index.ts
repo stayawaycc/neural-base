@@ -139,6 +139,7 @@ export interface FavoriteResult {
 export interface NewsItem {
   id: number
   sourceId?: number
+  sourceName?: string
   url?: string
   title: string
   category?: string

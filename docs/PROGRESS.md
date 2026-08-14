@@ -150,11 +150,8 @@
 
 ## 七、下一步建议
 
-> Phase 1-6：后端（知识库 RAG、AI 对话、八股文库）+ 前端主要页面（登录/知识库/对话/八股文/日报占位）已完成。
+> Phase 1-6：后端（知识库 RAG、AI 对话、八股文库、AI 日报）+ 前端全部页面（登录/Dashboard/知识库/对话/八股文/日报时间线）已完成。
 
-1. **前端收尾全部完成**（4/4：文档阅读器、亮色模式、动画打磨、延后项补做）
-2. **Phase 7/8** Docker 部署 + 部署文档
-3. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）、更多新闻源
-3. **Phase 7/8** Docker 部署 + 文档
-4. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）
-5. 八股文库遗留：JS 渲染站点需本机先 `playwright install chromium`（Java CLI：`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`）
+1. **Phase 7/8** Docker 部署 + 部署文档
+2. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）、更多新闻源
+3. 八股文库遗留：JS 渲染站点需本机先 `playwright install chromium`（Java CLI：`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`）

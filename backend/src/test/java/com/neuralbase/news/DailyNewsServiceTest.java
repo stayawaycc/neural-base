@@ -10,6 +10,7 @@ import com.neuralbase.service.DailyNewsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,6 +29,8 @@ class DailyNewsServiceTest {
     private DailyNewsMapper dailyNewsMapper;
     @Autowired
     private CrawlTaskMapper crawlTaskMapper;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void cleanUp() {
@@ -41,6 +44,8 @@ class DailyNewsServiceTest {
         service.startCrawl();
         service.runCrawlNow();
         assertThat(dailyNewsMapper.selectList(null)).hasSize(3); // 2 + 1 假件
+        // 假 ChatModel 返回非 JSON → 单篇摘要失败仍入库(summary null),任务仍 SUCCESS
+        assertThat(dailyNewsMapper.selectList(null)).allMatch(n -> n.getSummary() == null);
 
         service.startCrawl();
         service.runCrawlNow(); // 第二轮去重:不新增
@@ -49,6 +54,29 @@ class DailyNewsServiceTest {
         CrawlTask latest = crawlTaskMapper.selectList(
             new LambdaQueryWrapper<CrawlTask>().orderByDesc(CrawlTask::getId).last("LIMIT 1")).get(0);
         assertThat(latest.getStatus()).isEqualTo("SUCCESS");
+    }
+
+    @Test
+    void favoriteEmbedsAndRejectsDuplicate() {
+        service.startCrawl();
+        service.runCrawlNow();
+        var news = dailyNewsMapper.selectList(null);
+        long id = news.get(0).getId();
+        String url = news.get(0).getUrl();
+
+        service.favorite(id, 1L);
+        Long docId = jdbcTemplate.queryForObject(
+            "SELECT id FROM document WHERE file_type = 'NEWS' AND source_url = ? LIMIT 1",
+            Long.class, url);
+        assertThat(docId).isNotNull();
+        Integer vectors = jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM vector_store WHERE metadata->>'docId' = ?",
+            Integer.class, String.valueOf(docId));
+        assertThat(vectors).isGreaterThan(0);
+
+        assertThatThrownBy(() -> service.favorite(id, 1L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("已收藏");
     }
 
     @Test

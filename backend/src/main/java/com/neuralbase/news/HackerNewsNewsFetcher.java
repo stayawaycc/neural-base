@@ -46,9 +46,9 @@ public class HackerNewsNewsFetcher implements NewsFetcher {
         }
     }
 
-    static NewsItem parseItemJson(String json, long id) {
+    NewsItem parseItemJson(String json, long id) {
         try {
-            JsonNode node = new ObjectMapper().readTree(json);
+            JsonNode node = objectMapper.readTree(json);
             String title = node.path("title").asText(null);
             if (title == null || title.isBlank()) return null;
             String url = node.path("url").asText(null);

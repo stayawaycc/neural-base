@@ -18,17 +18,21 @@ public class GithubTrendingNewsFetcher implements NewsFetcher {
     @Override
     public List<NewsItem> fetch() {
         try {
-            return parseHtml(Jsoup.connect(TRENDING_URL)
+            var doc = Jsoup.connect(TRENDING_URL)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                 .timeout(15_000)
-                .get().html());
+                .get();
+            return parseDoc(doc);
         } catch (IOException e) {
             throw new RuntimeException("GitHub Trending 爬取失败", e);
         }
     }
 
     static List<NewsItem> parseHtml(String html) {
-        var doc = Jsoup.parse(html);
+        return parseDoc(Jsoup.parse(html));
+    }
+
+    private static List<NewsItem> parseDoc(org.jsoup.nodes.Document doc) {
         List<NewsItem> items = new ArrayList<>();
         for (var row : doc.select("article.Box-row")) {
             var a = row.selectFirst("h2 a");

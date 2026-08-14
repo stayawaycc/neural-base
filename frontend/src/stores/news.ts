@@ -1,6 +1,7 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import * as newsApi from '@/api/news'
+import { usePolling } from '@/utils/polling'
 import type { NewsItem, NewsTask } from '@/types'
 
 export const useNewsStore = defineStore('news', () => {
@@ -9,9 +10,11 @@ export const useNewsStore = defineStore('news', () => {
   const filterCategory = ref<string>('')
   const unreadOnly = ref(false)
 
-  const categories = computed(() =>
-    Array.from(new Set(items.value.map((n) => n.category).filter((c): c is string => !!c))),
-  )
+  // 固定五类 chips(规格:全部/大模型/框架/工具/论文/其他)
+  const categories = ['大模型', '框架', '工具', '论文', '其他'] as const
+
+  // 未读筛选走后端过滤(切换时重新拉取,避免本地与后端 LIMIT 200 不一致)
+  watch(unreadOnly, () => void load())
   const filtered = computed(() =>
     items.value.filter(
       (n) =>
@@ -20,7 +23,10 @@ export const useNewsStore = defineStore('news', () => {
     ),
   )
 
-  let pollTimer: number | null = null
+  const { start: startPolling, stop: stopPolling } = usePolling(async () => {
+    await refreshTask()
+    if (task.value && task.value.status !== 'RUNNING') stopPolling()
+  })
 
   async function load() {
     items.value = await newsApi.listNews({ unreadOnly: unreadOnly.value || undefined })
@@ -28,8 +34,7 @@ export const useNewsStore = defineStore('news', () => {
 
   async function refreshTask() {
     task.value = await newsApi.latestTask()
-    if (task.value?.status === 'RUNNING') startPolling()
-    else stopPolling()
+    if (task.value && task.value.status === 'RUNNING') startPolling()
   }
 
   async function triggerCrawl() {
@@ -50,18 +55,6 @@ export const useNewsStore = defineStore('news', () => {
 
   async function favorite(id: number, kbId: number) {
     await newsApi.favoriteNews(id, kbId)
-  }
-
-  function startPolling() {
-    stopPolling()
-    pollTimer = window.setInterval(() => void refreshTask(), 2000)
-  }
-
-  function stopPolling() {
-    if (pollTimer != null) {
-      clearInterval(pollTimer)
-      pollTimer = null
-    }
   }
 
   return {

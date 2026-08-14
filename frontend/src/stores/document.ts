@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import * as kbApi from '@/api/kb'
 import * as documentApi from '@/api/document'
+import { usePolling } from '@/utils/polling'
 import type { DocumentItem, Kb, SearchResult } from '@/types'
 
 export const useDocumentStore = defineStore('document', () => {
@@ -10,7 +11,13 @@ export const useDocumentStore = defineStore('document', () => {
   const documents = ref<DocumentItem[]>([])
   const searchResults = ref<SearchResult[] | null>(null)
 
-  let pollTimer: number | null = null
+  const { start: startPolling, stop: stopPolling } = usePolling(async () => {
+    await loadDocuments()
+    const pending = documents.value.some(
+      (d) => d.status === 'PENDING' || d.status === 'PROCESSING',
+    )
+    if (!pending) stopPolling()
+  })
 
   async function loadKbs() {
     kbs.value = await kbApi.listKbs()
@@ -55,25 +62,6 @@ export const useDocumentStore = defineStore('document', () => {
     await loadKbs()
   }
 
-  function startPolling() {
-    stopPolling()
-    pollTimer = window.setInterval(() => {
-      void (async () => {
-        await loadDocuments()
-        const pending = documents.value.some(
-          (d) => d.status === 'PENDING' || d.status === 'PROCESSING',
-        )
-        if (!pending) stopPolling()
-      })()
-    }, 2000)
-  }
-
-  function stopPolling() {
-    if (pollTimer != null) {
-      clearInterval(pollTimer)
-      pollTimer = null
-    }
-  }
 
   return {
     kbs,

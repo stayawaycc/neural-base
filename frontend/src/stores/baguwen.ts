@@ -1,6 +1,7 @@
 import { reactive, ref } from 'vue'
 import { defineStore } from 'pinia'
 import * as baguwenApi from '@/api/baguwen'
+import { usePolling } from '@/utils/polling'
 import type { BaguwenArticleView, ImportTask, TagCount } from '@/types'
 
 export const useBaguwenStore = defineStore('baguwen', () => {
@@ -9,8 +10,6 @@ export const useBaguwenStore = defineStore('baguwen', () => {
   const tags = ref<TagCount[]>([])
   const tasks = ref<ImportTask[]>([])
   const filter = reactive({ tag: '', keyword: '', page: 1, size: 20 })
-
-  let pollTimer: number | null = null
 
   async function loadTags() {
     tags.value = await baguwenApi.listTags()
@@ -53,29 +52,17 @@ export const useBaguwenStore = defineStore('baguwen', () => {
     return baguwenApi.favoriteArticle(id, kbId)
   }
 
-  function startPolling() {
-    stopPolling()
-    pollTimer = window.setInterval(() => {
-      void (async () => {
-        await refreshTasks()
-        const pending = tasks.value.some(
-          (t) => t.status === 'PENDING' || t.status === 'PROCESSING',
-        )
-        if (!pending) {
-          stopPolling()
-          await loadArticles()
-          await loadTags()
-        }
-      })()
-    }, 2000)
-  }
-
-  function stopPolling() {
-    if (pollTimer != null) {
-      clearInterval(pollTimer)
-      pollTimer = null
+  const { start: startPolling, stop: stopPolling } = usePolling(async () => {
+    await refreshTasks()
+    const pending = tasks.value.some(
+      (t) => t.status === 'PENDING' || t.status === 'PROCESSING',
+    )
+    if (!pending) {
+      stopPolling()
+      await loadArticles()
+      await loadTags()
     }
-  }
+  })
 
   return {
     articles,

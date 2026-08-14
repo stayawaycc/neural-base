@@ -150,6 +150,37 @@ public class DocumentService {
         return new DocumentContentView(doc.getId(), doc.getTitle(), doc.getFileType(), doc.getContent());
     }
 
+    /** 文本直入知识库的通用管线(八股收藏/新闻收藏共用):切片 → 建 READY Document → 幂等替换向量。返回切片数。 */
+    public int createEmbeddedDocument(Long kbId, String title, String fileType, String sourceUrl, String text) {
+        List<String> chunks = textChunker.chunk(text);
+        if (chunks.isEmpty()) {
+            throw new IllegalStateException("文本切片为空");
+        }
+        Document doc = new Document();
+        doc.setKbId(kbId);
+        doc.setTitle(title);
+        doc.setFileType(fileType);
+        doc.setSourceUrl(sourceUrl);
+        doc.setStatus("READY");
+        doc.setChunkCount(chunks.size());
+        doc.setContent(text);
+        documentMapper.insert(doc);
+        jdbcTemplate.update("DELETE FROM vector_store WHERE metadata->>'docId' = ?",
+            String.valueOf(doc.getId()));
+        List<org.springframework.ai.document.Document> aiDocs = new ArrayList<>();
+        for (int i = 0; i < chunks.size(); i++) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("docId", doc.getId());
+            metadata.put("kbId", kbId);
+            metadata.put("chunkIndex", i);
+            aiDocs.add(new org.springframework.ai.document.Document(chunks.get(i), metadata));
+        }
+        if (!aiDocs.isEmpty()) {
+            vectorStore.add(aiDocs);
+        }
+        return chunks.size();
+    }
+
     /** 存量文档回填:原文件仍在磁盘则重新提取全文并落库,否则原样返回。 */
     private Document backfillLegacyContent(Document doc) {
         if (doc.getFilePath() == null || doc.getFilePath().isBlank()) {

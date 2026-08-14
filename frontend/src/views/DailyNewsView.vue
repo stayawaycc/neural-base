@@ -41,7 +41,7 @@ async function onCrawl() {
   }
 }
 
-function openUrl(n: { id: number; url?: string }) {
+function openAndMarkRead(n: { id: number; url?: string }) {
   if (n.url) window.open(n.url, '_blank', 'noopener')
   void newsStore.markRead(n.id, true)
 }
@@ -97,6 +97,15 @@ async function onFavoriteConfirm() {
       </n-tag>
       <div class="flex flex-wrap gap-1.5">
         <n-tag
+          size="small"
+          :bordered="false"
+          :type="newsStore.filterCategory === '' ? 'warning' : 'default'"
+          class="cursor-pointer"
+          @click="newsStore.filterCategory = ''"
+        >
+          全部
+        </n-tag>
+        <n-tag
           v-for="c in newsStore.categories"
           :key="c"
           size="small"
@@ -126,7 +135,7 @@ async function onFavoriteConfirm() {
         <div class="flex items-start justify-between gap-2">
           <button
             class="text-left text-sm font-medium text-gray-900 hover:text-cyan-600 dark:text-gray-100 dark:hover:text-cyan-300"
-            @click="openUrl(n)"
+            @click="openAndMarkRead(n)"
           >
             {{ n.title }}
           </button>
@@ -150,6 +159,9 @@ async function onFavoriteConfirm() {
         </div>
         <p v-if="n.summary" class="mt-1 text-xs leading-relaxed text-gray-500">{{ n.summary }}</p>
         <p v-else class="mt-1 text-xs text-gray-400 dark:text-gray-600">暂无摘要</p>
+        <div v-if="n.sourceName" class="mt-1 text-[11px] text-gray-400 dark:text-gray-600">
+          {{ n.sourceName }}
+        </div>
       </div>
       <div v-if="!newsStore.filtered.length" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">
         还没有日报,点击右上角「立即爬取」

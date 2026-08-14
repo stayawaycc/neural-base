@@ -13,7 +13,7 @@
 | 1 | 首批信息源 | GitHub Trending(Jsoup 列表页)+ Hacker News(官方 API top 30);机器之心/InfoQ 等反爬风险源后续再加 |
 | 2 | AI 汇总 | 单篇一次 DeepSeek 调用:中文一句话摘要 + 固定分类(大模型/框架/工具/论文/其他);失败仍入库,summary 为 null |
 | 3 | 调度 | **不引入 Quartz**:Spring `@Scheduled` cron 配置化(`neuralbase.news.cron`,默认每日 8:00);手动触发 `POST /api/news/crawl` 异步执行 |
-| 4 | 手动爬取 | 用户明确要求:按钮/接口触发全源一轮;`crawl_task` 表记录;RUNNING 时拒绝重复触发(400) |
+| 4 | 手动爬取 | 用户明确要求:按钮/接口触发全源一轮;`crawl_task` 表记录;RUNNING 时拒绝重复触发(400,INSERT WHERE NOT EXISTS 原子实现,review 后修订) |
 | 5 | 前端 | 时间线页(卡片+分类彩标+摘要+原文链接)+ 一键收藏进 KB + 已读标记(单条/批量) |
 | 6 | 收藏管线 | 复用 Document + TextChunker + VectorStore(正文=标题+摘要),fileType 用 `NEWS` |
 
@@ -25,7 +25,7 @@
 
 - `crawler_source`:DataInitializer 种子写入两个源(GitHub Trending、Hacker News),`ON CONFLICT DO NOTHING`;`last_crawl` 每次爬取后更新
 - `daily_news`:`url` 去重判据(已存在跳过);`category` 存中文枚举值;`is_read` 默认 false
-- `crawl_task`:type=`DAILY_NEWS`;状态 PENDING/RUNNING/SUCCESS/FAILED;progress 0/50/100(爬取完成=50,汇总完成=100)
+- `crawl_task`:type=`DAILY_NEWS`;状态 RUNNING/SUCCESS/FAILED(PENDING 语义无价值,review 后修订为直接 RUNNING 创建);progress 0/50/100(爬取完成=50,汇总完成=100)
 
 ### 2.2 组件
 

@@ -45,9 +45,7 @@ public class BaguwenService {
     private final BaguwenArticleMapper articleMapper;
     private final BaguwenImportTaskMapper taskMapper;
     private final BaguwenQaPairMapper qaPairMapper;
-    private final TextChunker textChunker;
-    private final VectorStore vectorStore;
-    private final DocumentMapper documentMapper;
+    private final DocumentService documentService;
     private final KbMapper kbMapper;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -55,7 +53,7 @@ public class BaguwenService {
     public BaguwenService(ArticleCrawler articleCrawler, ContentExtractor contentExtractor,
                           BaguwenAiService baguwenAiService, BaguwenArticleMapper articleMapper,
                           BaguwenImportTaskMapper taskMapper, BaguwenQaPairMapper qaPairMapper,
-                          TextChunker textChunker, VectorStore vectorStore, DocumentMapper documentMapper,
+                          DocumentService documentService,
                           KbMapper kbMapper, JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
         this.articleCrawler = articleCrawler;
         this.contentExtractor = contentExtractor;
@@ -63,9 +61,7 @@ public class BaguwenService {
         this.articleMapper = articleMapper;
         this.taskMapper = taskMapper;
         this.qaPairMapper = qaPairMapper;
-        this.textChunker = textChunker;
-        this.vectorStore = vectorStore;
-        this.documentMapper = documentMapper;
+        this.documentService = documentService;
         this.kbMapper = kbMapper;
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
@@ -252,7 +248,7 @@ public class BaguwenService {
 
     // ---------- 收藏到知识库 ----------
 
-    /** 把文章的问答对按 Q/A 文本切片后 embedding 进指定 KB（复用现有 VectorStore 管线）。 */
+    /** 把文章的问答对按 Q/A 文本切片后 embedding 进指定 KB（复用 DocumentService 通用嵌入管线）。 */
     public FavoriteResult favorite(Long articleId, Long kbId) {
         if (kbMapper.selectById(kbId) == null) {
             throw new IllegalArgumentException("知识库不存在: " + kbId);
@@ -266,33 +262,9 @@ public class BaguwenService {
         for (BaguwenQaPair p : pairs) {
             sb.append("Q: ").append(p.getQuestion()).append("\nA: ").append(p.getAnswer()).append("\n");
         }
-        List<String> chunks = textChunker.chunk(sb.toString());
-        if (chunks.isEmpty()) {
-            throw new IllegalStateException("问答对文本切片为空: " + articleId);
-        }
-
-        Document doc = new Document();
-        doc.setKbId(kbId);
-        doc.setTitle(article.getTitle());
-        doc.setFileType("BAGUWEN");
-        doc.setSourceUrl(article.getUrl());
-        doc.setStatus("READY");
-        doc.setChunkCount(chunks.size());
-        doc.setContent(sb.toString());
-        documentMapper.insert(doc);
-
-        List<org.springframework.ai.document.Document> aiDocs = new ArrayList<>();
-        for (int i = 0; i < chunks.size(); i++) {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("docId", doc.getId());
-            metadata.put("kbId", kbId);
-            metadata.put("chunkIndex", i);
-            aiDocs.add(new org.springframework.ai.document.Document(chunks.get(i), metadata));
-        }
-        jdbcTemplate.update("DELETE FROM vector_store WHERE metadata->>'docId' = ?",
-            String.valueOf(doc.getId()));
-        vectorStore.add(aiDocs);
-        return new FavoriteResult(chunks.size());
+        int chunks = documentService.createEmbeddedDocument(kbId, article.getTitle(), "BAGUWEN",
+            article.getUrl(), sb.toString());
+        return new FavoriteResult(chunks);
     }
 
     // ---------- 辅助 ----------
