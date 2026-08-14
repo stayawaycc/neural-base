@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NButton, NModal, NSelect, NTag } from 'naive-ui'
+import { NButton, NModal, NSelect, NTabPane, NTabs, NTag } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { articleDetail, favoriteArticle } from '@/api/baguwen'
 import { listKbs } from '@/api/kb'
@@ -13,6 +13,7 @@ const router = useRouter()
 
 const detail = ref<BaguwenDetail | null>(null)
 const loading = ref(true)
+const activeTab = ref('qa')
 
 const favoriteModal = ref(false)
 const favoriteKbId = ref<number | null>(null)
@@ -90,32 +91,45 @@ async function onFavoriteConfirm() {
         原文链接 ↗
       </a>
     </div>
-    <div class="space-y-3">
-      <div v-for="(qa, i) in detail.qaPairs" :key="qa.id" class="glass-card !p-4">
-        <div class="flex items-start gap-2">
-          <span class="mt-0.5 shrink-0 text-sm text-gray-500">Q{{ i + 1 }}</span>
-          <div class="flex-1">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
-              <n-tag
-                v-if="difficultyMeta[qa.difficulty]"
-                size="tiny"
-                :type="difficultyMeta[qa.difficulty].type"
-                :bordered="false"
-              >
-                {{ difficultyMeta[qa.difficulty].label }}
-              </n-tag>
-            </div>
-            <div class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-              {{ qa.answer }}
+    <n-tabs v-model:value="activeTab" type="line">
+      <n-tab-pane name="qa" tab="问答">
+        <div class="space-y-3 pt-2">
+          <div v-for="(qa, i) in detail.qaPairs" :key="qa.id" class="glass-card !p-4">
+            <div class="flex items-start gap-2">
+              <span class="mt-0.5 shrink-0 text-sm text-gray-500">Q{{ i + 1 }}</span>
+              <div class="flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
+                  <n-tag
+                    v-if="difficultyMeta[qa.difficulty]"
+                    size="tiny"
+                    :type="difficultyMeta[qa.difficulty].type"
+                    :bordered="false"
+                  >
+                    {{ difficultyMeta[qa.difficulty].label }}
+                  </n-tag>
+                </div>
+                <div class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                  {{ qa.answer }}
+                </div>
+              </div>
             </div>
           </div>
+          <div v-if="!detail.qaPairs.length" class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
+            本文未提取到问答对
+          </div>
         </div>
-      </div>
-      <div v-if="!detail.qaPairs.length" class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
-        本文未提取到问答对
-      </div>
-    </div>
+      </n-tab-pane>
+      <n-tab-pane name="article" tab="原文">
+        <pre
+          v-if="detail.content"
+          class="whitespace-pre-wrap pt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+        >{{ detail.content }}</pre>
+        <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
+          未提取到原文
+        </div>
+      </n-tab-pane>
+    </n-tabs>
   </div>
   <div v-else class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">文章不存在</div>
 
