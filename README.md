@@ -27,7 +27,8 @@ PostgreSQL 16 + pgvector (业务表 + 向量同库)
 git clone <repo-url> && cd neural-base
 cp .env.example .env   # 填入 DB_PASSWORD、JWT_SECRET 与两个 AI key
 docker compose up -d --build
-# 打开 http://localhost:8080 访问前端(默认账号 admin / ADMIN_PASSWORD)
+# 前端 http://localhost:80;后端 API 直连 http://localhost:8080
+# 默认账号 admin / ADMIN_PASSWORD
 ```
 
 ## 本地开发
@@ -39,6 +40,17 @@ cd backend && mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081
 
 # 前端(vite 代理 → 8081)
 cd frontend && npm install && npm run dev
+```
+
+## 目录结构
+
+```
+neural-base/
+├── backend/          # Spring Boot 3 后端(REST + SSE + 定时任务 + Flyway 迁移)
+├── frontend/         # Vue 3 + Vite 前端(nginx 托管)
+├── docs/             # 设计文档、部署文档、进度记录、规格与计划
+├── docker-compose.yml
+└── .env.example
 ```
 
 ## 测试

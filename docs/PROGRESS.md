@@ -15,7 +15,7 @@
 | **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ✅ | 后端完成（前端仍 ❌） |
 | **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ✅ | 2026-08-14:GitHub Trending + Hacker News 两源、单篇中文摘要+五分类、`@Scheduled` 定时(未引入 Quartz)+ 手动触发 `/api/news/crawl`、任务状态机与去重、时间线页(筛选/已读/收藏进 KB)。真实冒烟:30 条真抓 + 30/30 真实摘要 |
 | **Phase 6** | UI 精细化打磨、动画、响应式 | ✅ | 主要页面完成（登录/知识库/对话/八股文/日报占位）+ 文档阅读器 + 亮色模式 + 动画打磨（2026-08-14）；延后项补做另列 |
-| **Phase 7** | Docker 本地部署、性能优化、压测 | ✅ | 2026-08-14:后端/前端 Dockerfile + nginx SPA 反代 + docker-compose 一键部署(压测按 YAGNI 裁决不做);本机无 Docker,容器实跑由用户在 Docker 环境按文档验收 |
+| **Phase 7** | Docker 本地部署、性能优化、压测 | ✅ | 2026-08-14:后端/前端 Dockerfile + nginx SPA 反代 + docker-compose 一键部署(压测按 YAGNI 裁决不做);本机无 Docker CLI,`docker compose config` 静态校验与容器实跑均留待 Docker 环境按文档验收(已如实记录);compose 变量与 .env.example 已人工交叉核对一致;review 修复 README 端口错误(80 前端/8080 后端) |
 | **Phase 8** | Docker 部署文档 | ✅ | 2026-08-14:README + docs/部署文档.md(环境变量表/备份/FAQ);application.yml 恢复跟踪为纯环境变量版,密钥迁移本地 .env |
 
 ---
