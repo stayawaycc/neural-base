@@ -135,3 +135,23 @@ export interface TagCount {
 export interface FavoriteResult {
   embedded: number
 }
+
+export interface NewsItem {
+  id: number
+  sourceId?: number
+  url?: string
+  title: string
+  category?: string
+  summary?: string
+  isRead: boolean
+  createdAt: string
+}
+
+export interface NewsTask {
+  id: number
+  type: string
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED'
+  progress: number
+  error?: string
+  createdAt: string
+}
