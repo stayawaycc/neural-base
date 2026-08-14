@@ -42,6 +42,12 @@ public class GithubTrendingNewsFetcher implements NewsFetcher {
         }
     }
 
+
+    @Override
+    public String sourceName() {
+        return "GitHub Trending";
+    }
+
     static List<NewsItem> parseHtml(String html) {
         return parseDoc(Jsoup.parse(html));
     }

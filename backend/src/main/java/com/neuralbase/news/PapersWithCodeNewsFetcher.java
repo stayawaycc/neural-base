@@ -42,6 +42,12 @@ public class PapersWithCodeNewsFetcher implements NewsFetcher {
         }
     }
 
+
+    @Override
+    public String sourceName() {
+        return "Papers with Code";
+    }
+
     static List<NewsItem> parseHtml(String html, String baseUri) {
         Document doc = Jsoup.parse(html, baseUri);
         List<NewsItem> items = new ArrayList<>();

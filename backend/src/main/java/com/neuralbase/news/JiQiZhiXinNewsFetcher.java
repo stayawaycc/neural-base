@@ -29,6 +29,12 @@ public class JiQiZhiXinNewsFetcher implements NewsFetcher {
         }
     }
 
+
+    @Override
+    public String sourceName() {
+        return "机器之心";
+    }
+
     static List<NewsItem> parseHtml(String html, String baseUri) {
         Document doc = Jsoup.parse(html, baseUri);
         List<NewsItem> items = new ArrayList<>();

@@ -46,6 +46,11 @@ public class HackerNewsNewsFetcher implements NewsFetcher {
         }
     }
 
+    @Override
+    public String sourceName() {
+        return "Hacker News";
+    }
+
     NewsItem parseItemJson(String json, long id) {
         try {
             JsonNode node = objectMapper.readTree(json);

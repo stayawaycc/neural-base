@@ -75,6 +75,9 @@ public class DailyNewsService {
         CrawlTask task = latestTaskByStatus(STATUS_RUNNING);
         try {
             for (NewsFetcher fetcher : fetchers) {
+                if (fetcher.sourceName() != null && !sourceEnabled(fetcher.sourceName())) {
+                    continue; // 停用的内置源跳过
+                }
                 List<NewsItem> items;
                 try {
                     items = fetcher.fetch();
@@ -189,6 +192,12 @@ public class DailyNewsService {
                 .eq(status != null, CrawlTask::getStatus, status)
                 .orderByDesc(CrawlTask::getId).last("LIMIT 1"))
             .stream().findFirst().orElse(null);
+    }
+
+    private boolean sourceEnabled(String name) {
+        CrawlerSource s = crawlerSourceMapper.selectOne(
+            new LambdaQueryWrapper<CrawlerSource>().eq(CrawlerSource::getName, name));
+        return s == null || Boolean.TRUE.equals(s.getEnabled());
     }
 
     private boolean exists(String url) {

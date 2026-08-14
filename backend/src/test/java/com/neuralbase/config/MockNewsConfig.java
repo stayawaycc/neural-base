@@ -14,14 +14,34 @@ public class MockNewsConfig {
     @Bean
     @Primary
     public NewsFetcher mockGithubFetcher() {
-        return () -> List.of(
-            new NewsItem("repo-1", "https://github.com/a/b", "GitHub Trending"),
-            new NewsItem("repo-2", "https://github.com/c/d", "GitHub Trending"));
+        return new NewsFetcher() {
+            @Override
+            public List<NewsItem> fetch() {
+                return List.of(
+                    new NewsItem("repo-1", "https://github.com/a/b", "GitHub Trending"),
+                    new NewsItem("repo-2", "https://github.com/c/d", "GitHub Trending"));
+            }
+
+            @Override
+            public String sourceName() {
+                return "GitHub Trending";
+            }
+        };
     }
 
     @Bean
     @Primary
     public NewsFetcher mockHnFetcher() {
-        return () -> List.of(new NewsItem("HN story", "https://news.ycombinator.com/item?id=9", "Hacker News"));
+        return new NewsFetcher() {
+            @Override
+            public List<NewsItem> fetch() {
+                return List.of(new NewsItem("HN story", "https://news.ycombinator.com/item?id=9", "Hacker News"));
+            }
+
+            @Override
+            public String sourceName() {
+                return "Hacker News";
+            }
+        };
     }
 }

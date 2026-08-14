@@ -45,6 +45,7 @@ public class DataInitializer implements CommandLineRunner {
         seedSource("Papers with Code", "https://paperswithcode.com", "html");
         seedSource("机器之心", "https://www.jiqizhixin.com/articles", "html");
         seedSource("InfoQ", "https://www.infoq.cn/", "html");
+        seedSource("GitHub Star AI", "https://api.github.com/search/repositories", "api");
     }
 
     private void seedSource(String name, String url, String type) {

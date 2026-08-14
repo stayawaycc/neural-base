@@ -37,6 +37,16 @@ class DailyNewsServiceTest {
         // 隔离:兄弟测试会遗留 RUNNING 任务与新闻行,先清空
         crawlTaskMapper.delete(null);
         dailyNewsMapper.delete(null);
+        jdbcTemplate.update("UPDATE crawler_source SET enabled = TRUE");
+    }
+
+    @Test
+    void disabledSourceIsSkipped() {
+        jdbcTemplate.update("UPDATE crawler_source SET enabled = FALSE WHERE name = 'GitHub Trending'");
+        jdbcTemplate.update("UPDATE crawler_source SET enabled = FALSE WHERE name = 'Hacker News'");
+        service.startCrawl();
+        service.runCrawlNow();
+        assertThat(dailyNewsMapper.selectList(null)).isEmpty();
     }
 
     @Test
