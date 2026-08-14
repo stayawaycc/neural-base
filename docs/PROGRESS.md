@@ -15,8 +15,8 @@
 | **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ✅ | 后端完成（前端仍 ❌） |
 | **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ✅ | 2026-08-14:GitHub Trending + Hacker News 两源、单篇中文摘要+五分类、`@Scheduled` 定时(未引入 Quartz)+ 手动触发 `/api/news/crawl`、任务状态机与去重、时间线页(筛选/已读/收藏进 KB)。真实冒烟:30 条真抓 + 30/30 真实摘要 |
 | **Phase 6** | UI 精细化打磨、动画、响应式 | ✅ | 主要页面完成（登录/知识库/对话/八股文/日报占位）+ 文档阅读器 + 亮色模式 + 动画打磨（2026-08-14）；延后项补做另列 |
-| **Phase 7** | Docker 本地部署、性能优化、压测 | ❌ | 未开始 |
-| **Phase 8** | Docker 部署文档 | ❌ | 未开始 |
+| **Phase 7** | Docker 本地部署、性能优化、压测 | ✅ | 2026-08-14:后端/前端 Dockerfile + nginx SPA 反代 + docker-compose 一键部署(压测按 YAGNI 裁决不做);本机无 Docker,容器实跑由用户在 Docker 环境按文档验收 |
+| **Phase 8** | Docker 部署文档 | ✅ | 2026-08-14:README + docs/部署文档.md(环境变量表/备份/FAQ);application.yml 恢复跟踪为纯环境变量版,密钥迁移本地 .env |
 
 ---
 
@@ -150,8 +150,8 @@
 
 ## 七、下一步建议
 
-> Phase 1-6：后端（知识库 RAG、AI 对话、八股文库、AI 日报）+ 前端全部页面（登录/Dashboard/知识库/对话/八股文/日报时间线）已完成。
+> **Roadmap Phase 1-8 全部完成**(2026-08-14)。剩余均为可选增强:
 
-1. **Phase 7/8** Docker 部署 + 部署文档
-2. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）、更多新闻源
-3. 八股文库遗留：JS 渲染站点需本机先 `playwright install chromium`（Java CLI：`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`）
+1. Docker 容器实跑验收(本机无 Docker,按 `docs/部署文档.md` 在有 Docker 环境执行)
+2. 可选:补 SpringDoc OpenAPI、Redis(若需要限流/队列)、更多新闻源
+3. 八股文库遗留:JS 渲染站点需本机先 `playwright install chromium`(Java CLI:`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`)
