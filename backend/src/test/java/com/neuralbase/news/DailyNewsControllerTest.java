@@ -42,6 +42,9 @@ class DailyNewsControllerTest {
         jdbcTemplate.update("DELETE FROM crawl_task");
         jdbcTemplate.update("DELETE FROM daily_news");
         jdbcTemplate.update("UPDATE crawler_source SET enabled = TRUE");
+        // 清自建源,保证来源计数断言幂等(内置 6 个保留)
+        jdbcTemplate.update("DELETE FROM crawler_source WHERE name NOT IN "
+            + "('GitHub Trending','Hacker News','Papers with Code','机器之心','InfoQ','GitHub Star AI')");
     }
 
     private String token() throws Exception {
@@ -111,6 +114,29 @@ class DailyNewsControllerTest {
                 .param("sourceId", String.valueOf(githubId)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.length()").value(2)); // 假件 GitHub 源 2 条
+    }
+
+    @Test
+    void sourceCrudRespectsBuiltinProtection() throws Exception {
+        String tk = token();
+
+        mvc.perform(post("/api/news/source")
+                .header("Authorization", "Bearer " + tk)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"我的技术站\",\"url\":\"https://example.com\",\"selector\":\"ul.news a\",\"enabled\":true}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.id").isNumber());
+
+        long builtinId = jdbcTemplate.queryForObject(
+            "SELECT id FROM crawler_source WHERE name = 'InfoQ'", Long.class);
+        mvc.perform(delete("/api/news/source/" + builtinId)
+                .header("Authorization", "Bearer " + tk))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("内置")));
+
+        mvc.perform(get("/api/news/source").header("Authorization", "Bearer " + tk))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(7)); // 6 内置 + 1 自建
     }
 
     @Test

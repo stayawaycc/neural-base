@@ -29,6 +29,8 @@ public class DailyNewsService {
     private static final String STATUS_RUNNING = "RUNNING";
     private static final String STATUS_SUCCESS = "SUCCESS";
     private static final String STATUS_FAILED = "FAILED";
+    private static final List<String> BUILTIN_SOURCES = List.of(
+        "GitHub Trending", "Hacker News", "Papers with Code", "机器之心", "InfoQ", "GitHub Star AI");
 
     private final List<NewsFetcher> fetchers;
     private final DailyNewsMapper dailyNewsMapper;
@@ -187,6 +189,53 @@ public class DailyNewsService {
 
     public CrawlTask latestTask() {
         return latestTaskByStatus(null);
+    }
+
+    // ---------- 来源管理 ----------
+
+    public List<CrawlerSource> sources() {
+        return crawlerSourceMapper.selectList(
+            new LambdaQueryWrapper<CrawlerSource>().orderByAsc(CrawlerSource::getId));
+    }
+
+    public CrawlerSource createSource(String name, String url, String selector, Boolean enabled) {
+        if (name == null || name.isBlank() || url == null || url.isBlank()) {
+            throw new IllegalArgumentException("名称与 URL 不能为空");
+        }
+        if (crawlerSourceMapper.selectCount(
+                new LambdaQueryWrapper<CrawlerSource>().eq(CrawlerSource::getName, name)) > 0) {
+            throw new IllegalArgumentException("同名来源已存在: " + name);
+        }
+        CrawlerSource s = new CrawlerSource();
+        s.setName(name);
+        s.setUrl(url);
+        s.setType("html");
+        s.setSelector(selector);
+        s.setEnabled(enabled == null || enabled);
+        crawlerSourceMapper.insert(s);
+        return s;
+    }
+
+    public CrawlerSource updateSource(Long id, String name, String url, String selector, Boolean enabled) {
+        CrawlerSource s = crawlerSourceMapper.selectById(id);
+        if (s == null) throw new IllegalArgumentException("来源不存在: " + id);
+        if (name != null && !name.isBlank() && !name.equals(s.getName())) {
+            s.setName(name);
+        }
+        if (url != null && !url.isBlank()) s.setUrl(url);
+        if (selector != null) s.setSelector(selector);
+        if (enabled != null) s.setEnabled(enabled);
+        crawlerSourceMapper.updateById(s);
+        return s;
+    }
+
+    public void deleteSource(Long id) {
+        CrawlerSource s = crawlerSourceMapper.selectById(id);
+        if (s == null) throw new IllegalArgumentException("来源不存在: " + id);
+        if (BUILTIN_SOURCES.contains(s.getName())) {
+            throw new IllegalArgumentException("内置来源不可删除,可停用: " + s.getName());
+        }
+        crawlerSourceMapper.deleteById(id);
     }
 
     // ---------- 私有 ----------

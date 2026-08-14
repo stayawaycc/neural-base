@@ -2,6 +2,7 @@ package com.neuralbase.controller;
 
 import com.neuralbase.common.Result;
 import com.neuralbase.entity.CrawlTask;
+import com.neuralbase.entity.CrawlerSource;
 import com.neuralbase.entity.DailyNews;
 import com.neuralbase.service.DailyNewsService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,9 +64,37 @@ public class DailyNewsController {
         return Result.ok(dailyNewsService.latestTask());
     }
 
+    @GetMapping("/source")
+    public Result<List<CrawlerSource>> sources() {
+        return Result.ok(dailyNewsService.sources());
+    }
+
+    @PostMapping("/source")
+    public Result<CrawlerSource> createSource(@RequestBody SourceRequest req) {
+        return Result.ok(dailyNewsService.createSource(
+            req == null ? null : req.name(), req == null ? null : req.url(),
+            req == null ? null : req.selector(), req == null ? null : req.enabled()));
+    }
+
+    @PutMapping("/source/{id}")
+    public Result<CrawlerSource> updateSource(@PathVariable Long id, @RequestBody SourceRequest req) {
+        return Result.ok(dailyNewsService.updateSource(id,
+            req == null ? null : req.name(), req == null ? null : req.url(),
+            req == null ? null : req.selector(), req == null ? null : req.enabled()));
+    }
+
+    @DeleteMapping("/source/{id}")
+    public Result<Void> deleteSource(@PathVariable Long id) {
+        dailyNewsService.deleteSource(id);
+        return Result.ok(null);
+    }
+
     public record ReadRequest(Boolean isRead) {
     }
 
     public record FavoriteRequest(Long kbId) {
+    }
+
+    public record SourceRequest(String name, String url, String selector, Boolean enabled) {
     }
 }
