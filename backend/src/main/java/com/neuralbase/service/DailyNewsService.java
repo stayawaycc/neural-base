@@ -82,6 +82,10 @@ public class DailyNewsService {
                     log.warn("新闻源爬取失败: {}", e.getMessage());
                     continue; // 单源失败不影响整轮
                 }
+                if (items.isEmpty()) {
+                    log.warn("新闻源无条目(可能为 JS 渲染壳或结构变更): {}", fetcher.getClass().getSimpleName());
+                    continue;
+                }
                 Long sourceId = sourceIdOf(items);
                 for (NewsItem item : items) {
                     if (exists(item.url())) continue; // 去重

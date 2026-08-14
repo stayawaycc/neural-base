@@ -5,6 +5,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,12 +23,21 @@ public class GithubTrendingNewsFetcher implements NewsFetcher {
     @Override
     public List<NewsItem> fetch() {
         try {
-            var doc = Jsoup.connect(TRENDING_URL)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                .timeout(15_000)
-                .get();
-            return parseDoc(doc);
-        } catch (IOException e) {
+            // JDK HttpClient(指纹更接近真实浏览器;连续多轮爬取时 Jsoup 易被限流)
+            HttpRequest request = HttpRequest.newBuilder(URI.create(TRENDING_URL))
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
+                .header("Accept", "text/html,application/xhtml+xml")
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+            String html = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build()
+                .send(request, HttpResponse.BodyHandlers.ofString())
+                .body();
+            return parseDoc(Jsoup.parse(html, TRENDING_URL));
+        } catch (IOException | InterruptedException e) {
             throw new RuntimeException("GitHub Trending 爬取失败", e);
         }
     }

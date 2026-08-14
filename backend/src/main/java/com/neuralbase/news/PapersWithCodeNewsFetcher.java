@@ -6,10 +6,15 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Papers with Code 首页论文卡爬取;解析逻辑独立成静态函数以便离线测试。 */
+/** Papers with Code 首页论文卡爬取。与 InfoQ 同理用 JDK HttpClient 拉取(指纹更接近真实浏览器),Jsoup 解析。 */
 @Component
 @Profile("!test")
 public class PapersWithCodeNewsFetcher implements NewsFetcher {
@@ -19,12 +24,20 @@ public class PapersWithCodeNewsFetcher implements NewsFetcher {
     @Override
     public List<NewsItem> fetch() {
         try {
-            Document doc = Jsoup.connect(BASE_URL)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
-                .timeout(15_000)
-                .get();
-            return parseHtml(doc.html(), BASE_URL);
-        } catch (IOException e) {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(BASE_URL))
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
+                .header("Accept", "text/html,application/xhtml+xml")
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
+            String html = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build()
+                .send(request, HttpResponse.BodyHandlers.ofString())
+                .body();
+            return parseHtml(html, BASE_URL);
+        } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Papers with Code 爬取失败", e);
         }
     }
