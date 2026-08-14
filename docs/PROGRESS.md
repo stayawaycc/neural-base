@@ -14,7 +14,7 @@
 | **Phase 3** | AI 对话（SSE 流式 + RAG 模式 + DeepSeek） | ✅ | 完成，真实冒烟双模式通过 |
 | **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ✅ | 后端完成（前端仍 ❌） |
 | **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ❌ | 未开始 |
-| **Phase 6** | UI 精细化打磨、动画、响应式 | ⏸ | 主要页面完成（登录/知识库/对话/八股文/日报占位）+ 文档阅读器 + 亮色模式（2026-08-13）；动画打磨未做 |
+| **Phase 6** | UI 精细化打磨、动画、响应式 | ✅ | 主要页面完成（登录/知识库/对话/八股文/日报占位）+ 文档阅读器 + 亮色模式 + 动画打磨（2026-08-14）；延后项补做另列 |
 | **Phase 7** | Docker 本地部署、性能优化、压测 | ❌ | 未开始 |
 | **Phase 8** | Docker 部署文档 | ❌ | 未开始 |
 
@@ -92,7 +92,7 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：后端 **89/89 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 58/58 绿** + typecheck 无输出 + build 成功（2026-08-13，亮色模式 review 修复后更新）
+- **自动化测试**：后端 **89/89 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 59/59 绿** + typecheck 无输出 + build 成功（2026-08-14，动画打磨后更新）
   - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除/竞态防护(11)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
   - 后端 Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
   - 前端：GlassCard(2)、user(3)、sse(7)、chat(5)、MarkdownRenderer(2)、ChatMessage(3)、document(5)、baguwen(3)
@@ -142,7 +142,8 @@
 
 **已完成**（2026-08-13）：
 - 登录页（cookie 认证）；Dashboard（四模块卡 + 最近会话/最近文档 + 日报占位）；知识库页（KB CRUD + 色板、拖拽上传、状态轮询、语义搜索、删除 + READY 文档点击进阅读器）；Chat 页（普通/知识库双模式、SSE fetch 流式 + 停止生成、Markdown 渲染 + 代码复制、会话列表/新建/删除）；八股文库（导入任务、标签筛选列表、详情问答对 + 难度徽标、收藏）；移动端（<768px）底部 Tab 导航；**文档阅读器**（两级树 + 分格式渲染 + md 目录抽屉/滚动高亮 + 下载/原文链接，规格 `docs/superpowers/specs/2026-08-13-document-reader-design.md`）；**亮色模式**（默认亮色 #f5f6f8 + 白卡片、顶栏太阳/月亮切换、localStorage 持久化、naive-ui/弹层/代码高亮全联动，CDP 真机验收亮暗两态，规格 `docs/superpowers/specs/2026-08-13-light-theme-design.md`，计划 `docs/superpowers/plans/2026-08-13-light-theme.md`）。
-- **未做项**：动画打磨（前端收尾 3/4）、延后项补做（4/4）、日报真实功能。
+- **动画打磨**（2026-08-14）：页面切换过渡（带 key 的 transition 重做，CDP 实验证实 out-in 仍空白、plain transition 稳定）、三个列表页 NSkeleton 骨架屏（Dashboard/KB/八股文，含确定性生命周期单测）、按压与涟漪微交互（.btn-press/.upload-ripple/.fade-in）、prefers-reduced-motion 全覆盖，规格 `docs/superpowers/specs/2026-08-13-animation-polish-design.md`。
+- **未做项**：延后项补做（前端收尾 4/4：会话重命名/收藏、消息点赞点踩、八股原文渲染）、日报真实功能。
 
 ---
 
@@ -150,7 +151,7 @@
 
 > Phase 1-6：后端（知识库 RAG、AI 对话、八股文库）+ 前端主要页面（登录/知识库/对话/八股文/日报占位）已完成。
 
-1. 前端收尾剩余：动画打磨、延后项补做（会话重命名/收藏、消息点赞点踩、八股原文渲染）——各走独立规格循环
+1. 前端收尾剩余：延后项补做（会话重命名/收藏、消息点赞点踩、八股原文渲染）——独立规格循环
 2. **Phase 5** AI 日报（Quartz 定时爬取 + DeepSeek 汇总；`crawler_source`/`daily_news`/`crawl_task` 表已建好）
 3. **Phase 7/8** Docker 部署 + 文档
 4. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）
