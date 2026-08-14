@@ -34,10 +34,13 @@ const pendingTaskCount = computed(
 )
 
 onMounted(async () => {
-  await baguwenStore.loadArticles()
-  await baguwenStore.loadTags()
-  await baguwenStore.refreshTasks()
-  listLoading.value = false
+  try {
+    await baguwenStore.loadArticles()
+    await baguwenStore.loadTags()
+    await baguwenStore.refreshTasks()
+  } finally {
+    listLoading.value = false // 请求失败也解除骨架,避免永驻
+  }
   if (pendingTaskCount.value) baguwenStore.startPolling()
 })
 

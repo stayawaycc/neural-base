@@ -130,9 +130,8 @@ body {
   animation: nb-blink 1s infinite;
 }
 
-/* 页面切换动画:App.vue 目前未包 <transition>(见其注释),此段供「动画打磨」子项目使用 */
-.page-enter-active,
-.page-leave-active {
+/* 页面切换动画(App.vue 已接线:key + plain transition;out-in 经 CDP 实验证实空白,勿改回) */
+.page-enter-active {
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
@@ -141,13 +140,16 @@ body {
   opacity: 0;
   transform: translateY(10px);
 }
-.page-leave-to {
-  opacity: 0;
+/* 旧页立即卸载:display:none 让 Vue 跳过 leave 等待,避免双视图同处文档流导致高度翻倍 */
+.page-leave-active {
+  display: none;
 }
 
-/* 按钮按压反馈(自绘元素专用,naive-ui 按钮自带动效不叠加) */
+/* 按钮按压反馈(自绘元素专用,naive-ui 按钮自带动效不叠加)。
+   注意:只调 duration 不写 property 列表——写 transition 简写会覆盖 glass-card 0.3s
+   悬停渐变与 transition-colors,统一 0.1s 加速是刻意取舍。 */
 .btn-press {
-  transition: transform 0.1s ease;
+  transition-duration: 0.1s;
 }
 .btn-press:active {
   transform: scale(0.97);
@@ -193,7 +195,7 @@ body {
     opacity: 1;
   }
   .btn-press {
-    transition: none;
+    transition-duration: 0s;
   }
   .btn-press:active {
     transform: none;
@@ -204,5 +206,8 @@ body {
   }
   .fade-in {
     animation: none;
+  }
+  .page-enter-active {
+    transition: opacity 0.1s ease;
   }
 }

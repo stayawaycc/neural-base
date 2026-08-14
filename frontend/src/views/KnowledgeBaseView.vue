@@ -31,9 +31,12 @@ const hasProcessing = computed(() =>
 )
 
 onMounted(async () => {
-  await docStore.loadKbs()
-  await docStore.loadDocuments()
-  listLoading.value = false
+  try {
+    await docStore.loadKbs()
+    await docStore.loadDocuments()
+  } finally {
+    listLoading.value = false // 请求失败也解除骨架,避免永驻
+  }
   if (hasProcessing.value) docStore.startPolling()
 })
 
@@ -159,11 +162,11 @@ function openReader(d: DocumentItem) {
         <div v-if="listLoading" class="space-y-2">
           <div v-for="i in 3" :key="i" class="glass-card flex items-center gap-3 !p-3">
             <n-skeleton text style="width: 60%" />
-            <n-skeleton text style="width: 20%" />
+            <n-skeleton text style="width: 56px; height: 20px" />
           </div>
         </div>
         <div v-else class="fade-in space-y-2">
-          <div v-for="d in docStore.documents" :key="d.id" class="glass-card !p-3">
+          <div v-for="d in docStore.documents" :key="d.id" class="glass-card btn-press !p-3">
             <div class="flex items-center justify-between gap-2">
               <span
                 class="truncate text-sm text-gray-800 dark:text-gray-200"

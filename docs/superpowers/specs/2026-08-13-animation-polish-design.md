@@ -79,7 +79,8 @@
 
 ## 四、文件清单
 
-**修改**:`frontend/src/App.vue`(transition 接线)、`frontend/src/styles/global.scss`(新类与 reduced-motion)、`frontend/src/views/DashboardView.vue`、`frontend/src/views/KnowledgeBaseView.vue`、`frontend/src/views/BaguwenView.vue`(骨架屏 + loading)、`frontend/src/components/FileUploader.vue`(涟漪类)、`frontend/src/components/AppHeader.vue`/`ModuleCard.vue`、`frontend/src/views/DocumentReaderView.vue`/`ChatView.vue`/`BaguwenDetailView.vue`(btn-press 类)
+**修改**:`frontend/src/App.vue`(transition 接线)、`frontend/src/styles/global.scss`(新类与 reduced-motion)、`frontend/src/views/DashboardView.vue`、`frontend/src/views/KnowledgeBaseView.vue`、`frontend/src/views/BaguwenView.vue`(骨架屏 + loading)、`frontend/src/components/FileUploader.vue`(涟漪类)、`frontend/src/components/AppHeader.vue`/`ModuleCard.vue`、`frontend/src/views/DocumentReaderView.vue`/`ChatView.vue`(btn-press 类)
+> 修订(2026-08-14 review):BaguwenDetailView 无自绘按钮(返回/收藏均为 naive-ui 按钮,全局约束不叠加),从清单移除;KB 文档行补 btn-press;KB 骨架补徽标形状块。
 
 ## 五、验收标准
 
