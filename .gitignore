@@ -8,5 +8,4 @@ dist/
 .env
 *.log
 backend/uploads/
-backend/src/main/resources/application.yml
 .superpowers/
