@@ -2,9 +2,9 @@ package com.neuralbase.news;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.LoadState;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.LoadState;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.context.annotation.Profile;
