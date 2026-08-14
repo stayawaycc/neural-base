@@ -6,9 +6,12 @@ vi.mock('@/api/conversation', () => ({
   list: vi.fn(),
   messages: vi.fn(),
   remove: vi.fn(),
+  renameConversation: vi.fn(),
+  toggleFavorite: vi.fn(),
+  setMessageFeedback: vi.fn(),
 }))
 
-import { list, messages, remove } from '@/api/conversation'
+import { list, messages, remove, renameConversation, toggleFavorite, setMessageFeedback } from '@/api/conversation'
 
 const streamChatMock = vi.hoisted(() => vi.fn())
 vi.mock('@/utils/sse', () => ({ streamChat: streamChatMock }))
@@ -80,7 +83,7 @@ describe('chat store', () => {
 
   it('加载历史消息与删除会话', async () => {
     vi.mocked(list).mockResolvedValue([
-      { id: 1, title: '旧会话', createdAt: '', updatedAt: '' },
+      { id: 1, title: '旧会话', favorite: false, createdAt: '', updatedAt: '' },
     ])
     vi.mocked(messages).mockResolvedValue([
       { id: 1, role: 'USER', content: '你好', createdAt: '' },
@@ -99,5 +102,33 @@ describe('chat store', () => {
     await store.removeConversation(1)
     expect(remove).toHaveBeenCalledWith(1)
     expect(store.currentId).toBeNull()
+  })
+
+  it('renameConversation 更新列表标题', async () => {
+    vi.mocked(renameConversation).mockResolvedValue({
+      id: 1, title: '新名', favorite: false, createdAt: '', updatedAt: '',
+    })
+    const store = useChatStore()
+    store.conversations = [{ id: 1, title: '旧名', favorite: false, createdAt: '', updatedAt: '' }]
+    await store.renameConversation(1, '新名')
+    expect(renameConversation).toHaveBeenCalledWith(1, '新名')
+    expect(store.conversations[0].title).toBe('新名')
+  })
+
+  it('toggleFavorite 切换并更新列表', async () => {
+    vi.mocked(toggleFavorite).mockResolvedValue(true)
+    const store = useChatStore()
+    store.conversations = [{ id: 1, title: 'a', favorite: false, createdAt: '', updatedAt: '' }]
+    await store.toggleFavorite(1)
+    expect(store.conversations[0].favorite).toBe(true)
+  })
+
+  it('setFeedback 写库并更新本地消息', async () => {
+    vi.mocked(setMessageFeedback).mockResolvedValue(null)
+    const store = useChatStore()
+    store.messages = [{ id: 9, role: 'ASSISTANT', content: 'hi' }]
+    await store.setFeedback(0, 'LIKE')
+    expect(setMessageFeedback).toHaveBeenCalledWith(9, 'LIKE')
+    expect(store.messages[0].feedback).toBe('LIKE')
   })
 })

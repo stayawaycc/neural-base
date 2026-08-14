@@ -5,9 +5,11 @@ import * as conversationApi from '@/api/conversation'
 import type { ConversationView, RagSource } from '@/types'
 
 export interface ChatUiMessage {
+  id: number
   role: 'USER' | 'ASSISTANT'
   content: string
   sources?: RagSource[]
+  feedback?: 'LIKE' | 'DISLIKE' | null
   streaming?: boolean
 }
 
@@ -30,9 +32,11 @@ export const useChatStore = defineStore('chat', () => {
     currentId.value = id
     const history = await conversationApi.messages(id)
     messages.value = history.map((m) => ({
+      id: m.id,
       role: m.role,
       content: m.content,
       sources: m.sources,
+      feedback: m.feedback,
     }))
     streamError.value = null
   }
@@ -49,8 +53,8 @@ export const useChatStore = defineStore('chat', () => {
   async function send(question: string, kbId?: number) {
     if (streaming.value || !question.trim()) return
     streamError.value = null
-    messages.value.push({ role: 'USER', content: question })
-    messages.value.push({ role: 'ASSISTANT', content: '', streaming: true })
+    messages.value.push({ id: 0, role: 'USER', content: question })
+    messages.value.push({ id: 0, role: 'ASSISTANT', content: '', streaming: true })
     streaming.value = true
     abortController = new AbortController()
     const assistant = lastAssistant()
@@ -96,6 +100,25 @@ export const useChatStore = defineStore('chat', () => {
     await loadConversations()
   }
 
+  async function renameConversation(id: number, title: string) {
+    const updated = await conversationApi.renameConversation(id, title)
+    const target = conversations.value.find((c) => c.id === id)
+    if (target) target.title = updated.title
+  }
+
+  async function toggleFavorite(id: number) {
+    const next = await conversationApi.toggleFavorite(id)
+    const target = conversations.value.find((c) => c.id === id)
+    if (target) target.favorite = next
+  }
+
+  async function setFeedback(index: number, feedback: 'LIKE' | 'DISLIKE' | null) {
+    const msg = messages.value[index]
+    if (!msg || msg.id === 0) return // 流式中的本地消息尚无服务端 id,不支持反馈
+    await conversationApi.setMessageFeedback(msg.id, feedback)
+    msg.feedback = feedback
+  }
+
   // 取末尾助手消息(流式回调的目标对象)
   function lastAssistant(): ChatUiMessage {
     const last = messages.value[messages.value.length - 1]
@@ -115,5 +138,8 @@ export const useChatStore = defineStore('chat', () => {
     send,
     stopStream,
     removeConversation,
+    renameConversation,
+    toggleFavorite,
+    setFeedback,
   }
 })

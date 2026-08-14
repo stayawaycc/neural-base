@@ -65,6 +65,7 @@ export interface ConversationView {
   id: number
   title: string
   kbId?: number
+  favorite: boolean
   createdAt: string
   updatedAt: string
   lastMessageContent?: string
@@ -75,6 +76,7 @@ export interface MessageView {
   role: 'USER' | 'ASSISTANT'
   content: string
   sources?: RagSource[]
+  feedback?: 'LIKE' | 'DISLIKE' | null
   createdAt: string
 }
 
