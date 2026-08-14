@@ -34,4 +34,28 @@ describe('ChatMessage', () => {
     })
     expect(wrapper.find('.nb-cursor').exists()).toBe(false)
   })
+
+  it('助手非流式消息渲染 👍👎,点击高亮项 emit null 取消', async () => {
+    const wrapper = mount(ChatMessage, {
+      props: { role: 'ASSISTANT', content: '回答', feedback: 'LIKE' },
+    })
+    const likeBtn = wrapper.find('button.fb-like')
+    const dislikeBtn = wrapper.find('button.fb-dislike')
+    expect(likeBtn.exists()).toBe(true)
+    expect(dislikeBtn.exists()).toBe(true)
+    expect(likeBtn.attributes('class')).toContain('fb-active')
+    await likeBtn.trigger('click')
+    expect(wrapper.emitted('feedback')?.[0]).toEqual([null])
+    await dislikeBtn.trigger('click')
+    expect(wrapper.emitted('feedback')?.[1]).toEqual(['DISLIKE'])
+  })
+
+  it('流式与用户消息不显示反馈按钮', () => {
+    const streaming = mount(ChatMessage, {
+      props: { role: 'ASSISTANT', content: '', streaming: true },
+    })
+    expect(streaming.find('button.fb-like').exists()).toBe(false)
+    const user = mount(ChatMessage, { props: { role: 'USER', content: '你好' } })
+    expect(user.find('button.fb-like').exists()).toBe(false)
+  })
 })

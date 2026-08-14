@@ -2,12 +2,19 @@
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import type { RagSource } from '@/types'
 
-defineProps<{
+const props = defineProps<{
   role: 'USER' | 'ASSISTANT'
   content: string
   sources?: RagSource[]
   streaming?: boolean
+  feedback?: 'LIKE' | 'DISLIKE' | null
 }>()
+
+const emit = defineEmits<{ feedback: ['LIKE' | 'DISLIKE' | null] }>()
+
+function onFeedback(type: 'LIKE' | 'DISLIKE') {
+  emit('feedback', props.feedback === type ? null : type)
+}
 </script>
 
 <template>
@@ -34,6 +41,24 @@ defineProps<{
         <div class="text-[15px] leading-relaxed text-gray-900 dark:text-gray-100">
           <MarkdownRenderer :content="content" />
           <span v-if="streaming" class="nb-cursor" />
+        </div>
+        <div v-if="role === 'ASSISTANT' && !streaming" class="mt-1.5 flex items-center gap-2">
+          <button
+            class="fb-like btn-press rounded p-1 text-xs transition-colors"
+            :class="feedback === 'LIKE' ? 'fb-active text-cyan-600 dark:text-cyan-300' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+            title="赞"
+            @click="onFeedback('LIKE')"
+          >
+            <span class="text-sm leading-none">👍</span>
+          </button>
+          <button
+            class="fb-dislike btn-press rounded p-1 text-xs transition-colors"
+            :class="feedback === 'DISLIKE' ? 'fb-active text-red-500 dark:text-red-300' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+            title="踩"
+            @click="onFeedback('DISLIKE')"
+          >
+            <span class="text-sm leading-none">👎</span>
+          </button>
         </div>
       </div>
     </div>
