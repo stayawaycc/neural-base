@@ -27,12 +27,15 @@ public class ConversationService {
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
     private final ObjectMapper objectMapper;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     public ConversationService(ConversationMapper conversationMapper, MessageMapper messageMapper,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.conversationMapper = conversationMapper;
         this.messageMapper = messageMapper;
         this.objectMapper = objectMapper;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public Conversation create(String title, Long kbId) {
@@ -101,6 +104,23 @@ public class ConversationService {
         c.setFavorite(next);
         conversationMapper.updateById(c);
         return next;
+    }
+
+    public void setFeedback(Long messageId, String feedback) {
+        Message m = messageMapper.selectById(messageId);
+        if (m == null) {
+            throw new IllegalArgumentException("消息不存在: " + messageId);
+        }
+        if (feedback != null && !feedback.equals("LIKE") && !feedback.equals("DISLIKE")) {
+            throw new IllegalArgumentException("feedback 只能是 LIKE/DISLIKE/null");
+        }
+        if (feedback == null) {
+            // MyBatis-Plus updateById 默认忽略 null 字段,取消反馈必须走 SQL
+            jdbcTemplate.update("UPDATE message SET feedback = NULL WHERE id = ?", messageId);
+        } else {
+            m.setFeedback(feedback);
+            messageMapper.updateById(m);
+        }
     }
 
     public void delete(Long conversationId) {
