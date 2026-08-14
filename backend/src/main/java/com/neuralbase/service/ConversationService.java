@@ -80,6 +80,29 @@ public class ConversationService {
         return messages.stream().map(this::toView).toList();
     }
 
+    public ConversationView rename(Long id, String title) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("标题不能为空");
+        }
+        if (title.length() > 100) {
+            throw new IllegalArgumentException("标题过长(最多 100 字符)");
+        }
+        Conversation c = get(id);
+        c.setTitle(title);
+        c.setUpdatedAt(OffsetDateTime.now());
+        conversationMapper.updateById(c);
+        return list().stream().filter(v -> v.id().equals(id)).findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("会话不存在: " + id));
+    }
+
+    public boolean toggleFavorite(Long id) {
+        Conversation c = get(id);
+        boolean next = !Boolean.TRUE.equals(c.getFavorite());
+        c.setFavorite(next);
+        conversationMapper.updateById(c);
+        return next;
+    }
+
     public void delete(Long conversationId) {
         conversationMapper.deleteById(conversationId);   // message 由 DB CASCADE 删除
     }

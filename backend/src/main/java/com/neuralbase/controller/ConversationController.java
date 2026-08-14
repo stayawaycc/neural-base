@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,6 +43,16 @@ public class ConversationController {
         return Result.ok(conversationService.messages(id));
     }
 
+    @PutMapping("/{id}")
+    public Result<ConversationView> rename(@PathVariable Long id, @RequestBody RenameRequest req) {
+        return Result.ok(conversationService.rename(id, req == null ? null : req.title()));
+    }
+
+    @PutMapping("/{id}/favorite")
+    public Result<Boolean> toggleFavorite(@PathVariable Long id) {
+        return Result.ok(conversationService.toggleFavorite(id));
+    }
+
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         conversationService.delete(id);
@@ -49,5 +60,8 @@ public class ConversationController {
     }
 
     public record CreateConversationRequest(String title, Long kbId) {
+    }
+
+    public record RenameRequest(String title) {
     }
 }
