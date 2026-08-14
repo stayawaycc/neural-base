@@ -50,6 +50,12 @@ public class BaguwenController {
         return Result.ok(task);
     }
 
+    @DeleteMapping("/tasks/{id}")
+    public Result<Void> deleteTask(@PathVariable Long id) {
+        baguwenService.deleteTask(id);
+        return Result.ok(null);
+    }
+
     @GetMapping
     public Result<Page<BaguwenArticleView>> list(@RequestParam(required = false) String tag,
                                                  @RequestParam(required = false) String keyword,

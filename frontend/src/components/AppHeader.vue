@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { NDropdown } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
@@ -8,6 +8,7 @@ import { useThemeStore } from '@/stores/theme'
 
 const userStore = useUserStore()
 const router = useRouter()
+const route = useRoute()
 const themeStore = useThemeStore()
 
 const navs = [
@@ -17,6 +18,11 @@ const navs = [
   { name: 'baguwen', label: '八股文', path: '/baguwen' },
   { name: 'news', label: 'AI 日报', path: '/news' },
 ]
+
+// 详情子路径(如 /baguwen/1、/kb/1/reader/3)也保持对应导航高亮
+function isActive(path: string) {
+  return route.path === path || route.path.startsWith(path + '/')
+}
 
 const initial = computed(() => (userStore.user?.username ?? '?').charAt(0).toUpperCase())
 
@@ -36,9 +42,11 @@ async function onUserSelect(key: string) {
     style="background: var(--nb-header-bg); border-color: var(--nb-border)"
   >
     <div class="mx-auto flex h-full max-w-7xl items-center gap-2 px-4">
-      <RouterLink to="/" class="flex shrink-0 items-center gap-2">
-        <span class="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400" />
-        <span class="text-sm font-semibold tracking-wide text-gray-900 dark:text-gray-100">NeuralBase</span>
+      <RouterLink to="/" class="flex shrink-0 items-center gap-2.5">
+        <span class="nb-brand-badge h-8 w-8">
+          <Icon icon="mdi:brain" class="h-5 w-5 text-white" />
+        </span>
+        <span class="text-[15px] font-semibold tracking-tight text-gray-900 dark:text-gray-100">NeuralBase</span>
       </RouterLink>
       <nav class="ml-6 hidden items-center gap-1 md:flex">
         <RouterLink
@@ -46,6 +54,7 @@ async function onUserSelect(key: string) {
           :key="n.name"
           :to="n.path"
           class="nav-link rounded-lg px-3 py-1.5 text-sm transition-colors"
+          :class="{ 'nav-link--active': isActive(n.path) }"
         >
           {{ n.label }}
         </RouterLink>
@@ -64,7 +73,7 @@ async function onUserSelect(key: string) {
             class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
           >
             <span
-              class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 text-xs font-semibold text-black"
+              class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 text-xs font-semibold text-white"
             >
               {{ initial }}
             </span>
@@ -79,12 +88,28 @@ async function onUserSelect(key: string) {
 <style scoped>
 .nav-link {
   color: var(--nb-text-secondary);
+  position: relative;
 }
 .nav-link:hover {
   color: var(--nb-text-primary);
-}
-.nav-link.router-link-active {
-  color: var(--nb-text-primary);
   background: var(--nb-nav-active-bg);
+}
+.nav-link.router-link-active,
+.nav-link--active {
+  color: var(--nb-text-primary);
+  font-weight: 500;
+}
+/* 激活导航:品牌渐变下划线 */
+.nav-link.router-link-active::after,
+.nav-link--active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--nb-grad-brand);
 }
 </style>

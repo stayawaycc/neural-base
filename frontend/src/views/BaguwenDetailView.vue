@@ -63,53 +63,68 @@ async function onFavoriteConfirm() {
 
 <template>
   <div v-if="loading" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">加载中…</div>
-  <div v-else-if="detail" class="mx-auto max-w-3xl space-y-4">
-    <div class="flex items-start justify-between gap-3">
-      <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ detail.title }}</h1>
-      <div class="flex shrink-0 items-center gap-2">
-        <n-button quaternary size="small" @click="router.back()">
-          <template #icon><Icon icon="mdi:arrow-left" class="h-4 w-4" /></template>
-          返回
-        </n-button>
-        <n-button size="small" @click="openFavorite">
-          <template #icon><Icon icon="mdi:bookmark-plus-outline" class="h-4 w-4" /></template>
-          收藏
-        </n-button>
-      </div>
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <n-tag v-for="t in detail.tags" :key="t" size="small" :bordered="false" type="warning">
-        {{ t }}
-      </n-tag>
-      <a
-        v-if="detail.url"
-        :href="detail.url"
-        target="_blank"
-        rel="noopener"
-        class="text-xs text-cyan-600 hover:underline dark:text-cyan-400"
+  <div v-else-if="detail" class="mx-auto max-w-3xl space-y-5">
+    <!-- 头部:返回 + 徽章 + 标题/标签 + 收藏 -->
+    <div class="flex items-center gap-3">
+      <button
+        class="btn-press flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
+        title="返回"
+        @click="router.back()"
       >
-        原文链接 ↗
-      </a>
+        <Icon icon="mdi:arrow-left" class="h-5 w-5" />
+      </button>
+      <span class="nb-brand-badge h-9 w-9 shrink-0">
+        <Icon icon="mdi:file-document-multiple-outline" class="h-5 w-5 text-white" />
+      </span>
+      <div class="min-w-0 flex-1">
+        <h1 class="truncate text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+          {{ detail.title }}
+        </h1>
+        <div class="mt-1 flex flex-wrap items-center gap-2">
+          <n-tag v-for="t in detail.tags" :key="t" size="tiny" :bordered="false">
+            {{ t }}
+          </n-tag>
+          <a
+            v-if="detail.url"
+            :href="detail.url"
+            target="_blank"
+            rel="noopener"
+            class="text-xs text-cyan-600 hover:underline dark:text-cyan-400"
+          >
+            原文链接 ↗
+          </a>
+        </div>
+      </div>
+      <n-button secondary size="small" class="shrink-0" @click="openFavorite">
+        <template #icon><Icon icon="mdi:bookmark-plus-outline" class="h-4 w-4" /></template>
+        收藏
+      </n-button>
     </div>
+
     <n-tabs v-model:value="activeTab" type="line">
       <n-tab-pane name="qa" tab="问答">
         <div class="space-y-3 pt-2">
-          <div v-for="(qa, i) in detail.qaPairs" :key="qa.id" class="glass-card !p-4">
-            <div class="flex items-start gap-2">
-              <span class="mt-0.5 shrink-0 text-sm text-gray-500">Q{{ i + 1 }}</span>
-              <div class="flex-1">
+          <div
+            v-for="(qa, i) in detail.qaPairs"
+            :key="qa.id"
+            class="glass-card glass-card--amber glass-card--hover !p-5"
+          >
+            <div class="flex items-start gap-3">
+              <span class="qa-badge">{{ i + 1 }}</span>
+              <div class="min-w-0 flex-1">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
+                  <span class="text-[15px] font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
                   <n-tag
                     v-if="difficultyMeta[qa.difficulty]"
                     size="tiny"
                     :type="difficultyMeta[qa.difficulty].type"
                     :bordered="false"
+                    class="shrink-0"
                   >
                     {{ difficultyMeta[qa.difficulty].label }}
                   </n-tag>
                 </div>
-                <div class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                <div class="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
                   {{ qa.answer }}
                 </div>
               </div>
@@ -150,3 +165,22 @@ async function onFavoriteConfirm() {
     </div>
   </n-modal>
 </template>
+
+<style scoped>
+/* 问答序号徽章:琥珀淡底数字 */
+.qa-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nb-accent-amber);
+  background: color-mix(in srgb, var(--nb-accent-amber) 14%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--nb-accent-amber) 22%, transparent);
+}
+</style>

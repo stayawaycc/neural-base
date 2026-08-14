@@ -16,6 +16,8 @@ export const listTasks = (status?: ImportTaskStatus) =>
 
 export const retryTask = (id: number) => http.post<ImportTask>(`/baguwen/tasks/${id}/retry`)
 
+export const deleteTask = (id: number) => http.del<null>(`/baguwen/tasks/${id}`)
+
 export const listArticles = (params: { tag?: string; keyword?: string; page: number; size: number }) =>
   http.get<Page<BaguwenArticleView>>('/baguwen', {
     tag: params.tag,

@@ -99,15 +99,86 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
 </template>
 
 <style scoped>
-.md-body :deep(p) {
-  margin: 0.5em 0;
+/* AI 回答排版:全部走 CSS 变量双主题化(旧版深色专用样式在浅色下隐形,已修复) */
+.md-body {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--nb-text-primary);
 }
+.md-body :deep(p) {
+  margin: 0.6em 0;
+}
+/* 标题层级 */
+.md-body :deep(h1),
+.md-body :deep(h2),
+.md-body :deep(h3),
+.md-body :deep(h4) {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  margin: 1.4em 0 0.5em;
+}
+.md-body :deep(h1) {
+  font-size: 1.35em;
+}
+.md-body :deep(h2) {
+  font-size: 1.2em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--nb-border);
+}
+.md-body :deep(h3) {
+  font-size: 1.08em;
+}
+.md-body :deep(h4) {
+  font-size: 1em;
+  color: var(--nb-text-secondary);
+}
+/* 列表 */
+.md-body :deep(ul),
+.md-body :deep(ol) {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+.md-body :deep(li) {
+  margin: 0.3em 0;
+}
+.md-body :deep(li::marker) {
+  color: var(--nb-text-faint);
+}
+/* 引用块:青色光条 + 淡青底(签名元素) */
+.md-body :deep(blockquote) {
+  margin: 0.9em 0;
+  padding: 0.6em 1em;
+  border-left: 3px solid var(--nb-accent-cyan);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--nb-accent-cyan) 6%, transparent);
+  color: var(--nb-text-secondary);
+}
+.md-body :deep(blockquote p) {
+  margin: 0.3em 0;
+}
+/* 行内代码 */
+.md-body :deep(code) {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--nb-nav-active-bg);
+  border: 1px solid var(--nb-border);
+  border-radius: 5px;
+  padding: 0.15em 0.4em;
+}
+/* 代码块(背景由 hljs 主题 css 提供,这里补边框/圆角/复制按钮) */
 .md-body :deep(pre.code-block) {
   position: relative;
-  margin: 0.75em 0;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 0.9em 0;
+  border-radius: 12px;
+  border: 1px solid var(--nb-border);
   overflow: hidden;
+}
+.md-body :deep(pre.code-block code) {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.9em;
 }
 .md-body :deep(.code-copy-btn) {
   position: absolute;
@@ -115,29 +186,54 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
   right: 8px;
   padding: 2px 10px;
   font-size: 12px;
-  color: #9ca3af;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--nb-text-faint);
+  background: var(--nb-card-bg);
+  border: 1px solid var(--nb-border);
   border-radius: 6px;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 .md-body :deep(.code-copy-btn:hover) {
-  color: #f3f4f6;
+  color: var(--nb-text-primary);
 }
-.md-body :deep(code) {
-  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-}
+/* 链接:下划线用淡化青色,悬停加深 */
 .md-body :deep(a) {
-  color: #22d3ee;
+  color: var(--nb-accent-cyan);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--nb-accent-cyan) 40%, transparent);
+  transition: border-color 0.2s ease;
 }
+.md-body :deep(a:hover) {
+  border-color: var(--nb-accent-cyan);
+}
+/* 分隔线 */
+.md-body :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--nb-border);
+  margin: 1.4em 0;
+}
+/* 表格:极淡分隔线 + 悬停行高亮(隐形结构) */
 .md-body :deep(table) {
+  width: 100%;
   border-collapse: collapse;
-  margin: 0.75em 0;
+  margin: 0.9em 0;
+  font-size: 0.9em;
 }
-.md-body :deep(th),
+.md-body :deep(th) {
+  text-align: left;
+  font-weight: 600;
+  color: var(--nb-text-primary);
+  border-bottom: 1px solid var(--nb-border);
+  padding: 8px 12px;
+}
 .md-body :deep(td) {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 6px 12px;
+  border-bottom: 1px solid var(--nb-border);
+  padding: 8px 12px;
+}
+.md-body :deep(tr:hover) {
+  background: var(--nb-nav-active-bg);
+}
+.md-body :deep(tr:last-child td) {
+  border-bottom: none;
 }
 </style>

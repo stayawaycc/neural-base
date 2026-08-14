@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NDrawer, NDrawerContent, NSelect, NTag } from 'naive-ui'
+import { Icon } from '@iconify/vue'
 import { useDocumentStore } from '@/stores/document'
 import { getDocumentContent, documentFileUrl } from '@/api/document'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
@@ -115,6 +116,16 @@ function openDoc(id: number) {
   router.replace({ name: 'kb-reader', params: { kbId: String(route.params.kbId), docId: String(id) } })
 }
 
+// 文档类型图标(侧栏列表项)
+function docIcon(ft?: string): string {
+  const t = (ft ?? '').toLowerCase()
+  if (t === 'md' || t === 'markdown') return 'mdi:language-markdown-outline'
+  if (t === 'pdf') return 'mdi:file-pdf-box'
+  if (t === 'doc' || t === 'docx') return 'mdi:file-word-box'
+  if (t === 'baguwen') return 'mdi:notebook-outline'
+  return 'mdi:file-document-outline'
+}
+
 function switchKb(v: number) {
   docStore.selectKb(v)
   void router.replace({ name: 'kb-reader', params: { kbId: String(v) } })
@@ -144,6 +155,7 @@ watch(
     <!-- 左:两级树(知识库选择 + 文档列表) -->
     <aside class="hidden w-64 shrink-0 flex-col md:flex">
       <n-select :value="Number(route.params.kbId)" :options="kbOptions" placeholder="选择知识库" class="mb-3" @update:value="switchKb" />
+      <div class="mb-2 text-xs text-gray-400 dark:text-gray-500">文档</div>
       <div class="flex-1 space-y-1.5 overflow-y-auto pr-1">
         <button
           v-for="d in docStore.documents"
@@ -157,7 +169,10 @@ watch(
           @click="d.status === 'READY' && openDoc(d.id)"
         >
           <div class="flex items-center justify-between gap-2">
-            <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ d.title }}</span>
+            <span class="flex min-w-0 items-center gap-2">
+              <Icon :icon="docIcon(d.fileType)" class="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500" />
+              <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ d.title }}</span>
+            </span>
             <n-tag v-if="d.status !== 'READY'" size="small" :type="statusMeta[d.status].type" :bordered="false">
               {{ statusMeta[d.status].label }}
             </n-tag>
@@ -218,7 +233,15 @@ watch(
           <p v-if="loadError.includes('内容缺失')" class="mt-2 text-gray-400 dark:text-gray-600">请删除该文档后重新上传。</p>
           <p v-else-if="loadError.includes('尚未处理')" class="mt-2 text-gray-400 dark:text-gray-600">处理完成后自动可用,稍后重新选择即可。</p>
         </div>
-        <div v-else-if="!content" class="py-20 text-center text-sm text-gray-400 dark:text-gray-600">从左侧选择一篇文档开始阅读</div>
+        <div v-else-if="!content" class="flex h-full flex-col items-center justify-center gap-4 py-20">
+          <span class="nb-brand-badge h-12 w-12">
+            <Icon icon="mdi:book-open-page-variant-outline" class="h-6 w-6 text-white" />
+          </span>
+          <div class="text-center">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">从左侧选择一篇文档开始阅读</p>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-600">支持 Markdown / PDF / Word / TXT</p>
+          </div>
+        </div>
         <template v-else>
           <MarkdownRenderer v-if="kind === 'markdown'" :content="content.content" anchor-headings />
           <iframe v-else-if="kind === 'pdf'" :src="documentFileUrl(content.id)" class="h-full min-h-[60vh] w-full rounded-xl border border-gray-200 dark:border-white/5" />

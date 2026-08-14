@@ -117,69 +117,80 @@ async function onFavoriteConfirm() {
 
 <template>
   <div class="space-y-4">
-    <!-- 工具栏:手动爬取 + 任务状态 + 分类筛选 + 未读/全部已读 -->
-    <div class="flex flex-wrap items-center gap-2">
-      <n-button
-        type="primary"
-        size="small"
-        :loading="crawling || newsStore.task?.status === 'RUNNING'"
-        @click="onCrawl"
-      >
-        <template #icon><Icon icon="mdi:cloud-download-outline" class="h-4 w-4" /></template>
-        立即爬取
-      </n-button>
-      <n-tag
-        v-if="newsStore.task"
-        size="small"
-        :bordered="false"
-        :type="newsStore.task.status === 'SUCCESS' ? 'success' : newsStore.task.status === 'FAILED' ? 'error' : 'info'"
-      >
-        {{ newsStore.task.status === 'RUNNING' ? `爬取中 ${newsStore.task.progress}%` : newsStore.task.status }}
-      </n-tag>
-      <n-select v-model:value="newsStore.sort" :options="sortOptions" size="small" class="w-28" />
-      <div class="flex flex-wrap gap-1.5">
+    <!-- 页面头部:标题 + 任务状态 + 立即爬取 -->
+    <div class="flex flex-wrap items-center gap-3">
+      <span class="nb-brand-badge h-9 w-9">
+        <Icon icon="mdi:newspaper-variant-outline" class="h-5 w-5 text-white" />
+      </span>
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">AI 日报</h1>
+        <p class="text-xs text-gray-500 dark:text-gray-400">前沿资讯定时爬取,AI 单篇摘要</p>
+      </div>
+      <div class="ml-auto flex items-center gap-2">
+        <div v-if="newsStore.task?.status === 'RUNNING'" class="flex items-center gap-2">
+          <div class="nb-progress w-20">
+            <div class="nb-progress__bar" :style="{ width: `${newsStore.task.progress ?? 0}%` }" />
+          </div>
+        </div>
         <n-tag
+          v-if="newsStore.task"
           size="small"
           :bordered="false"
-          :type="newsStore.sourceFilter === null ? 'warning' : 'default'"
-          class="cursor-pointer"
+          :type="newsStore.task.status === 'SUCCESS' ? 'success' : newsStore.task.status === 'FAILED' ? 'error' : 'info'"
+        >
+          {{ newsStore.task.status === 'RUNNING' ? `爬取中 ${newsStore.task.progress}%` : newsStore.task.status }}
+        </n-tag>
+        <n-button
+          round
+          type="primary"
+          size="small"
+          :loading="crawling || newsStore.task?.status === 'RUNNING'"
+          @click="onCrawl"
+        >
+          <template #icon><Icon icon="mdi:cloud-download-outline" class="h-4 w-4" /></template>
+          立即爬取
+        </n-button>
+      </div>
+    </div>
+
+    <!-- 工具栏:排序 + 来源筛选 + 分类筛选 + 已读 -->
+    <div class="flex flex-wrap items-center gap-2">
+      <n-select v-model:value="newsStore.sort" :options="sortOptions" size="small" class="w-28" />
+      <div class="flex flex-wrap gap-1.5">
+        <button
+          class="nb-chip"
+          :class="newsStore.sourceFilter === null ? 'nb-chip--active' : ''"
           @click="newsStore.sourceFilter = null"
         >
           全部来源
-        </n-tag>
-        <n-tag
+        </button>
+        <button
           v-for="s in newsStore.sources"
           :key="s.id"
-          size="small"
-          :bordered="false"
-          :type="newsStore.sourceFilter === s.id ? 'warning' : 'default'"
-          class="cursor-pointer"
+          class="nb-chip"
+          :class="newsStore.sourceFilter === s.id ? 'nb-chip--active' : ''"
           @click="newsStore.sourceFilter = newsStore.sourceFilter === s.id ? null : s.id"
         >
           {{ s.name }}
-        </n-tag>
+        </button>
       </div>
       <div class="flex flex-wrap gap-1.5">
-        <n-tag
-          size="small"
-          :bordered="false"
-          :type="newsStore.filterCategory === '' ? 'warning' : 'default'"
-          class="cursor-pointer"
+        <button
+          class="nb-chip"
+          :class="newsStore.filterCategory === '' ? 'nb-chip--active' : ''"
           @click="newsStore.filterCategory = ''"
         >
           全部
-        </n-tag>
-        <n-tag
+        </button>
+        <button
           v-for="c in newsStore.categories"
           :key="c"
-          size="small"
-          :bordered="false"
-          :type="newsStore.filterCategory === c ? 'warning' : 'default'"
-          class="cursor-pointer"
+          class="nb-chip"
+          :class="newsStore.filterCategory === c ? 'nb-chip--active' : ''"
           @click="newsStore.filterCategory = newsStore.filterCategory === c ? '' : c"
         >
           {{ c }}
-        </n-tag>
+        </button>
       </div>
       <div class="ml-auto flex items-center gap-2">
         <n-button size="small" quaternary @click="sourceModal = true">来源管理</n-button>
@@ -194,7 +205,7 @@ async function onFavoriteConfirm() {
       <div
         v-for="n in newsStore.filtered"
         :key="n.id"
-        class="glass-card !p-4 transition-colors"
+        class="glass-card !p-4 transition-all hover:-translate-y-0.5 hover:shadow-[var(--nb-card-shadow-hover)]"
         :class="!n.isRead ? 'glass-card--selected' : ''"
       >
         <div class="flex items-start justify-between gap-2">
@@ -207,12 +218,17 @@ async function onFavoriteConfirm() {
           <div class="flex shrink-0 items-center gap-2">
             <span
               v-if="n.category"
-              class="text-xs"
-              :class="categoryMeta[n.category] ?? categoryMeta['其他']"
+              class="rounded-full px-2 py-0.5 text-[11px]"
+              :class="[
+                categoryMeta[n.category] ?? categoryMeta['其他'],
+                { 'bg-violet-50 dark:bg-violet-400/10': n.category === '大模型' },
+                { 'bg-cyan-50 dark:bg-cyan-400/10': n.category === '框架' },
+                { 'bg-emerald-50 dark:bg-emerald-400/10': n.category === '工具' },
+                { 'bg-amber-50 dark:bg-amber-400/10': n.category === '论文' },
+              ]"
             >
               {{ n.category }}
             </span>
-            <span v-if="!n.isRead" class="h-2 w-2 rounded-full bg-cyan-400" title="未读" />
             <span
               class="btn-press cursor-pointer rounded p-1 text-gray-400 hover:text-amber-400 dark:text-gray-600"
               title="收藏到知识库"
@@ -222,10 +238,21 @@ async function onFavoriteConfirm() {
             </span>
           </div>
         </div>
-        <p v-if="n.summary" class="mt-1 text-xs leading-relaxed text-gray-500">{{ n.summary }}</p>
-        <p v-else class="mt-1 text-xs text-gray-400 dark:text-gray-600">暂无摘要</p>
-        <div class="mt-1 text-[11px] text-gray-400 dark:text-gray-600">
-          {{ fmtTime(n.createdAt) }}<template v-if="n.sourceName"> · {{ n.sourceName }}</template>
+        <p v-if="n.summary" class="mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ n.summary }}</p>
+        <p v-else class="mt-1.5 text-xs text-gray-400 dark:text-gray-600">暂无摘要</p>
+        <div class="mt-2 flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-600">
+          <span v-if="n.sourceName" class="flex items-center gap-1.5">
+            <span class="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+            {{ n.sourceName }}
+          </span>
+          <span class="flex items-center gap-1">
+            <Icon icon="mdi:clock-outline" class="h-3 w-3" />
+            {{ fmtTime(n.createdAt) }}
+          </span>
+          <span v-if="!n.isRead" class="ml-auto flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400">
+            <span class="h-1.5 w-1.5 rounded-full bg-cyan-500" />
+            未读
+          </span>
         </div>
       </div>
       <div v-if="!newsStore.filtered.length" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">

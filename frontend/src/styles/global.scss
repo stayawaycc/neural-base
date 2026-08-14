@@ -20,12 +20,42 @@
   --nb-accent-violet: #7c3aed;
   --nb-accent-amber: #d97706;
   --nb-accent-emerald: #059669;
+  /* 背景氛围光(页面角落的柔和渐变光晕) */
+  --nb-glow-cyan: rgba(6, 182, 212, 0.09);
+  --nb-glow-violet: rgba(139, 92, 246, 0.09);
+  --nb-glow-amber: rgba(245, 158, 11, 0.05);
+  --nb-glow-neon: rgba(34, 211, 238, 0.06);
+  /* 卡片阴影:静置为极浅多层阴影,悬浮加深并带强调色光。
+     规范:模糊半径≤12px、透明度≤0.06,重阴影显廉价 */
+  --nb-card-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px -4px rgba(15, 23, 42, 0.05);
+  --nb-card-shadow-hover:
+    0 4px 10px -2px rgba(15, 23, 42, 0.06),
+    0 12px 24px -12px rgba(15, 23, 42, 0.1);
+  /* 品牌渐变(徽章/标题装饰) */
+  --nb-grad-brand: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
+  /* 5 级圆角体系(8px 基准网格):徽章→紧凑控件→输入框→卡片→大容器 */
+  --nb-radius-1: 6px;
+  --nb-radius-2: 8px;
+  --nb-radius-3: 12px;
+  --nb-radius-4: 16px;
+  --nb-radius-5: 24px;
+  /* 6 级字号层级:caption → body-sm → body → body-lg → title → title-lg */
+  --nb-text-1: 12px;
+  --nb-text-2: 13px;
+  --nb-text-3: 14px;
+  --nb-text-4: 15px;
+  --nb-text-5: 18px;
+  --nb-text-6: 24px;
+  /* 背景网格线(radial 渐隐,避免满屏方格) */
+  --nb-grid-line: rgba(15, 23, 42, 0.03);
 }
 
 .dark {
-  --nb-bg: #0a0a0f;
-  --nb-card-bg: rgba(255, 255, 255, 0.02);
-  --nb-border: rgba(255, 255, 255, 0.05);
+  --nb-bg: #09090b;
+  --nb-card-bg: rgba(255, 255, 255, 0.03);
+  --nb-border: rgba(255, 255, 255, 0.06);
   --nb-text-primary: #f3f4f6;
   --nb-text-secondary: #9ca3af;
   --nb-text-faint: #4b5563;
@@ -38,27 +68,54 @@
   --nb-accent-violet: #a78bfa;
   --nb-accent-amber: #fbbf24;
   --nb-accent-emerald: #34d399;
+  --nb-glow-cyan: rgba(34, 211, 238, 0.16);
+  --nb-glow-violet: rgba(167, 139, 250, 0.15);
+  --nb-glow-amber: rgba(251, 191, 36, 0.06);
+  --nb-glow-neon: rgba(34, 211, 238, 0.12);
+  --nb-card-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 4px 12px -4px rgba(0, 0, 0, 0.3);
+  --nb-card-shadow-hover:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 12px 28px -12px rgba(0, 0, 0, 0.45);
+  --nb-grad-brand: linear-gradient(135deg, #22d3ee 0%, #a78bfa 100%);
+  /* 5 级圆角体系(与亮色一致) */
+  --nb-radius-1: 6px;
+  --nb-radius-2: 8px;
+  --nb-radius-3: 12px;
+  --nb-radius-4: 16px;
+  --nb-radius-5: 24px;
+  /* 6 级字号层级 */
+  --nb-text-1: 12px;
+  --nb-text-2: 13px;
+  --nb-text-3: 14px;
+  --nb-text-4: 15px;
+  --nb-text-5: 18px;
+  --nb-text-6: 24px;
+  --nb-grid-line: rgba(255, 255, 255, 0.025);
 }
 
 /* 玻璃卡片基础样式(全局:GlassCard.vue 组件与裸 class="glass-card" 使用方共用) */
 .glass-card {
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
-  border-radius: 12px;
+  border-radius: var(--nb-radius-4);
   backdrop-filter: blur(12px);
+  box-shadow: var(--nb-card-shadow);
   transition:
-    transform 0.3s ease,
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
+    transform 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease;
 }
 /* 玻璃卡片修饰类(全局:裸 class 使用方如 BaguwenView 卡片因此生效) */
 .glass-card--padded {
   padding: 16px;
 }
 .glass-card--hover:hover {
-  transform: translateY(-2px);
-  border-color: var(--nb-accent);
-  box-shadow: var(--nb-hover-shadow);
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--nb-accent) 55%, var(--nb-border));
+  box-shadow: var(--nb-card-shadow-hover), 0 0 0 1px color-mix(in srgb, var(--nb-accent) 12%, transparent);
 }
 .glass-card--cyan {
   --nb-accent: var(--nb-accent-cyan);
@@ -83,10 +140,41 @@ body,
   height: 100%;
 }
 
+/* 内容层置于背景特效(网格/粒子)之上 */
+#app {
+  position: relative;
+  z-index: 1;
+}
+
+/* 背景网格线:24px 细网格,径向渐隐避免满屏方格 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--nb-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--nb-grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 25%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 25%, transparent 75%);
+}
+
 body {
-  background: var(--nb-bg);
+  /* naive-ui 会以 bodyColor 覆盖 background-color,渐变经 background-image 叠加不受影响 */
+  background-color: var(--nb-bg);
+  background-image:
+    radial-gradient(ellipse 55% 45% at 12% -6%, var(--nb-glow-cyan), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 96% 108%, var(--nb-glow-violet), transparent 65%),
+    radial-gradient(ellipse 35% 30% at 78% -10%, var(--nb-glow-amber), transparent 60%),
+    radial-gradient(ellipse 45% 35% at 50% 0%, var(--nb-glow-neon), transparent 70%);
+  background-attachment: fixed;
   color: var(--nb-text-primary);
   font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
@@ -130,7 +218,8 @@ body {
   animation: nb-blink 1s infinite;
 }
 
-/* 页面切换动画(App.vue 已接线:key + plain transition;out-in 经 CDP 实验证实空白,勿改回) */
+/* 页面切换动画(App.vue 已改为 GSAP JS hooks:css=false,入场上浮渐显;此处保留旧 CSS 兜底类,
+   leave 立即完成避免双视图高度翻倍——勿改回 out-in) */
 .page-enter-active {
   transition:
     opacity 0.3s ease,
@@ -188,6 +277,203 @@ body {
   }
 }
 
+/* ---- 高级感装饰类(页面/组件共用) ---- */
+
+/* 品牌渐变徽章(Logo/首屏标识):圆角方块 + 品牌渐变 + 柔和光晕 */
+.nb-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--nb-grad-brand);
+  box-shadow:
+    0 4px 14px -4px color-mix(in srgb, var(--nb-accent-cyan) 55%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+/* 渐变文字(大标题点睛) */
+.nb-gradient-text {
+  background: var(--nb-grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 列表项统一质感(最近会话/最近文档等) */
+.nb-list-item {
+  border-radius: 10px;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.nb-list-item:hover {
+  background: var(--nb-nav-active-bg);
+  box-shadow: var(--nb-card-shadow);
+}
+.nb-list-item:active {
+  transform: scale(0.99);
+}
+
+/* 品牌小圆点(Logo 与空态共用,带呼吸光晕) */
+.nb-dot {
+  border-radius: 9999px;
+  background: var(--nb-grad-brand);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--nb-accent-cyan) 60%, transparent);
+}
+
+/* 浮层与页面融合(规范:弹窗/气泡加 1px 边框,避免"贴膏药"感) */
+.n-modal,
+.n-dialog,
+.n-popover {
+  border: 1px solid var(--nb-border);
+}
+/* 弹窗淡阴影(克制,不压过卡片) */
+.n-dialog {
+  box-shadow: var(--nb-card-shadow-hover);
+}
+
+/* 精致筛选胶囊 chips(替换 naive warning 黄底选中态) */
+.nb-chip {
+  border: 1px solid var(--nb-border);
+  border-radius: 9999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--nb-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+.nb-chip:hover {
+  border-color: var(--nb-accent-cyan);
+  color: var(--nb-text-primary);
+}
+/* 键盘可达性:胶囊聚焦环 */
+.nb-chip:focus-visible {
+  outline: 2px solid var(--nb-accent-cyan);
+  outline-offset: 2px;
+}
+.nb-chip--active {
+  border-color: color-mix(in srgb, var(--nb-accent-cyan) 55%, var(--nb-border));
+  background: color-mix(in srgb, var(--nb-accent-cyan) 10%, transparent);
+  color: var(--nb-accent-cyan);
+  font-weight: 500;
+}
+
+/* ---- 按钮 5 变体(自绘元素用;naive-ui 按钮走组件主题) ---- */
+.nb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--nb-radius-3);
+  font-size: var(--nb-text-3);
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.nb-btn:active {
+  transform: scale(0.97);
+}
+.nb-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.nb-btn:focus-visible {
+  outline: 2px solid var(--nb-accent-cyan);
+  outline-offset: 2px;
+}
+/* 1. 主按钮:品牌渐变填充 + 霓虹光 */
+.nb-btn--primary {
+  color: #fff;
+  background: var(--nb-grad-brand);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--nb-accent-cyan) 55%, transparent);
+}
+.nb-btn--primary:hover {
+  box-shadow: 0 6px 20px -4px color-mix(in srgb, var(--nb-accent-cyan) 70%, transparent);
+  filter: brightness(1.05);
+}
+/* 2. 描边按钮:透明底 + 细边框 */
+.nb-btn--outline {
+  color: var(--nb-text-primary);
+  background: transparent;
+  border-color: var(--nb-border);
+}
+.nb-btn--outline:hover {
+  border-color: var(--nb-accent-cyan);
+  color: var(--nb-accent-cyan);
+}
+/* 3. 幽灵按钮:纯透明,悬停淡底 */
+.nb-btn--ghost {
+  color: var(--nb-text-secondary);
+  background: transparent;
+}
+.nb-btn--ghost:hover {
+  background: var(--nb-nav-active-bg);
+  color: var(--nb-text-primary);
+}
+/* 4. 淡色按钮:主色 10% 淡底 */
+.nb-btn--soft {
+  color: var(--nb-accent-cyan);
+  background: color-mix(in srgb, var(--nb-accent-cyan) 10%, transparent);
+}
+.nb-btn--soft:hover {
+  background: color-mix(in srgb, var(--nb-accent-cyan) 16%, transparent);
+}
+/* 5. 危险按钮:语义红 */
+.nb-btn--danger {
+  color: #fff;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 14px -4px rgba(239, 68, 68, 0.5);
+}
+.nb-btn--danger:hover {
+  filter: brightness(1.05);
+}
+
+/* ---- 进度条(任务/上传等场景) ---- */
+.nb-progress {
+  position: relative;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--nb-nav-active-bg);
+  overflow: hidden;
+}
+.nb-progress__bar {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--nb-grad-brand);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--nb-accent-cyan) 60%, transparent);
+  transition: width 0.4s ease;
+}
+
+/* ---- 骨架屏 shimmer(自绘骨架;naive NSkeleton 保持组件样式) ---- */
+.nb-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--nb-radius-2);
+  background: var(--nb-nav-active-bg);
+}
+.nb-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--nb-card-bg) 80%, transparent), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
 /* 尊重系统减弱动效设置(仅减弱动画,不改变任何视觉 token) */
 @media (prefers-reduced-motion: reduce) {
   .nb-cursor {
@@ -206,6 +492,15 @@ body {
   }
   .fade-in {
     animation: none;
+  }
+  .nb-skeleton::after {
+    animation: none;
+  }
+  .nb-btn--primary:hover {
+    filter: none;
+  }
+  .nb-btn--danger:hover {
+    filter: none;
   }
   .page-enter-active {
     transition: opacity 0.1s ease;

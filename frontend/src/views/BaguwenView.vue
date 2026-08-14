@@ -117,9 +117,39 @@ async function onFavoriteConfirm() {
 
 <template>
   <div class="space-y-4">
+    <!-- 页面头部 -->
+    <div class="flex items-center gap-3">
+      <span class="nb-brand-badge h-9 w-9">
+        <Icon icon="mdi:file-document-multiple-outline" class="h-5 w-5 text-white" />
+      </span>
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">八股文库</h1>
+        <p class="text-xs text-gray-500 dark:text-gray-400">URL 导入,AI 自动提取问答对</p>
+      </div>
+      <div class="ml-auto">
+        <span class="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-500 dark:border-white/10 dark:text-gray-400">
+          共 {{ baguwenStore.total }} 篇
+        </span>
+      </div>
+    </div>
+
     <!-- 导入区 -->
-    <div class="glass-card space-y-2">
-      <div class="text-sm text-gray-700 dark:text-gray-300">导入文章(每行一个 URL,后台异步爬取 + AI 结构化)</div>
+    <div class="glass-card space-y-3 !p-5">
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+          :style="{
+            background: 'color-mix(in srgb, var(--nb-accent-amber) 14%, transparent)',
+            boxShadow: '0 0 0 1px color-mix(in srgb, var(--nb-accent-amber) 22%, transparent)',
+          }"
+        >
+          <Icon icon="mdi:link-variant" class="h-5 w-5" :style="{ color: 'var(--nb-accent-amber)' }" />
+        </span>
+        <div>
+          <div class="text-sm font-medium text-gray-800 dark:text-gray-200">导入文章</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">每行一个 URL,后台异步爬取 + AI 结构化</div>
+        </div>
+      </div>
       <n-input
         v-model:value="urlText"
         type="textarea"
@@ -127,7 +157,7 @@ async function onFavoriteConfirm() {
         placeholder="https://example.com/article&#10;https://example.com/another"
       />
       <div class="flex justify-end">
-        <n-button type="primary" :loading="importing" @click="onImport">
+        <n-button round type="primary" :loading="importing" @click="onImport">
           <template #icon><Icon icon="mdi:download-box-outline" class="h-4 w-4" /></template>
           开始导入
         </n-button>
@@ -135,19 +165,53 @@ async function onFavoriteConfirm() {
     </div>
 
     <!-- 任务进度 -->
-    <div v-if="baguwenStore.tasks.length" class="glass-card space-y-1.5">
-      <div class="text-xs text-gray-500">
-        导入任务(处理中 {{ pendingTaskCount }} 个,每 2 秒刷新)
+    <div v-if="baguwenStore.tasks.length" class="glass-card !p-4">
+      <div class="mb-2 flex items-center gap-2">
+        <span
+          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+          :style="{
+            background: 'color-mix(in srgb, var(--nb-accent-amber) 14%, transparent)',
+            boxShadow: '0 0 0 1px color-mix(in srgb, var(--nb-accent-amber) 22%, transparent)',
+          }"
+        >
+          <Icon icon="mdi:progress-clock" class="h-4 w-4" :style="{ color: 'var(--nb-accent-amber)' }" />
+        </span>
+        <span class="text-xs font-medium text-gray-700 dark:text-gray-300">导入任务</span>
+        <span v-if="pendingTaskCount" class="text-xs text-gray-400 dark:text-gray-500">处理中 {{ pendingTaskCount }} 个</span>
+        <span v-else class="text-xs text-emerald-600 dark:text-emerald-400">全部完成</span>
       </div>
-      <div v-for="t in baguwenStore.tasks" :key="t.id" class="flex items-center justify-between gap-2 py-1">
-        <span class="min-w-0 flex-1 truncate text-xs text-gray-600 dark:text-gray-400">{{ t.url }}</span>
-        <div class="flex shrink-0 items-center gap-2">
-          <n-tag size="small" :type="taskStatusMeta[t.status].type" :bordered="false">
-            {{ taskStatusMeta[t.status].label }}
-          </n-tag>
-          <n-button v-if="t.status === 'FAILED'" size="tiny" quaternary @click="baguwenStore.retry(t.id)">
-            重试
-          </n-button>
+      <div class="space-y-0.5">
+        <div
+          v-for="t in baguwenStore.tasks"
+          :key="t.id"
+          class="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.02]"
+        >
+          <span class="task-dot" :class="`task-dot--${t.status.toLowerCase()}`" />
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-xs text-gray-600 dark:text-gray-400">{{ t.url }}</div>
+            <div v-if="t.status === 'FAILED' && t.errorMsg" class="truncate text-[11px] text-red-400 dark:text-red-400/80">
+              {{ t.errorMsg }}
+            </div>
+          </div>
+          <div class="flex shrink-0 items-center gap-1">
+            <n-tag size="tiny" :type="taskStatusMeta[t.status].type" :bordered="false">
+              {{ taskStatusMeta[t.status].label }}
+            </n-tag>
+            <n-button v-if="t.status === 'FAILED'" size="tiny" quaternary @click="baguwenStore.retry(t.id)">
+              重试
+            </n-button>
+            <n-popconfirm v-if="t.status === 'FAILED'" @positive-click="baguwenStore.removeTask(t.id)">
+              <template #trigger>
+                <span
+                  class="cursor-pointer rounded p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-red-400 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-white/5"
+                  title="删除任务"
+                >
+                  <Icon icon="mdi:trash-can-outline" class="h-3.5 w-3.5" />
+                </span>
+              </template>
+              删除该导入任务?
+            </n-popconfirm>
+          </div>
         </div>
       </div>
     </div>
@@ -164,17 +228,15 @@ async function onFavoriteConfirm() {
       />
       <n-button quaternary @click="onSearch">搜索</n-button>
       <div class="flex flex-wrap gap-1.5">
-        <n-tag
+        <button
           v-for="t in baguwenStore.tags"
           :key="t.tag"
-          size="small"
-          :bordered="false"
-          :type="baguwenStore.filter.tag === t.tag ? 'warning' : 'default'"
-          class="cursor-pointer"
+          class="nb-chip"
+          :class="baguwenStore.filter.tag === t.tag ? 'nb-chip--active' : ''"
           @click="onTagFilter(t.tag)"
         >
           {{ t.tag }} {{ t.count }}
-        </n-tag>
+        </button>
       </div>
     </div>
 
@@ -212,11 +274,14 @@ async function onFavoriteConfirm() {
           </div>
         </div>
         <div class="flex flex-wrap gap-1">
-          <n-tag v-for="t in a.tags" :key="t" size="tiny" :bordered="false" type="warning">
+          <n-tag v-for="t in a.tags" :key="t" size="tiny" :bordered="false">
             {{ t }}
           </n-tag>
         </div>
-        <div class="mt-auto text-xs text-gray-400 dark:text-gray-600">{{ new Date(a.createdAt).toLocaleDateString() }}</div>
+        <div class="mt-auto flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-600">
+          <Icon icon="mdi:calendar-blank-outline" class="h-3.5 w-3.5" />
+          {{ new Date(a.createdAt).toLocaleDateString() }}
+        </div>
       </div>
     </div>
 
@@ -253,3 +318,38 @@ async function onFavoriteConfirm() {
     </div>
   </n-modal>
 </template>
+
+<style scoped>
+/* 任务状态色点:PENDING 灰 / PROCESSING 青色呼吸 / SUCCESS 绿 / FAILED 红 */
+.task-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--nb-text-faint);
+}
+.task-dot--processing {
+  background: var(--nb-accent-cyan);
+  animation: nb-task-pulse 1.2s ease-in-out infinite;
+}
+.task-dot--success {
+  background: var(--nb-accent-emerald);
+}
+.task-dot--failed {
+  background: #ef4444;
+}
+@keyframes nb-task-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .task-dot--processing {
+    animation: none;
+  }
+}
+</style>

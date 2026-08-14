@@ -12,6 +12,7 @@ const router = createRouter({
     { path: '/baguwen', name: 'baguwen', component: () => import('@/views/BaguwenView.vue') },
     { path: '/baguwen/:id', name: 'baguwen-detail', component: () => import('@/views/BaguwenDetailView.vue') },
     { path: '/news', name: 'news', component: () => import('@/views/DailyNewsView.vue') },
+    { path: '/news', name: 'news', component: () => import('@/views/DailyNewsView.vue') },
   ],
 })
 

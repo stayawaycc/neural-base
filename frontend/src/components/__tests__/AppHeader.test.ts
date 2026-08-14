@@ -7,6 +7,7 @@ import { useUserStore } from '@/stores/user'
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  useRoute: () => ({ path: '/' }),
   RouterLink: { template: '<a><slot /></a>' },
 }))
 

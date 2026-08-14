@@ -42,6 +42,11 @@ export const useBaguwenStore = defineStore('baguwen', () => {
     startPolling()
   }
 
+  async function removeTask(id: number) {
+    await baguwenApi.deleteTask(id)
+    await refreshTasks()
+  }
+
   async function removeArticle(id: number) {
     await baguwenApi.deleteArticle(id)
     await loadArticles()
@@ -75,6 +80,7 @@ export const useBaguwenStore = defineStore('baguwen', () => {
     importUrls,
     refreshTasks,
     retry,
+    removeTask,
     removeArticle,
     favorite,
     startPolling,

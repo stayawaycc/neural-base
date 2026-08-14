@@ -82,10 +82,40 @@ function openReader(d: DocumentItem) {
   if (d.status !== 'READY' || kbId == null) return
   void router.push({ name: 'kb-reader', params: { kbId: String(kbId), docId: String(d.id) } })
 }
+
+// 文档类型图标(列表项左侧)
+function fileIcon(ft?: string): string {
+  const t = (ft ?? '').toLowerCase()
+  if (t === 'md' || t === 'markdown') return 'mdi:language-markdown-outline'
+  if (t === 'pdf') return 'mdi:file-pdf-box'
+  if (t === 'doc' || t === 'docx') return 'mdi:file-word-box'
+  if (t === 'baguwen') return 'mdi:notebook-outline'
+  return 'mdi:file-document-outline'
+}
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-9.5rem)] gap-4">
+  <div class="flex h-[calc(100vh-9.5rem)] flex-col gap-4">
+    <!-- 页面头部 -->
+    <div class="flex items-center gap-3">
+      <span class="nb-brand-badge h-9 w-9">
+        <Icon icon="mdi:bookshelf" class="h-5 w-5 text-white" />
+      </span>
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">知识库</h1>
+        <p class="text-xs text-gray-500 dark:text-gray-400">多格式上传,自动切片入库,语义检索</p>
+      </div>
+      <div class="ml-auto hidden items-center gap-2 sm:flex">
+        <span class="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-500 dark:border-white/10 dark:text-gray-400">
+          {{ docStore.kbs.length }} 个知识库
+        </span>
+        <span class="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-500 dark:border-white/10 dark:text-gray-400">
+          {{ docStore.documents.length }} 篇文档
+        </span>
+      </div>
+    </div>
+
+    <div class="flex min-h-0 flex-1 gap-4">
     <!-- 知识库列表 -->
     <aside class="hidden w-64 shrink-0 flex-col md:flex">
       <div class="mb-3 flex items-center justify-between">
@@ -97,19 +127,28 @@ function openReader(d: DocumentItem) {
       </div>
       <div class="flex-1 space-y-1.5 overflow-y-auto pr-1">
         <button
-          class="glass-card btn-press w-full !p-3 text-left"
+          class="glass-card btn-press relative w-full !p-3 text-left"
           :class="docStore.currentKbId === null ? 'glass-card--selected' : ''"
           @click="docStore.selectKb(null)"
         >
+          <span
+            v-if="docStore.currentKbId === null"
+            class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-cyan-500 dark:bg-cyan-400"
+          />
           <span class="text-sm text-gray-800 dark:text-gray-200">全部文档</span>
         </button>
         <button
           v-for="k in docStore.kbs"
           :key="k.id"
-          class="glass-card btn-press w-full !p-3 text-left"
+          class="glass-card btn-press relative w-full !p-3 text-left"
           :class="docStore.currentKbId === k.id ? 'glass-card--selected' : ''"
           @click="docStore.selectKb(k.id)"
         >
+          <span
+            v-if="docStore.currentKbId === k.id"
+            class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full"
+            :style="{ background: k.color || 'var(--nb-accent-cyan)' }"
+          />
           <div class="flex items-center gap-2">
             <span v-if="k.color" class="h-2.5 w-2.5 rounded-full" :style="{ background: k.color }" />
             <span class="truncate text-sm text-gray-800 dark:text-gray-200">{{ k.name }}</span>
@@ -145,7 +184,7 @@ function openReader(d: DocumentItem) {
         <div
           v-for="r in docStore.searchResults"
           :key="`${r.docId}-${r.score}`"
-          class="glass-card !p-3"
+          class="glass-card !p-3 transition-all hover:-translate-y-0.5 hover:shadow-[var(--nb-card-shadow-hover)]"
         >
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-800 dark:text-gray-200">{{ r.title ?? `文档#${r.docId}` }}</span>
@@ -168,11 +207,17 @@ function openReader(d: DocumentItem) {
         <div v-else class="fade-in space-y-2">
           <div v-for="d in docStore.documents" :key="d.id" class="glass-card btn-press !p-3">
             <div class="flex items-center justify-between gap-2">
-              <span
-                class="truncate text-sm text-gray-800 dark:text-gray-200"
-                :class="d.status === 'READY' && (d.kbId ?? docStore.currentKbId) != null ? 'cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-300' : ''"
-                @click="openReader(d)"
-              >{{ d.title }}</span>
+              <span class="flex min-w-0 items-center gap-2.5">
+                <Icon
+                  :icon="fileIcon(d.fileType)"
+                  class="h-4 w-4 shrink-0 text-gray-400 dark:text-gray-500"
+                />
+                <span
+                  class="truncate text-sm text-gray-800 dark:text-gray-200"
+                  :class="d.status === 'READY' && (d.kbId ?? docStore.currentKbId) != null ? 'cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-300' : ''"
+                  @click="openReader(d)"
+                >{{ d.title }}</span>
+              </span>
               <div class="flex shrink-0 items-center gap-2">
                 <n-tag size="small" :type="statusMeta[d.status].type" :bordered="false">
                   {{ statusMeta[d.status].label }}<template v-if="d.chunkCount"> · {{ d.chunkCount }} 块</template>
@@ -196,6 +241,7 @@ function openReader(d: DocumentItem) {
           </div>
         </div>
       </template>
+    </div>
     </div>
   </div>
 

@@ -3,13 +3,13 @@ import type { GlobalThemeOverrides } from 'naive-ui'
 // 深色玻璃拟态主题覆盖(设计文档 5.3)
 export const darkThemeOverrides: GlobalThemeOverrides = {
   common: {
-    bodyColor: '#0a0a0f',
-    cardColor: 'rgba(255, 255, 255, 0.02)',
+    bodyColor: '#09090b',
+    cardColor: 'rgba(255, 255, 255, 0.03)',
     modalColor: '#15151f',
     popoverColor: '#15151f',
     borderColor: 'rgba(255, 255, 255, 0.08)',
     dividerColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: '8px',
+    borderRadius: '10px',
     textColorBase: '#f3f4f6',
     textColor1: '#f3f4f6',
     textColor2: '#9ca3af',
@@ -36,6 +36,19 @@ export const darkThemeOverrides: GlobalThemeOverrides = {
     errorColorSuppl: '#fca5a5',
     inputColor: 'rgba(255, 255, 255, 0.03)',
   },
+  // 输入类组件:更大圆角 + 聚焦青色光晕
+  Input: {
+    borderRadius: '12px',
+    borderFocus: '#22d3ee',
+    borderHover: 'rgba(255, 255, 255, 0.2)',
+    boxShadowFocus: '0 0 0 2px rgba(34, 211, 238, 0.18)',
+  },
+  Button: {
+    borderRadius: '12px',
+  },
+  Select: {
+    borderRadius: '10px',
+  },
 }
 
 // 亮色主题覆盖(规格 3.3:浅灰底 + 白卡片,强调色压暗一档保证白底对比度)
@@ -47,7 +60,7 @@ export const lightThemeOverrides: GlobalThemeOverrides = {
     popoverColor: '#ffffff',
     borderColor: '#e5e7eb',
     dividerColor: '#f3f4f6',
-    borderRadius: '8px',
+    borderRadius: '10px',
     textColorBase: '#111827',
     textColor1: '#111827',
     textColor2: '#4b5563',
@@ -73,5 +86,18 @@ export const lightThemeOverrides: GlobalThemeOverrides = {
     errorColorPressed: '#b91c1c',
     errorColorSuppl: '#ef4444',
     inputColor: '#f9fafb',
+  },
+  // 输入类组件:更大圆角 + 聚焦青色光晕
+  Input: {
+    borderRadius: '12px',
+    borderFocus: '#0891b2',
+    borderHover: '#cbd5e1',
+    boxShadowFocus: '0 0 0 2px rgba(8, 145, 178, 0.15)',
+  },
+  Button: {
+    borderRadius: '12px',
+  },
+  Select: {
+    borderRadius: '10px',
   },
 }

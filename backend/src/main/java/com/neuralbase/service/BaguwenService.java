@@ -170,6 +170,15 @@ public class BaguwenService {
         return task;
     }
 
+    /** 删除失败任务(仅 FAILED;处理中的任务删除会与异步线程竞争,故禁止)。 */
+    public void deleteTask(Long taskId) {
+        BaguwenImportTask task = requireTask(taskId);
+        if (!"FAILED".equals(task.getStatus())) {
+            throw new IllegalArgumentException("仅 FAILED 任务可删除，当前状态: " + task.getStatus());
+        }
+        taskMapper.deleteById(taskId);
+    }
+
     // ---------- 查询 ----------
 
     public List<BaguwenImportTask> tasks(String status) {
