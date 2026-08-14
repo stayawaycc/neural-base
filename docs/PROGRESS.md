@@ -13,7 +13,7 @@
 | **Phase 2** | 上传 + SiliconFlow Embedding + pgvector 检索 | ✅ | 完成，真实 embedding 冒烟通过 |
 | **Phase 3** | AI 对话（SSE 流式 + RAG 模式 + DeepSeek） | ✅ | 完成，真实冒烟双模式通过 |
 | **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ✅ | 后端完成（前端仍 ❌） |
-| **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ✅ | 2026-08-14:GitHub Trending + Hacker News 两源、单篇中文摘要+五分类、`@Scheduled` 定时(未引入 Quartz)+ 手动触发 `/api/news/crawl`、任务状态机与去重、时间线页(筛选/已读/收藏进 KB)。真实冒烟:30 条真抓 + 30/30 真实摘要。**扩展 3 源**(InfoQ✅58 条/机器之心 JS 壳需 Playwright/Papers with Code 本机 TLS 环境问题待验证);GitHub Trending 本机 TLS 证书吊销检查故障(CRYPT_E_NO_REVOCATION_CHECK,当日早前曾成功,非代码问题) |
+| **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ✅ | 2026-08-14:GitHub Trending + Hacker News 两源、单篇中文摘要+五分类、`@Scheduled` 定时(未引入 Quartz)+ 手动触发 `/api/news/crawl`、任务状态机与去重、时间线页(筛选/已读/收藏进 KB)。真实冒烟:30 条真抓 + 30/30 真实摘要。**扩展 3 源**(InfoQ✅58 条/机器之心 JS 壳需 Playwright/Papers with Code 本机 TLS 环境问题待验证);GitHub Trending 本机 TLS 证书吊销检查故障(CRYPT_E_NO_REVOCATION_CHECK,当日早前曾成功,非代码问题)。**增强(2026-08-14)**:多维排序(最新/最早/来源/分类)、绝对时间展示、来源筛选 chips、来源管理 CRUD(内置可停用不可删/自建全权限)+ GenericHtmlNewsFetcher 自建源抓取、GitHub Star AI 源(近 7 天新建 AI 仓库按星)、机器之心 Playwright 化(浏览器安装受本机环境限制,fixture 测试覆盖)。规格 `2026-08-14-news-enhancement-design.md`,计划 `2026-08-14-news-enhancement.md` |
 | **Phase 6** | UI 精细化打磨、动画、响应式 | ✅ | 主要页面完成（登录/知识库/对话/八股文/日报占位）+ 文档阅读器 + 亮色模式 + 动画打磨（2026-08-14）；延后项补做另列 |
 | **Phase 7** | Docker 本地部署、性能优化、压测 | ✅ | 2026-08-14:后端/前端 Dockerfile + nginx SPA 反代 + docker-compose 一键部署(压测按 YAGNI 裁决不做);本机无 Docker CLI,`docker compose config` 静态校验与容器实跑均留待 Docker 环境按文档验收(已如实记录);compose 变量与 .env.example 已人工交叉核对一致;review 修复 README 端口错误(80 前端/8080 后端) |
 | **Phase 8** | Docker 部署文档 | ✅ | 2026-08-14:README + docs/部署文档.md(环境变量表/备份/FAQ);application.yml 恢复跟踪为纯环境变量版,密钥迁移本地 .env |
@@ -92,7 +92,7 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：后端 **105/105 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 67/67 绿** + typecheck 无输出 + build 成功（2026-08-14，Phase 5 后更新）
+- **自动化测试**：后端 **116/116 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 69/69 绿** + typecheck 无输出 + build 成功（2026-08-14，AI 日报增强后更新）
   - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除/竞态防护(11)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
   - 后端 Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
   - 前端：GlassCard(2)、user(3)、sse(7)、chat(5)、MarkdownRenderer(2)、ChatMessage(3)、document(5)、baguwen(3)
@@ -153,5 +153,5 @@
 > **Roadmap Phase 1-8 全部完成**(2026-08-14)。剩余均为可选增强:
 
 1. Docker 容器实跑验收(本机无 Docker,按 `docs/部署文档.md` 在有 Docker 环境执行)
-2. 可选:补 SpringDoc OpenAPI、Redis(若需要限流/队列)、更多新闻源
-3. 八股文库遗留:JS 渲染站点需本机先 `playwright install chromium`(Java CLI:`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`)
+2. 可选:补 SpringDoc OpenAPI、Redis(若需要限流/队列)、GitHub Star AI/机器之心在正常网络环境真实验证
+3. 八股文库/机器之心 Playwright 浏览器:本机需先 `playwright install chromium`(Java CLI:`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`,当前受本机安全软件/TLS 环境阻断)
