@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { NButton, NModal, NSelect, NSwitch, NTag } from 'naive-ui'
+import { NButton, NInput, NModal, NSelect, NSwitch, NTag, type SelectOption } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useNewsStore } from '@/stores/news'
 import { listKbs } from '@/api/kb'
@@ -14,6 +14,46 @@ const favoriteNewsId = ref<number | null>(null)
 const favoriteKbId = ref<number | null>(null)
 const kbs = ref<Kb[]>([])
 
+const sortOptions: SelectOption[] = [
+  { label: '最新', value: 'created_desc' },
+  { label: '最早', value: 'created_asc' },
+  { label: '按来源', value: 'source' },
+  { label: '按分类', value: 'category' },
+]
+
+const BUILTIN_SOURCE_NAMES = ['GitHub Trending', 'Hacker News', 'Papers with Code', '机器之心', 'InfoQ', 'GitHub Star AI']
+
+const sourceModal = ref(false)
+const sourceForm = ref({ name: '', url: '', selector: '' })
+const savingSource = ref(false)
+
+function fmtTime(iso: string): string {
+  const d = new Date(iso)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+async function onCreateSource() {
+  if (!sourceForm.value.name.trim() || !sourceForm.value.url.trim()) {
+    message.warning('请填写名称与 URL')
+    return
+  }
+  savingSource.value = true
+  try {
+    await newsStore.createSource({
+      name: sourceForm.value.name.trim(),
+      url: sourceForm.value.url.trim(),
+      selector: sourceForm.value.selector.trim() || undefined,
+    })
+    sourceForm.value = { name: '', url: '', selector: '' }
+    message.success('来源已添加,下次爬取生效')
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    savingSource.value = false
+  }
+}
+
 const categoryMeta: Record<string, string> = {
   大模型: 'text-violet-600 dark:text-violet-300',
   框架: 'text-cyan-600 dark:text-cyan-300',
@@ -24,6 +64,7 @@ const categoryMeta: Record<string, string> = {
 
 onMounted(async () => {
   await newsStore.load()
+  await newsStore.loadSources()
   await newsStore.refreshTask()
 })
 
@@ -95,6 +136,29 @@ async function onFavoriteConfirm() {
       >
         {{ newsStore.task.status === 'RUNNING' ? `爬取中 ${newsStore.task.progress}%` : newsStore.task.status }}
       </n-tag>
+      <n-select v-model:value="newsStore.sort" :options="sortOptions" size="small" class="w-28" />
+      <div class="flex flex-wrap gap-1.5">
+        <n-tag
+          size="small"
+          :bordered="false"
+          :type="newsStore.sourceFilter === null ? 'warning' : 'default'"
+          class="cursor-pointer"
+          @click="newsStore.sourceFilter = null"
+        >
+          全部来源
+        </n-tag>
+        <n-tag
+          v-for="s in newsStore.sources"
+          :key="s.id"
+          size="small"
+          :bordered="false"
+          :type="newsStore.sourceFilter === s.id ? 'warning' : 'default'"
+          class="cursor-pointer"
+          @click="newsStore.sourceFilter = newsStore.sourceFilter === s.id ? null : s.id"
+        >
+          {{ s.name }}
+        </n-tag>
+      </div>
       <div class="flex flex-wrap gap-1.5">
         <n-tag
           size="small"
@@ -118,6 +182,7 @@ async function onFavoriteConfirm() {
         </n-tag>
       </div>
       <div class="ml-auto flex items-center gap-2">
+        <n-button size="small" quaternary @click="sourceModal = true">来源管理</n-button>
         <span class="text-xs text-gray-500">仅未读</span>
         <n-switch v-model:value="newsStore.unreadOnly" size="small" />
         <n-button size="small" quaternary @click="newsStore.markAllRead()">全部已读</n-button>
@@ -159,8 +224,8 @@ async function onFavoriteConfirm() {
         </div>
         <p v-if="n.summary" class="mt-1 text-xs leading-relaxed text-gray-500">{{ n.summary }}</p>
         <p v-else class="mt-1 text-xs text-gray-400 dark:text-gray-600">暂无摘要</p>
-        <div v-if="n.sourceName" class="mt-1 text-[11px] text-gray-400 dark:text-gray-600">
-          {{ n.sourceName }}
+        <div class="mt-1 text-[11px] text-gray-400 dark:text-gray-600">
+          {{ fmtTime(n.createdAt) }}<template v-if="n.sourceName"> · {{ n.sourceName }}</template>
         </div>
       </div>
       <div v-if="!newsStore.filtered.length" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">
@@ -183,6 +248,57 @@ async function onFavoriteConfirm() {
           placeholder="选择知识库"
           :options="kbs.map((k) => ({ label: k.name, value: k.id }))"
         />
+      </div>
+    </n-modal>
+
+    <!-- 来源管理弹窗 -->
+    <n-modal
+      v-model:show="sourceModal"
+      preset="dialog"
+      title="来源管理"
+      positive-text="关闭"
+      @positive-click="sourceModal = false"
+    >
+      <div class="space-y-3 py-2">
+        <div class="space-y-1.5">
+          <div
+            v-for="s in newsStore.sources"
+            :key="s.id"
+            class="flex items-center justify-between gap-2 rounded-lg border border-gray-100 px-3 py-2 dark:border-white/5"
+          >
+            <div class="min-w-0">
+              <div class="truncate text-sm text-gray-800 dark:text-gray-200">{{ s.name }}</div>
+              <div class="truncate text-xs text-gray-400 dark:text-gray-600">{{ s.url }}</div>
+            </div>
+            <div class="flex shrink-0 items-center gap-2">
+              <n-switch
+                size="small"
+                :value="s.enabled"
+                @update:value="(v: boolean) => newsStore.updateSource(s.id, { enabled: v })"
+              />
+              <button
+                v-if="!BUILTIN_SOURCE_NAMES.includes(s.name)"
+                class="btn-press text-gray-400 hover:text-red-400 dark:text-gray-600"
+                @click="newsStore.removeSource(s.id)"
+              >
+                <Icon icon="mdi:trash-can-outline" class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="border-t border-gray-100 pt-3 dark:border-white/5">
+          <div class="mb-2 text-xs text-gray-500">
+            新增静态来源(仅支持无 JS 渲染的列表页,需填写链接选择器)
+          </div>
+          <div class="space-y-2">
+            <n-input v-model:value="sourceForm.name" size="small" placeholder="名称" />
+            <n-input v-model:value="sourceForm.url" size="small" placeholder="URL" />
+            <n-input v-model:value="sourceForm.selector" size="small" placeholder="链接选择器,如 ul.news-list a" />
+            <n-button size="small" type="primary" :loading="savingSource" @click="onCreateSource">
+              添加来源
+            </n-button>
+          </div>
+        </div>
       </div>
     </n-modal>
   </div>
