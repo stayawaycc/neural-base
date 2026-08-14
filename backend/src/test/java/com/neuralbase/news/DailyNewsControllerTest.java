@@ -90,6 +90,29 @@ class DailyNewsControllerTest {
     }
 
     @Test
+    void listSupportsSortAndSourceFilter() throws Exception {
+        String tk = token();
+        service.startCrawl();
+        service.runCrawlNow();
+
+        mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk)
+                .param("sort", "source"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(3));
+
+        mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk)
+                .param("sort", "bogus"))
+            .andExpect(status().isOk()); // 非法 sort 回退默认,不 400
+
+        Long githubId = jdbcTemplate.queryForObject(
+            "SELECT id FROM crawler_source WHERE name = 'GitHub Trending'", Long.class);
+        mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk)
+                .param("sourceId", String.valueOf(githubId)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(2)); // 假件 GitHub 源 2 条
+    }
+
+    @Test
     void crawlRejectedWhileRunning() throws Exception {
         String tk = token();
         service.startCrawl(); // 制造 RUNNING 任务

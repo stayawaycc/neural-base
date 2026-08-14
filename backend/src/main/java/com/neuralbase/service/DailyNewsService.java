@@ -135,13 +135,18 @@ public class DailyNewsService {
         }
     }
 
-    public List<DailyNews> list(String category, Boolean unreadOnly) {
-        List<DailyNews> news = dailyNewsMapper.selectList(
-            new LambdaQueryWrapper<DailyNews>()
-                .eq(category != null && !category.isBlank(), DailyNews::getCategory, category)
-                .eq(Boolean.TRUE.equals(unreadOnly), DailyNews::getIsRead, false)
-                .orderByDesc(DailyNews::getCreatedAt)
-                .last("LIMIT 200"));
+    public List<DailyNews> list(String category, Boolean unreadOnly, Long sourceId, String sort) {
+        LambdaQueryWrapper<DailyNews> qw = new LambdaQueryWrapper<DailyNews>()
+            .eq(category != null && !category.isBlank(), DailyNews::getCategory, category)
+            .eq(Boolean.TRUE.equals(unreadOnly), DailyNews::getIsRead, false)
+            .eq(sourceId != null, DailyNews::getSourceId, sourceId);
+        switch (sort == null ? "created_desc" : sort) {
+            case "created_asc" -> qw.orderByAsc(DailyNews::getCreatedAt);
+            case "source" -> qw.orderByAsc(DailyNews::getSourceId);
+            case "category" -> qw.orderByAsc(DailyNews::getCategory);
+            default -> qw.orderByDesc(DailyNews::getCreatedAt); // 含非法值回退默认
+        }
+        List<DailyNews> news = dailyNewsMapper.selectList(qw.last("LIMIT 200"));
         // 透出来源名(前端卡片展示)
         Map<Long, String> sourceNames = new HashMap<>();
         for (CrawlerSource s : crawlerSourceMapper.selectList(null)) {

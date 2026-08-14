@@ -27,8 +27,10 @@ public class DailyNewsController {
 
     @GetMapping
     public Result<List<DailyNews>> list(@RequestParam(required = false) String category,
-                                        @RequestParam(required = false) Boolean unreadOnly) {
-        return Result.ok(dailyNewsService.list(category, unreadOnly));
+                                        @RequestParam(required = false) Boolean unreadOnly,
+                                        @RequestParam(required = false) Long sourceId,
+                                        @RequestParam(required = false) String sort) {
+        return Result.ok(dailyNewsService.list(category, unreadOnly, sourceId, sort));
     }
 
     @PostMapping("/crawl")

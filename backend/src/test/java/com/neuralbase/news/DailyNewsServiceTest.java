@@ -107,7 +107,7 @@ class DailyNewsServiceTest {
         var news = dailyNewsMapper.selectList(null);
         service.markRead(news.get(0).getId(), true);
         // 3 条中 1 条已读 → 未读筛选返回 2 条,且全部未读
-        var unread = service.list(null, true);
+        var unread = service.list(null, true, null, null);
         assertThat(unread).hasSize(2);
         assertThat(unread).allMatch(n -> !Boolean.TRUE.equals(n.getIsRead()));
     }
