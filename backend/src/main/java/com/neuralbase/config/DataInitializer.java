@@ -39,20 +39,25 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedNewsSources() {
-        if (crawlerSourceMapper.selectCount(null) == 0) {
-            CrawlerSource github = new CrawlerSource();
-            github.setName("GitHub Trending");
-            github.setUrl("https://github.com/trending");
-            github.setType("html");
-            github.setEnabled(true);
-            crawlerSourceMapper.insert(github);
+        // 按 name 幂等:存量库(已有部分源)也能补齐新源
+        seedSource("GitHub Trending", "https://github.com/trending", "html");
+        seedSource("Hacker News", "https://hacker-news.firebaseio.com/v0/topstories.json", "api");
+        seedSource("Papers with Code", "https://paperswithcode.com", "html");
+        seedSource("机器之心", "https://www.jiqizhixin.com/articles", "html");
+        seedSource("InfoQ", "https://www.infoq.cn/", "html");
+    }
 
-            CrawlerSource hn = new CrawlerSource();
-            hn.setName("Hacker News");
-            hn.setUrl("https://hacker-news.firebaseio.com/v0/topstories.json");
-            hn.setType("api");
-            hn.setEnabled(true);
-            crawlerSourceMapper.insert(hn);
+    private void seedSource(String name, String url, String type) {
+        if (crawlerSourceMapper.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<CrawlerSource>()
+                    .eq(CrawlerSource::getName, name)) > 0) {
+            return;
         }
+        CrawlerSource s = new CrawlerSource();
+        s.setName(name);
+        s.setUrl(url);
+        s.setType(type);
+        s.setEnabled(true);
+        crawlerSourceMapper.insert(s);
     }
 }
