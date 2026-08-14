@@ -34,9 +34,12 @@ class DailyNewsServiceTest {
 
     @BeforeEach
     void cleanUp() {
-        // 隔离:兄弟测试会遗留 RUNNING 任务与新闻行,先清空
+        // 隔离:兄弟测试会遗留 RUNNING 任务、新闻行与收藏文档,先清空
         crawlTaskMapper.delete(null);
         dailyNewsMapper.delete(null);
+        jdbcTemplate.update("DELETE FROM vector_store WHERE metadata->>'docId' IN "
+            + "(SELECT id::text FROM document WHERE file_type = 'NEWS')");
+        jdbcTemplate.update("DELETE FROM document WHERE file_type = 'NEWS'");
         jdbcTemplate.update("UPDATE crawler_source SET enabled = TRUE");
     }
 
