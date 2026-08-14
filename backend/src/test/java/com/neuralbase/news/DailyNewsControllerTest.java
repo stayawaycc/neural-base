@@ -41,6 +41,7 @@ class DailyNewsControllerTest {
     void cleanUp() {
         jdbcTemplate.update("DELETE FROM crawl_task");
         jdbcTemplate.update("DELETE FROM daily_news");
+        jdbcTemplate.update("UPDATE crawler_source SET enabled = TRUE");
     }
 
     private String token() throws Exception {
