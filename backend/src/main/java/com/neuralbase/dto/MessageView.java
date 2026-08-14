@@ -3,5 +3,6 @@ package com.neuralbase.dto;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public record MessageView(Long id, String role, String content, List<RagSource> sources, OffsetDateTime createdAt) {
+public record MessageView(Long id, String role, String content, List<RagSource> sources,
+                          String feedback, OffsetDateTime createdAt) {
 }

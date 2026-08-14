@@ -16,5 +16,6 @@ public class Message {
     private String role;
     private String content;
     private String sources;   // JSONB：RagSource 数组的 JSON 文本；可为 null
+    private String feedback;  // LIKE / DISLIKE / null
     private OffsetDateTime createdAt;
 }

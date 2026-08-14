@@ -14,6 +14,7 @@ public class Conversation {
     private Long id;
     private String title;
     private Long kbId;
+    private Boolean favorite;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

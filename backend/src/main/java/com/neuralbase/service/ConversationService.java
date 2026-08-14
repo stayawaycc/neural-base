@@ -66,7 +66,7 @@ public class ConversationService {
             .collect(Collectors.toMap(MessageMapper.LastMessageRow::getConversationId,
                 MessageMapper.LastMessageRow::getContent, (a, b) -> a));
         return conversations.stream()
-            .map(c -> new ConversationView(c.getId(), c.getTitle(), c.getKbId(),
+            .map(c -> new ConversationView(c.getId(), c.getTitle(), c.getKbId(), c.getFavorite(),
                 c.getCreatedAt(), c.getUpdatedAt(), lastByConversation.get(c.getId())))
             .toList();
     }
@@ -98,6 +98,6 @@ public class ConversationService {
 
     private MessageView toView(Message m) {
         return new MessageView(m.getId(), m.getRole(), m.getContent(),
-            parseSources(m.getSources()), m.getCreatedAt());
+            parseSources(m.getSources()), m.getFeedback(), m.getCreatedAt());
     }
 }
