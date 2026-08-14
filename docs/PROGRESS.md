@@ -13,7 +13,7 @@
 | **Phase 2** | 上传 + SiliconFlow Embedding + pgvector 检索 | ✅ | 完成，真实 embedding 冒烟通过 |
 | **Phase 3** | AI 对话（SSE 流式 + RAG 模式 + DeepSeek） | ✅ | 完成，真实冒烟双模式通过 |
 | **Phase 4** | 八股文爬取 + DeepSeek 结构化整理 | ✅ | 后端完成（前端仍 ❌） |
-| **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ❌ | 未开始 |
+| **Phase 5** | AI 日报定时爬取 + DeepSeek 汇总 | ✅ | 2026-08-14:GitHub Trending + Hacker News 两源、单篇中文摘要+五分类、`@Scheduled` 定时(未引入 Quartz)+ 手动触发 `/api/news/crawl`、任务状态机与去重、时间线页(筛选/已读/收藏进 KB)。真实冒烟:30 条真抓 + 30/30 真实摘要 |
 | **Phase 6** | UI 精细化打磨、动画、响应式 | ✅ | 主要页面完成（登录/知识库/对话/八股文/日报占位）+ 文档阅读器 + 亮色模式 + 动画打磨（2026-08-14）；延后项补做另列 |
 | **Phase 7** | Docker 本地部署、性能优化、压测 | ❌ | 未开始 |
 | **Phase 8** | Docker 部署文档 | ❌ | 未开始 |
@@ -92,7 +92,7 @@
 
 ## 四、测试与冒烟
 
-- **自动化测试**：后端 **94/94 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 64/64 绿** + typecheck 无输出 + build 成功（2026-08-14，延后项补做后更新）
+- **自动化测试**：后端 **105/105 绿**（`mvn test`，测试用假 ChatModel + 假 EmbeddingModel + 假 Crawler，不依赖真实 API key/浏览器）；前端 **Vitest 67/67 绿** + typecheck 无输出 + build 成功（2026-08-14，Phase 5 后更新）
   - 后端：Auth(7)+CookieAuth(3)、Kb(1)、Document 上传/处理/检索/删除/竞态防护(11)、Chat 服务(3)+HTTP 层 SSE(3)+Conversation CRUD(2)、TextChunker(5)、TextExtractor(2)、AiContext(1)、ChatContext(1)、SchemaMigration(3)、应用上下文(1)
   - 后端 Phase 4 新增：ContentExtractor(2)、JsoupCrawler(2)、CompositeCrawler(4)、BaguwenAiService(3)、BaguwenService(12)、BaguwenController(8)
   - 前端：GlassCard(2)、user(3)、sse(7)、chat(5)、MarkdownRenderer(2)、ChatMessage(3)、document(5)、baguwen(3)
@@ -153,7 +153,8 @@
 > Phase 1-6：后端（知识库 RAG、AI 对话、八股文库）+ 前端主要页面（登录/知识库/对话/八股文/日报占位）已完成。
 
 1. **前端收尾全部完成**（4/4：文档阅读器、亮色模式、动画打磨、延后项补做）
-2. **Phase 5** AI 日报（Quartz 定时爬取 + DeepSeek 汇总；`crawler_source`/`daily_news`/`crawl_task` 表已建好）
+2. **Phase 7/8** Docker 部署 + 部署文档
+3. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）、更多新闻源
 3. **Phase 7/8** Docker 部署 + 文档
 4. 可选：补 SpringDoc OpenAPI、Redis（若需要限流/队列）
 5. 八股文库遗留：JS 渲染站点需本机先 `playwright install chromium`（Java CLI：`mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`）
