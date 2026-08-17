@@ -36,7 +36,8 @@ export const http = {
   post: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
     client.post(url, data, config) as Promise<T>,
   put: <T>(url: string, data?: unknown) => client.put(url, data) as Promise<T>,
-  del: <T>(url: string) => client.delete(url) as Promise<T>,
+  del: <T>(url: string, params?: Record<string, unknown>) =>
+    client.delete(url, { params }) as Promise<T>,
 }
 
 export default http

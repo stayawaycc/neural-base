@@ -11,12 +11,15 @@ import type {
 
 export const importUrls = (urls: string[]) => http.post<ImportTask[]>('/baguwen/import', { urls })
 
-export const listTasks = (status?: ImportTaskStatus) =>
-  http.get<ImportTask[]>('/baguwen/tasks', status ? { status } : undefined)
+export const listTasks = (params?: { status?: string; page?: number; size?: number }) =>
+  http.get<Page<ImportTask>>('/baguwen/tasks', params)
 
 export const retryTask = (id: number) => http.post<ImportTask>(`/baguwen/tasks/${id}/retry`)
 
 export const deleteTask = (id: number) => http.del<null>(`/baguwen/tasks/${id}`)
+
+export const clearTasks = (status: ImportTaskStatus) =>
+  http.del<number>('/baguwen/tasks', { status })
 
 export const listArticles = (params: { tag?: string; keyword?: string; page: number; size: number }) =>
   http.get<Page<BaguwenArticleView>>('/baguwen', {

@@ -84,6 +84,25 @@ function onPageChange(page: number) {
   void baguwenStore.loadArticles()
 }
 
+function onTaskPageChange(page: number) {
+  baguwenStore.taskFilter.page = page
+  void baguwenStore.loadTasksPage()
+}
+
+const clearingFailed = ref(false)
+
+async function onClearFailed() {
+  clearingFailed.value = true
+  try {
+    const deleted = await baguwenStore.clearFailedTasks()
+    message.success(deleted > 0 ? `已清理 ${deleted} 个失败任务` : '没有失败任务')
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    clearingFailed.value = false
+  }
+}
+
 async function openFavorite(id: number) {
   favoriteArticleId.value = id
   favoriteKbId.value = null
@@ -179,6 +198,14 @@ async function onFavoriteConfirm() {
         <span class="text-xs font-medium text-gray-700 dark:text-gray-300">导入任务</span>
         <span v-if="pendingTaskCount" class="text-xs text-gray-400 dark:text-gray-500">处理中 {{ pendingTaskCount }} 个</span>
         <span v-else class="text-xs text-emerald-600 dark:text-emerald-400">全部完成</span>
+        <div class="ml-auto">
+          <n-popconfirm @positive-click="onClearFailed">
+            <template #trigger>
+              <n-button size="tiny" quaternary :loading="clearingFailed">清理失败任务</n-button>
+            </template>
+            删除全部失败任务(不影响已导入的文章)?
+          </n-popconfirm>
+        </div>
       </div>
       <div class="space-y-0.5">
         <div
@@ -200,19 +227,30 @@ async function onFavoriteConfirm() {
             <n-button v-if="t.status === 'FAILED'" size="tiny" quaternary @click="baguwenStore.retry(t.id)">
               重试
             </n-button>
-            <n-popconfirm v-if="t.status === 'FAILED'" @positive-click="baguwenStore.removeTask(t.id)">
+            <n-popconfirm
+              v-if="t.status === 'FAILED' || t.status === 'SUCCESS'"
+              @positive-click="baguwenStore.removeTask(t.id)"
+            >
               <template #trigger>
                 <span
-                  class="cursor-pointer rounded p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-red-400 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-white/5"
+                  class="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-400 dark:text-gray-600 dark:hover:bg-white/5"
                   title="删除任务"
                 >
                   <Icon icon="mdi:trash-can-outline" class="h-3.5 w-3.5" />
                 </span>
               </template>
-              删除该导入任务?
+              删除该导入任务?(不影响已导入的文章)
             </n-popconfirm>
           </div>
         </div>
+      </div>
+      <div v-if="baguwenStore.taskTotal > baguwenStore.taskFilter.size" class="flex justify-center pt-2">
+        <n-pagination
+          :page="baguwenStore.taskFilter.page"
+          :page-size="baguwenStore.taskFilter.size"
+          :item-count="baguwenStore.taskTotal"
+          @update:page="onTaskPageChange"
+        />
       </div>
     </div>
 

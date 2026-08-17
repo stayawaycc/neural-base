@@ -9,6 +9,8 @@ export const useBaguwenStore = defineStore('baguwen', () => {
   const total = ref(0)
   const tags = ref<TagCount[]>([])
   const tasks = ref<ImportTask[]>([])
+  const taskFilter = reactive({ page: 1, size: 10 })
+  const taskTotal = ref(0)
   const filter = reactive({ tag: '', keyword: '', page: 1, size: 20 })
 
   async function loadTags() {
@@ -26,25 +28,40 @@ export const useBaguwenStore = defineStore('baguwen', () => {
     total.value = page.total
   }
 
+  async function loadTasksPage() {
+    const page = await baguwenApi.listTasks({ page: taskFilter.page, size: taskFilter.size })
+    tasks.value = page.records
+    taskTotal.value = page.total
+  }
+
   async function importUrls(urls: string[]) {
     await baguwenApi.importUrls(urls)
-    await refreshTasks()
+    taskFilter.page = 1
+    await loadTasksPage()
     startPolling()
   }
 
   async function refreshTasks() {
-    tasks.value = await baguwenApi.listTasks()
+    await loadTasksPage()
   }
 
   async function retry(id: number) {
     await baguwenApi.retryTask(id)
-    await refreshTasks()
+    taskFilter.page = 1
+    await loadTasksPage()
     startPolling()
   }
 
   async function removeTask(id: number) {
     await baguwenApi.deleteTask(id)
-    await refreshTasks()
+    await loadTasksPage()
+  }
+
+  /** 批量清理失败任务,返回删除条数并刷新当前任务页。 */
+  async function clearFailedTasks() {
+    const deleted = await baguwenApi.clearTasks('FAILED')
+    await loadTasksPage()
+    return deleted
   }
 
   async function removeArticle(id: number) {
@@ -57,12 +74,11 @@ export const useBaguwenStore = defineStore('baguwen', () => {
     return baguwenApi.favoriteArticle(id, kbId)
   }
 
+  // 轮询:多状态 total 判停(分页后当前页任务不足以判断全局是否还有处理中任务)
   const { start: startPolling, stop: stopPolling } = usePolling(async () => {
-    await refreshTasks()
-    const pending = tasks.value.some(
-      (t) => t.status === 'PENDING' || t.status === 'PROCESSING',
-    )
-    if (!pending) {
+    const pending = await baguwenApi.listTasks({ status: 'PENDING,PROCESSING', page: 1, size: 1 })
+    await loadTasksPage()
+    if (!pending.total) {
       stopPolling()
       await loadArticles()
       await loadTags()
@@ -74,13 +90,17 @@ export const useBaguwenStore = defineStore('baguwen', () => {
     total,
     tags,
     tasks,
+    taskFilter,
+    taskTotal,
     filter,
     loadTags,
     loadArticles,
+    loadTasksPage,
     importUrls,
     refreshTasks,
     retry,
     removeTask,
+    clearFailedTasks,
     removeArticle,
     favorite,
     startPolling,
