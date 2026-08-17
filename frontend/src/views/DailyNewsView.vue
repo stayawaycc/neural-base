@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { NButton, NInput, NModal, NSelect, NSwitch, NTag, type SelectOption } from 'naive-ui'
+import { NButton, NInput, NModal, NPagination, NPopconfirm, NSelect, NSwitch, NTag, type SelectOption } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useNewsStore } from '@/stores/news'
 import { listKbs } from '@/api/kb'
@@ -111,6 +111,20 @@ async function onFavoriteConfirm() {
     message.success('已收藏进知识库')
   } catch (e) {
     message.error((e as Error).message)
+  }
+}
+
+const cleaningNonAi = ref(false)
+
+async function onCleanupNonAi() {
+  cleaningNonAi.value = true
+  try {
+    const deleted = await newsStore.cleanupNonAi()
+    message.success(`已清理 ${deleted} 条非 AI 历史数据`)
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    cleaningNonAi.value = false
   }
 }
 </script>
@@ -260,6 +274,16 @@ async function onFavoriteConfirm() {
       </div>
     </div>
 
+    <!-- 分页 -->
+    <div v-if="newsStore.total > newsStore.size" class="flex justify-center pt-2">
+      <n-pagination
+        :page="newsStore.page"
+        :page-size="newsStore.size"
+        :item-count="newsStore.total"
+        @update:page="newsStore.page = $event"
+      />
+    </div>
+
     <!-- 收藏弹窗 -->
     <n-modal
       v-model:show="favoriteModal"
@@ -325,6 +349,17 @@ async function onFavoriteConfirm() {
               添加来源
             </n-button>
           </div>
+        </div>
+        <div class="border-t border-gray-100 pt-3 dark:border-white/5">
+          <n-popconfirm
+            @positive-click="onCleanupNonAi"
+            :positive-button-props="{ type: 'warning' }"
+          >
+            <template #trigger>
+              <n-button size="small" quaternary :loading="cleaningNonAi">清理非 AI 历史数据</n-button>
+            </template>
+            将删除 GitHub Trending / Hacker News / InfoQ 三个源中标题不含 AI 关键词的历史条目,确认继续?
+          </n-popconfirm>
         </div>
       </div>
     </n-modal>

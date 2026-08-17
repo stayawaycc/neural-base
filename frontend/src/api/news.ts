@@ -1,12 +1,20 @@
 import http from './request'
-import type { NewsItem, NewsSort, NewsSource, NewsTask } from '@/types'
+import type { NewsPage, NewsSort, NewsSource, NewsTask } from '@/types'
 
-export const listNews = (params?: { category?: string; unreadOnly?: boolean; sourceId?: number; sort?: NewsSort }) =>
-  http.get<NewsItem[]>('/news', params)
+export const listNews = (params?: {
+  category?: string
+  unreadOnly?: boolean
+  sourceId?: number
+  sort?: NewsSort
+  page?: number
+  size?: number
+}) => http.get<NewsPage>('/news', params)
 
 export const triggerCrawl = () => http.post<null>('/news/crawl')
 
 export const latestTask = () => http.get<NewsTask | null>('/news/task/latest')
+
+export const cleanupNonAi = () => http.post<number>('/news/cleanup')
 
 export const markRead = (id: number, isRead: boolean) =>
   http.put<null>(`/news/${id}/read`, { isRead })

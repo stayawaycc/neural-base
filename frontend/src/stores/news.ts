@@ -12,19 +12,24 @@ export const useNewsStore = defineStore('news', () => {
   const sort = ref<NewsSort>('created_desc')
   const sourceFilter = ref<number | null>(null)
   const sources = ref<NewsSource[]>([])
+  const page = ref(1)
+  const size = 20
+  const total = ref(0)
 
   // 固定五类 chips(规格:全部/大模型/框架/工具/论文/其他)
   const categories = ['大模型', '框架', '工具', '论文', '其他'] as const
 
-  // 未读/来源/排序走后端(切换时重新拉取,避免本地与后端 LIMIT 200 不一致)
-  watch([unreadOnly, sort, sourceFilter], () => void load())
-  const filtered = computed(() =>
-    items.value.filter(
-      (n) =>
-        (!filterCategory.value || n.category === filterCategory.value) &&
-        (!unreadOnly.value || !n.isRead),
-    ),
-  )
+  // 服务端分页:筛选/排序变化回第 1 页;分页变化直接重拉;本地不再过滤
+  watch([unreadOnly, sort, sourceFilter, filterCategory], () => {
+    if (page.value !== 1) {
+      page.value = 1 // 触发 page watch → load
+    } else {
+      void load()
+    }
+  })
+  watch(page, () => void load())
+
+  const filtered = computed(() => items.value)
 
   const { start: startPolling, stop: stopPolling } = usePolling(async () => {
     await refreshTask()
@@ -32,11 +37,16 @@ export const useNewsStore = defineStore('news', () => {
   })
 
   async function load() {
-    items.value = await newsApi.listNews({
+    const r = await newsApi.listNews({
+      category: filterCategory.value || undefined,
       unreadOnly: unreadOnly.value || undefined,
       sourceId: sourceFilter.value ?? undefined,
       sort: sort.value,
+      page: page.value,
+      size,
     })
+    items.value = r.items
+    total.value = r.total
   }
 
   async function loadSources() {
@@ -59,8 +69,13 @@ export const useNewsStore = defineStore('news', () => {
   }
 
   async function refreshTask() {
+    const prev = task.value?.status
     task.value = await newsApi.latestTask()
-    if (task.value && task.value.status === 'RUNNING') startPolling()
+    if (task.value && task.value.status === 'RUNNING') {
+      startPolling()
+    } else if (prev === 'RUNNING') {
+      await load() // 爬取完成自动刷新列表,否则修复后仍需手动刷新才能看到新数据
+    }
   }
 
   async function triggerCrawl() {
@@ -83,10 +98,18 @@ export const useNewsStore = defineStore('news', () => {
     await newsApi.favoriteNews(id, kbId)
   }
 
+  /** 清理三个通用内置源的历史非 AI 条目,返回删除条数并刷新列表。 */
+  async function cleanupNonAi() {
+    const deleted = await newsApi.cleanupNonAi()
+    await load()
+    return deleted
+  }
+
   return {
     items, task, filterCategory, unreadOnly, sort, sourceFilter, sources, categories, filtered,
+    page, size, total,
     load, loadSources, createSource, updateSource, removeSource,
-    refreshTask, triggerCrawl, markRead, markAllRead, favorite,
+    refreshTask, triggerCrawl, markRead, markAllRead, favorite, cleanupNonAi,
     startPolling, stopPolling,
   }
 })

@@ -148,6 +148,13 @@ export interface NewsItem {
   createdAt: string
 }
 
+export interface NewsPage {
+  items: NewsItem[]
+  total: number
+  page: number
+  size: number
+}
+
 export interface NewsTask {
   id: number
   type: string
