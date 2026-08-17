@@ -16,10 +16,11 @@ class MoreNewsFetcherParseTest {
             <article><a href="/papers/2608.09888" class="line-clamp-2">BDH-CQ duplicate (responsive)</a></article>
             <article><h3><a href="/papers/2605.31264">COLLEAGUE.SKILL</a></h3></article>
             <article><a href="/papers/2608.09888"><span>thumbnail</span></a></article>
+            <nav><a href="/papers/9999.00001">Trending Papers 导航</a></nav>
             </body></html>
             """;
         List<NewsItem> items = PapersWithCodeNewsFetcher.parseHtml(html, "https://huggingface.co");
-        assertThat(items).hasSize(2); // 同 URL 去重
+        assertThat(items).hasSize(2); // 同 URL 去重;article 外导航链接不取
         assertThat(items.get(0).title()).isEqualTo("BDH-CQ: In-Context Learning with Recurrent Latent Reasoning");
         assertThat(items.get(0).url()).isEqualTo("https://huggingface.co/papers/2608.09888");
         assertThat(items.get(0).sourceName()).isEqualTo("Papers with Code");

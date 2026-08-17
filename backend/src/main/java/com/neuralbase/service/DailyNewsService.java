@@ -34,6 +34,13 @@ public class DailyNewsService {
     private static final List<String> BUILTIN_SOURCES = List.of(
         "GitHub Trending", "Hacker News", "Papers with Code", "机器之心", "InfoQ", "GitHub Star AI");
 
+    /**
+     * 清理范围仅含仍可能混入非 AI 内容的历史源:Hacker News(旧 top 全站)与 InfoQ(首页全站)。
+     * GitHub Trending 虽曾被全站爬取过,但现已改为 topic:ai 上游(AI 原生),按标题关键词清理会误删
+     * "ComfyUI" 这类标题无 AI 关键词的真实 AI 仓库,故不列入。
+     */
+    private static final List<String> CLEANUP_SOURCES = List.of("Hacker News", "InfoQ");
+
     private final List<NewsFetcher> fetchers;
     private final DailyNewsMapper dailyNewsMapper;
     private final CrawlTaskMapper crawlTaskMapper;
@@ -203,11 +210,11 @@ public class DailyNewsService {
         documentService.createEmbeddedDocument(kbId, n.getTitle(), "NEWS", n.getUrl(), text);
     }
 
-    /** 一次性清理:删除三个通用内置源历史条目中标题不命中 AI 关键词的脏数据,返回删除条数(可重复执行)。 */
+    /** 一次性清理:删除通用内置源(Hacker News/InfoQ)历史条目中标题不命中 AI 关键词的脏数据,返回删除条数(可重复执行)。 */
     public long cleanupNonAi() {
         List<CrawlerSource> sources = crawlerSourceMapper.selectList(
             new LambdaQueryWrapper<CrawlerSource>()
-                .in(CrawlerSource::getName, "GitHub Trending", "Hacker News", "InfoQ"));
+                .in(CrawlerSource::getName, CLEANUP_SOURCES));
         List<Long> sourceIds = sources.stream().map(CrawlerSource::getId).toList();
         if (sourceIds.isEmpty()) return 0;
         List<DailyNews> candidates = dailyNewsMapper.selectList(

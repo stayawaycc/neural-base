@@ -22,8 +22,6 @@ public class HackerNewsNewsFetcher implements NewsFetcher {
 
     private static final String API = "https://hn.algolia.com/api/v1/search?query=AI&tags=story&hitsPerPage=30";
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public List<NewsItem> fetch() {
         try {

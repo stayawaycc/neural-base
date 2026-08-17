@@ -116,15 +116,18 @@ class DailyNewsServiceTest {
         Long hnId = sourceId("Hacker News");
         Long infoqId = sourceId("InfoQ");
         Long jqzxId = sourceId("机器之心");
-        jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://t/ai', 'AI 框架发布', FALSE)", trendingId);
         jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://t/plain', 'Plain 维护笔记', FALSE)", trendingId);
         jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://h/plain', 'Weather forecast', FALSE)", hnId);
         jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://i/ai', 'LLM 评测', FALSE)", infoqId);
+        jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://i/plain', 'How to grow tomatoes', FALSE)", infoqId);
         jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://j/plain', '本周招聘汇总', FALSE)", jqzxId);
 
         long deleted = service.cleanupNonAi();
-        assertThat(deleted).isEqualTo(2); // 三个通用源中的非 AI 条目;机器之心(非清理范围)保留
-        assertThat(dailyNewsMapper.selectList(null)).hasSize(3);
+        assertThat(deleted).isEqualTo(2); // HN + InfoQ 的非 AI 条目
+        var remaining = dailyNewsMapper.selectList(null);
+        assertThat(remaining).hasSize(3);
+        // GitHub Trending 已为 topic:ai 上游(AI 原生),不在清理范围,避免误删 ComfyUI 类标题
+        assertThat(remaining).anyMatch(n -> n.getTitle().equals("Plain 维护笔记"));
         assertThat(service.cleanupNonAi()).isZero(); // 幂等
     }
 

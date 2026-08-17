@@ -38,7 +38,7 @@
 | 8 | GitHub/HF TLS 修复 | **代码内为这两个源的 HttpClient 构造专用 SSLContext(读 Windows 根证书库)**,不引入启动参数、不动全局信任链(a);非 Windows(如 Linux 容器)加载失败时回退系统默认 SSLContext |
 | 9 | Papers with Code | 抓取目标改为 `huggingface.co/papers/trending`,**源名保留** "Papers with Code"(a) |
 | 10 | 历史清理实现 | 手动接口 `POST /api/news/cleanup` + 前端按钮(可重复执行)(b) |
-| 11 | 清理范围 | 仅三个通用内置源(GitHub Trending / Hacker News / InfoQ)的历史条目,按关键词判定删除(a) |
+| 11 | 清理范围 | 通用内置源(Hacker News / InfoQ)的历史条目,按关键词判定删除(a)。**评审修正**:GitHub Trending 因决策 7 已转为 topic:ai 上游(AI 原生源),按标题关键词清理会误删 "ComfyUI" 类真实 AI 仓库,与本文档「不误删 AI 原生源」原则冲突,故移出清理范围 |
 | 12 | InfoQ | **实测 `/aibriefs` 为 Nuxt 壳且数据接口对 headless 浏览器反爬(Playwright 渲染后文章链接恒为 0),经用户确认回退**:抓首页 + 关键词兜底过滤(a) |
 
 **关键词兜底过滤的作用范围**(由决策 2/3 推导):仅应用于仍可能混入非 AI 内容的源 —— Hacker News(Algolia 前缀匹配会混入 "Airfoil" 之类)、InfoQ(频道页仍可能混入)、自建源;不应用于 AI 原生源(机器之心、Papers、两个 GitHub topic:ai 源),避免误删 "ComfyUI" 这类标题无 AI 关键词的真实 AI 内容。
@@ -59,21 +59,21 @@
 | `GithubStarAiNewsFetcher` | 加 WindowsTrust SSLContext;**修复既有 bug:查询分隔符 `+` 被整体 URL 编码为 `%2B`,GitHub 将日期解析为 "YYYY-MM-DD+topic:ai" 返回 422,该源在任何机器都拿不到数据**(改为空格分隔符,已加 buildUrl 回归测试);口径不变 | 否 |
 | `HackerNewsNewsFetcher` | **重写**:GET `https://hn.algolia.com/api/v1/search?query=AI&tags=story&hitsPerPage=30`;解析 hits[]{title, url(空则 `https://news.ycombinator.com/item?id={objectID}`)};静态 `parseResponse(String)` | **是** |
 | `InfoQNewsFetcher` | **回退**:继续抓首页(JDK HttpClient,SSR 有 137 条标题)+ 关键词兜底过滤;`/aibriefs` 频道页为 Nuxt 壳,数据接口对 headless 浏览器反爬(实测 Playwright 渲染后文章链接恒 0) | **是** |
-| `PapersWithCodeNewsFetcher` | 目标改为 `https://huggingface.co/papers/trending`;解析 `article` 内 `a[href^="/papers/"]` 的标题;WindowsTrust SSLContext;sourceName 保留 | 否 |
+| `PapersWithCodeNewsFetcher` | 目标改为 `https://huggingface.co/papers/trending`;解析 `article` 内 `a[href^="/papers/"]` 的标题(限定 article 防导航链接混入),按 URL 去重;WindowsTrust SSLContext;sourceName 保留 | 否 |
 | `机器之心` | 不变 | 否 |
 | `GenericHtmlNewsFetcher` | 不变 | **是** |
 
 ### 4.3 AiKeywordFilter(新类,静态纯函数 `isAiRelated(String title)`)
 
-- 英文词边界匹配(忽略大小写):`\b(ai|llm|gpt|llama|claude|gemini|deepseek|mistral|qwen|openai|anthropic|chatgpt|copilot|transformer|diffusion|neural|machine learning|deep learning|rag|embedding|fine-?tuning|multimodal|agent|chatbot|prompt|pytorch|tensorflow|langchain|inference|vision|语音|asr|tts)\b`(最终表以测试固化为准)
-- 中文子串:AI、人工智能、大模型、机器学习、深度学习、神经网络、智能体、多模态、生成式、提示词、微调、具身智能、文生图、文生视频
+- 英文词边界匹配(忽略大小写):`\b(ai|llm|gpt|llama|claude|gemini|deepseek|mistral|qwen|openai|anthropic|chatgpt|copilot|transformer|diffusion|neural|machine learning|deep learning|rag|embedding|fine-?tuning|multimodal|agent|chatbot|prompt|pytorch|tensorflow|langchain|inference|vision|asr|tts)\b`(最终表以测试固化为准;`fine-?tun(ing|ed)?` 同时命中 finetune/fine-tune 两形)
+- 中文子串:人工智能、大模型、机器学习、深度学习、神经网络、智能体、多模态、生成式、提示词、微调、具身智能、文生图、文生视频、语音("AI" 一词由英文 `\bai\b` 覆盖,避免大小写混排的子串误判)
 - `NewsFetcher` 加 `default boolean needsAiFilter() { return false; }`;通用源(HN / InfoQ / Generic)覆写 true
 
 ### 4.4 DailyNewsService
 
 - `runCrawlNow()`:入库前对 `needsAiFilter()` 为 true 的源逐条 `AiKeywordFilter.isAiRelated(title)` 过滤;过滤后为空记 warn 跳过(不 touch last_crawl)
 - **分页**:`list(category, unreadOnly, sourceId, sort, page, size)` 用 MyBatis-Plus `Page` + `selectPage`(分页拦截器已配置),返回 `NewsPage{items, total, page, size}`(service 内 record);page≥1、size 默认 20 上限 100;sourceName 回填逻辑不变
-- **清理**:`cleanupNonAi()`:查 source 名 ∈ {GitHub Trending, Hacker News, InfoQ} 的 `source_id` → 拉取这些源的 title/id → Java 侧 `!isAiRelated(title)` 判删 → 批量删除,返回删除条数
+- **清理**:`cleanupNonAi()`:查 source 名 ∈ {Hacker News, InfoQ}(`CLEANUP_SOURCES` 常量;GitHub Trending 已 AI 原生化,不列入)的 `source_id` → 拉取这些源的 title/id → Java 侧 `!isAiRelated(title)` 判删 → 批量删除,返回删除条数
 
 ### 4.5 接口
 

@@ -10,13 +10,13 @@ public final class AiKeywordFilter {
     private static final Pattern EN = Pattern.compile(
         "\\b(ai|llms?|gpts?|llama|claude|gemini|deepseek|mistral|qwen|openai|anthropic|chatgpt|"
         + "copilots?|transformers?|diffusion|neural|machine learning|deep learning|rag|embeddings?|"
-        + "fine-tun(ing|ed)?|multimodal|agents?|chatbots?|prompt|pytorch|tensorflow|langchain|"
+        + "fine-?tun(ing|ed)?|multimodal|agents?|chatbots?|prompt|pytorch|tensorflow|langchain|"
         + "inference|vision|asr|tts)\\b",
         Pattern.CASE_INSENSITIVE);
 
     private static final List<String> ZH = List.of(
         "人工智能", "大模型", "机器学习", "深度学习", "神经网络", "智能体",
-        "多模态", "生成式", "提示词", "微调", "具身智能", "文生图", "文生视频");
+        "多模态", "生成式", "提示词", "微调", "具身智能", "文生图", "文生视频", "语音");
 
     public static boolean isAiRelated(String title) {
         if (title == null || title.isBlank()) return false;

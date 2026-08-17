@@ -180,22 +180,14 @@ Commit: `feat: paginated news list (page/size/total)`
 
 ```java
 public long cleanupNonAi() {
-    List<String> names = List.of("GitHub Trending", "Hacker News", "InfoQ");
     List<CrawlerSource> sources = crawlerSourceMapper.selectList(
-        new LambdaQueryWrapper<CrawlerSource>().in(CrawlerSource::getName, names));
-    List<Long> sourceIds = sources.stream().map(CrawlerSource::getId).toList();
-    if (sourceIds.isEmpty()) return 0;
-    List<DailyNews> candidates = dailyNewsMapper.selectList(
-        new LambdaQueryWrapper<DailyNews>().in(DailyNews::getSourceId, sourceIds));
-    List<Long> toDelete = candidates.stream()
-        .filter(n -> !AiKeywordFilter.isAiRelated(n.getTitle()))
-        .map(DailyNews::getId).toList();
-    if (!toDelete.isEmpty()) dailyNewsMapper.deleteByIds(toDelete);
-    return toDelete.size();
+        new LambdaQueryWrapper<CrawlerSource>().in(CrawlerSource::getName, CLEANUP_SOURCES));
+    // CLEANUP_SOURCES = {Hacker News, InfoQ};GitHub Trending 已 AI 原生化(topic:ai),不列入(评审修正,防 ComfyUI 类误删)
+    ...
 }
 ```
 
-测试:三个通用源各插 AI/非 AI 条目 + 机器之心插非 AI 标题条目 → cleanup 只删三个通用源的非 AI、返回计数、机器之心不动;重跑返回 0。
+测试:HN/InfoQ 各插 AI/非 AI 条目 + GitHub Trending 与机器之心插非 AI 标题条目 → cleanup 只删 HN/InfoQ 的非 AI、返回计数、Trending 与机器之心不动;重跑返回 0。
 
 Run: `DB_PASSWORD=root mvn test -Dtest=DailyNewsServiceTest,DailyNewsControllerTest -q`
 Commit: `feat: manual cleanup of legacy non-ai news rows`

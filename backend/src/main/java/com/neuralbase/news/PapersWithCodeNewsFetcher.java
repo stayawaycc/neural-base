@@ -53,7 +53,8 @@ public class PapersWithCodeNewsFetcher implements NewsFetcher {
         Document doc = Jsoup.parse(html, baseUri);
         List<NewsItem> items = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
-        for (var a : doc.select("a[href^=\"/papers/\"]")) {
+        // 限定 article 内:页面其它区域(导航等)也可能出现 /papers/ 链接
+        for (var a : doc.select("article a[href^=\"/papers/\"]")) {
             String title = a.text().strip();
             if (title.isEmpty()) continue;
             String url = a.absUrl("href");

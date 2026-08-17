@@ -167,11 +167,11 @@ class DailyNewsControllerTest {
     @Test
     void cleanupEndpointReturnsDeletedCount() throws Exception {
         String tk = token();
-        Long trendingId = jdbcTemplate.queryForObject(
-            "SELECT id FROM crawler_source WHERE name = 'GitHub Trending'", Long.class);
+        Long infoqId = jdbcTemplate.queryForObject(
+            "SELECT id FROM crawler_source WHERE name = 'InfoQ'", Long.class);
         jdbcTemplate.update(
             "INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://c/plain', 'Repair bicycle chain', FALSE)",
-            trendingId);
+            infoqId);
         mvc.perform(post("/api/news/cleanup").header("Authorization", "Bearer " + tk))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data").value(1));

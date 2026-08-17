@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import * as newsApi from '@/api/news'
 import { usePolling } from '@/utils/polling'
@@ -28,8 +28,6 @@ export const useNewsStore = defineStore('news', () => {
     }
   })
   watch(page, () => void load())
-
-  const filtered = computed(() => items.value)
 
   const { start: startPolling, stop: stopPolling } = usePolling(async () => {
     await refreshTask()
@@ -106,7 +104,7 @@ export const useNewsStore = defineStore('news', () => {
   }
 
   return {
-    items, task, filterCategory, unreadOnly, sort, sourceFilter, sources, categories, filtered,
+    items, task, filterCategory, unreadOnly, sort, sourceFilter, sources, categories,
     page, size, total,
     load, loadSources, createSource, updateSource, removeSource,
     refreshTask, triggerCrawl, markRead, markAllRead, favorite, cleanupNonAi,

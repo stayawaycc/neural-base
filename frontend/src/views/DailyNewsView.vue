@@ -217,7 +217,7 @@ async function onCleanupNonAi() {
     <!-- 卡片时间线 -->
     <div class="space-y-2">
       <div
-        v-for="n in newsStore.filtered"
+        v-for="n in newsStore.items"
         :key="n.id"
         class="glass-card !p-4 transition-all hover:-translate-y-0.5 hover:shadow-[var(--nb-card-shadow-hover)]"
         :class="!n.isRead ? 'glass-card--selected' : ''"
@@ -269,7 +269,7 @@ async function onCleanupNonAi() {
           </span>
         </div>
       </div>
-      <div v-if="!newsStore.filtered.length" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">
+      <div v-if="!newsStore.items.length" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">
         还没有日报,点击右上角「立即爬取」
       </div>
     </div>
@@ -358,7 +358,7 @@ async function onCleanupNonAi() {
             <template #trigger>
               <n-button size="small" quaternary :loading="cleaningNonAi">清理非 AI 历史数据</n-button>
             </template>
-            将删除 GitHub Trending / Hacker News / InfoQ 三个源中标题不含 AI 关键词的历史条目,确认继续?
+            将删除 Hacker News / InfoQ 两个源中标题不含 AI 关键词的历史条目,确认继续?
           </n-popconfirm>
         </div>
       </div>
