@@ -103,6 +103,18 @@ describe('baguwen store', () => {
     expect(clearTasks).toHaveBeenCalledWith('FAILED')
   })
 
+  it('refreshTasks 发现有处理中任务时启动轮询并记录全局计数', async () => {
+    const proc: ImportTask = { ...task, status: 'PROCESSING' }
+    vi.mocked(listTasks)
+      .mockResolvedValueOnce(pageOf([proc])) // loadTasksPage
+      .mockResolvedValueOnce(pageOf([proc], 3, 1)) // 全局 pending 查询(total=3,大于当前页可见数)
+    const store = useBaguwenStore()
+    await store.refreshTasks()
+    expect(listTasks).toHaveBeenCalledWith({ status: 'PENDING,PROCESSING', page: 1, size: 1 })
+    expect(store.pendingCount).toBe(3)
+    store.stopPolling()
+  })
+
   it('任务分页状态随翻页加载', async () => {
     vi.mocked(listTasks).mockResolvedValue(pageOf([task], 15))
     const store = useBaguwenStore()

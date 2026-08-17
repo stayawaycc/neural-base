@@ -11,6 +11,7 @@ export const useBaguwenStore = defineStore('baguwen', () => {
   const tasks = ref<ImportTask[]>([])
   const taskFilter = reactive({ page: 1, size: 10 })
   const taskTotal = ref(0)
+  const pendingCount = ref(0)
   const filter = reactive({ tag: '', keyword: '', page: 1, size: 20 })
 
   async function loadTags() {
@@ -43,6 +44,9 @@ export const useBaguwenStore = defineStore('baguwen', () => {
 
   async function refreshTasks() {
     await loadTasksPage()
+    // 分页后当前页任务不足以判断全局是否还有处理中任务,单独查多状态 total
+    pendingCount.value = (await baguwenApi.listTasks({ status: 'PENDING,PROCESSING', page: 1, size: 1 })).total
+    if (pendingCount.value) startPolling()
   }
 
   async function retry(id: number) {
@@ -76,9 +80,9 @@ export const useBaguwenStore = defineStore('baguwen', () => {
 
   // 轮询:多状态 total 判停(分页后当前页任务不足以判断全局是否还有处理中任务)
   const { start: startPolling, stop: stopPolling } = usePolling(async () => {
-    const pending = await baguwenApi.listTasks({ status: 'PENDING,PROCESSING', page: 1, size: 1 })
+    pendingCount.value = (await baguwenApi.listTasks({ status: 'PENDING,PROCESSING', page: 1, size: 1 })).total
     await loadTasksPage()
-    if (!pending.total) {
+    if (!pendingCount.value) {
       stopPolling()
       await loadArticles()
       await loadTags()
@@ -92,6 +96,7 @@ export const useBaguwenStore = defineStore('baguwen', () => {
     tasks,
     taskFilter,
     taskTotal,
+    pendingCount,
     filter,
     loadTags,
     loadArticles,

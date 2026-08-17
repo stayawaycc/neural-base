@@ -252,6 +252,30 @@ class BaguwenControllerTest {
             .andExpect(jsonPath("$.data.records[0].id").value(p.getId()));
     }
 
+    @Test
+    void tasksMultiStatusFilterWithPagination() throws Exception {
+        String tk = token();
+        for (int i = 1; i <= 5; i++) {
+            BaguwenImportTask t = new BaguwenImportTask();
+            t.setUrl("http://mp/" + i);
+            t.setStatus(i % 2 == 1 ? "PENDING" : "PROCESSING");
+            t.setAttempt(0);
+            taskMapper.insert(t);
+        }
+        BaguwenImportTask f = baguwenService.importUrls(List.of("http://fail/1")).get(0);
+        f.setStatus("FAILED");
+        taskMapper.updateById(f);
+
+        mvc.perform(get("/api/baguwen/tasks")
+                .param("status", "PENDING,PROCESSING")
+                .param("page", "2").param("size", "2")
+                .header("Authorization", "Bearer " + tk))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.total").value(5)) // FAILED 不计入多状态过滤
+            .andExpect(jsonPath("$.data.records.length()").value(2))
+            .andExpect(jsonPath("$.data.current").value(2));
+    }
+
     private void awaitStatus(Long taskId, String expected) throws Exception {
         for (int i = 0; i < 100; i++) {
             if (expected.equals(taskMapper.selectById(taskId).getStatus())) {

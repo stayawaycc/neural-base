@@ -63,6 +63,18 @@ class ErrorDispatchSecurityTest {
     }
 
     @Test
+    void methodMismatchWithAuthReturns405Not401() throws Exception {
+        String tk = token();
+        // /tasks/{id} 无 POST 映射,应 405;曾被 ERROR 分发篡改为 401(响应携带 Allow 头即其证据)
+        HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/baguwen/tasks/999999"))
+            .header("Authorization", "Bearer " + tk)
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+        HttpResponse<String> resp = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+        assertThat(resp.statusCode()).isEqualTo(405);
+    }
+
+    @Test
     void protectedPathWithoutAuthStillReturns401() throws Exception {
         HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/news"))
             .GET().build();

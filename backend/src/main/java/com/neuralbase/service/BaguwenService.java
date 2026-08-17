@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -183,11 +184,12 @@ public class BaguwenService {
 
     /** 批量删除指定终态任务,返回删除条数。 */
     public long deleteTasksByStatus(String status) {
-        if (status == null || !DELETABLE_STATUSES.contains(status.strip())) {
+        String target = status == null ? "" : status.strip();
+        if (!DELETABLE_STATUSES.contains(target)) {
             throw new IllegalArgumentException("仅支持批量删除 FAILED/SUCCESS 任务，当前: " + status);
         }
         return taskMapper.delete(new LambdaQueryWrapper<BaguwenImportTask>()
-            .eq(BaguwenImportTask::getStatus, status.strip()));
+            .eq(BaguwenImportTask::getStatus, target));
     }
 
     // ---------- 查询 ----------
@@ -198,7 +200,7 @@ public class BaguwenService {
         LambdaQueryWrapper<BaguwenImportTask> w = new LambdaQueryWrapper<>();
         if (status != null && !status.isBlank()) {
             // 逗号分隔多状态(轮询用 PENDING,PROCESSING)
-            List<String> statuses = java.util.Arrays.stream(status.split(","))
+            List<String> statuses = Arrays.stream(status.split(","))
                 .map(String::strip).filter(s -> !s.isEmpty()).toList();
             if (!statuses.isEmpty()) {
                 w.in(BaguwenImportTask::getStatus, statuses);

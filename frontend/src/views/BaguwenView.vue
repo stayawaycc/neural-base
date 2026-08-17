@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { NButton, NInput, NModal, NPopconfirm, NPagination, NSelect, NSkeleton, NTag } from 'naive-ui'
 import { Icon } from '@iconify/vue'
@@ -29,19 +29,14 @@ const taskStatusMeta: Record<ImportTaskStatus, { type: 'default' | 'info' | 'suc
   FAILED: { type: 'error', label: '失败' },
 }
 
-const pendingTaskCount = computed(
-  () => baguwenStore.tasks.filter((t) => t.status === 'PENDING' || t.status === 'PROCESSING').length,
-)
-
 onMounted(async () => {
   try {
     await baguwenStore.loadArticles()
     await baguwenStore.loadTags()
-    await baguwenStore.refreshTasks()
+    await baguwenStore.refreshTasks() // 内部:有处理中任务则启动轮询
   } finally {
     listLoading.value = false // 请求失败也解除骨架,避免永驻
   }
-  if (pendingTaskCount.value) baguwenStore.startPolling()
 })
 
 onBeforeUnmount(() => baguwenStore.stopPolling())
@@ -196,7 +191,7 @@ async function onFavoriteConfirm() {
           <Icon icon="mdi:progress-clock" class="h-4 w-4" :style="{ color: 'var(--nb-accent-amber)' }" />
         </span>
         <span class="text-xs font-medium text-gray-700 dark:text-gray-300">导入任务</span>
-        <span v-if="pendingTaskCount" class="text-xs text-gray-400 dark:text-gray-500">处理中 {{ pendingTaskCount }} 个</span>
+        <span v-if="baguwenStore.pendingCount" class="text-xs text-gray-400 dark:text-gray-500">处理中 {{ baguwenStore.pendingCount }} 个</span>
         <span v-else class="text-xs text-emerald-600 dark:text-emerald-400">全部完成</span>
         <div class="ml-auto">
           <n-popconfirm @positive-click="onClearFailed">
