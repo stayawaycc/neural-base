@@ -3,6 +3,7 @@ import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { darkTheme, lightTheme, NConfigProvider } from 'naive-ui'
 import { gsap } from 'gsap'
+import { useTheme } from 'vuetify'
 import { darkThemeOverrides, lightThemeOverrides } from '@/styles/theme'
 import { useThemeStore } from '@/stores/theme'
 import { applyFeedbackTheme } from '@/utils/feedback'
@@ -13,8 +14,13 @@ import NeuralBackground from '@/components/NeuralBackground.vue'
 const route = useRoute()
 const isLogin = computed(() => route.name === 'login')
 const themeStore = useThemeStore()
+const vuetifyTheme = useTheme()
 
 watchEffect(() => applyFeedbackTheme(themeStore.isDark))
+// Vuetify 主题随 .dark 联动
+watchEffect(() => {
+  vuetifyTheme.global.name.value = themeStore.isDark ? 'dark' : 'light'
+})
 
 // GSAP 页面转场(JS hooks):入场上浮渐显;离开立即完成,避免双视图高度翻倍
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches

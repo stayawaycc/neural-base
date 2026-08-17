@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NButton, NModal, NSelect, NTabPane, NTabs, NTag } from 'naive-ui'
+import { NButton, NModal, NSelect, NTag } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { articleDetail, favoriteArticle } from '@/api/baguwen'
 import { listKbs } from '@/api/kb'
@@ -101,50 +101,59 @@ async function onFavoriteConfirm() {
       </n-button>
     </div>
 
-    <n-tabs v-model:value="activeTab" type="line">
-      <n-tab-pane name="qa" tab="问答">
-        <div class="space-y-3 pt-2">
-          <div
-            v-for="(qa, i) in detail.qaPairs"
-            :key="qa.id"
-            class="glass-card glass-card--amber glass-card--hover !p-5"
-          >
-            <div class="flex items-start gap-3">
-              <span class="qa-badge">{{ i + 1 }}</span>
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-[15px] font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
-                  <n-tag
-                    v-if="difficultyMeta[qa.difficulty]"
-                    size="tiny"
-                    :type="difficultyMeta[qa.difficulty].type"
-                    :bordered="false"
-                    class="shrink-0"
-                  >
-                    {{ difficultyMeta[qa.difficulty].label }}
-                  </n-tag>
-                </div>
-                <div class="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                  {{ qa.answer }}
+    <!-- Vuetify tabs:滑动指示器 + 玻璃容器融合 -->
+    <div class="overflow-hidden rounded-2xl border border-gray-100/80 dark:border-white/5">
+      <v-tabs v-model="activeTab" bg-color="transparent" slider-color="primary" density="compact">
+        <v-tab value="qa">问答</v-tab>
+        <v-tab value="article">原文</v-tab>
+      </v-tabs>
+      <v-window v-model="activeTab">
+        <v-window-item value="qa">
+          <div class="space-y-3 p-4">
+            <div
+              v-for="(qa, i) in detail.qaPairs"
+              :key="qa.id"
+              class="glass-card glass-card--amber glass-card--hover !p-5"
+            >
+              <div class="flex items-start gap-3">
+                <span class="qa-badge">{{ i + 1 }}</span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-[15px] font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
+                    <n-tag
+                      v-if="difficultyMeta[qa.difficulty]"
+                      size="tiny"
+                      :type="difficultyMeta[qa.difficulty].type"
+                      :bordered="false"
+                      class="shrink-0"
+                    >
+                      {{ difficultyMeta[qa.difficulty].label }}
+                    </n-tag>
+                  </div>
+                  <div class="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                    {{ qa.answer }}
+                  </div>
                 </div>
               </div>
             </div>
+            <div v-if="!detail.qaPairs.length" class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
+              本文未提取到问答对
+            </div>
           </div>
-          <div v-if="!detail.qaPairs.length" class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
-            本文未提取到问答对
+        </v-window-item>
+        <v-window-item value="article">
+          <div class="p-4">
+            <pre
+              v-if="detail.content"
+              class="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+            >{{ detail.content }}</pre>
+            <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
+              未提取到原文
+            </div>
           </div>
-        </div>
-      </n-tab-pane>
-      <n-tab-pane name="article" tab="原文">
-        <pre
-          v-if="detail.content"
-          class="whitespace-pre-wrap pt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400"
-        >{{ detail.content }}</pre>
-        <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
-          未提取到原文
-        </div>
-      </n-tab-pane>
-    </n-tabs>
+        </v-window-item>
+      </v-window>
+    </div>
   </div>
   <div v-else class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">文章不存在</div>
 
