@@ -9,18 +9,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MoreNewsFetcherParseTest {
 
     @Test
-    void papersWithCodeParsesPaperCards() {
+    void papersWithCodeParsesHuggingFaceCards() {
         String html = """
             <html><body>
-            <div class="paper-card"><h1><a href="/paper/attention-is-all-you-need">Attention Is All You Need</a></h1></div>
-            <div class="paper-card"><h1><a href="/paper/resnet">Deep Residual Learning</a></h1></div>
+            <article><a href="/papers/2608.09888" class="line-clamp-2">BDH-CQ: In-Context Learning with Recurrent Latent Reasoning</a></article>
+            <article><a href="/papers/2608.09888" class="line-clamp-2">BDH-CQ duplicate (responsive)</a></article>
+            <article><h3><a href="/papers/2605.31264">COLLEAGUE.SKILL</a></h3></article>
+            <article><a href="/papers/2608.09888"><span>thumbnail</span></a></article>
             </body></html>
             """;
-        List<NewsItem> items = PapersWithCodeNewsFetcher.parseHtml(html, "https://paperswithcode.com");
-        assertThat(items).hasSize(2);
-        assertThat(items.get(0).title()).isEqualTo("Attention Is All You Need");
-        assertThat(items.get(0).url()).isEqualTo("https://paperswithcode.com/paper/attention-is-all-you-need");
+        List<NewsItem> items = PapersWithCodeNewsFetcher.parseHtml(html, "https://huggingface.co");
+        assertThat(items).hasSize(2); // 同 URL 去重
+        assertThat(items.get(0).title()).isEqualTo("BDH-CQ: In-Context Learning with Recurrent Latent Reasoning");
+        assertThat(items.get(0).url()).isEqualTo("https://huggingface.co/papers/2608.09888");
         assertThat(items.get(0).sourceName()).isEqualTo("Papers with Code");
+        assertThat(items.get(1).title()).isEqualTo("COLLEAGUE.SKILL");
     }
 
     @Test

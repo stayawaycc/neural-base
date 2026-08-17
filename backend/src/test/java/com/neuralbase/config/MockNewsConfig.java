@@ -35,12 +35,19 @@ public class MockNewsConfig {
         return new NewsFetcher() {
             @Override
             public List<NewsItem> fetch() {
-                return List.of(new NewsItem("HN story", "https://news.ycombinator.com/item?id=9", "Hacker News"));
+                return List.of(
+                    new NewsItem("HN: 大模型 scaling laws", "https://news.ycombinator.com/item?id=9", "Hacker News"),
+                    new NewsItem("Plain weather forecast", "https://news.ycombinator.com/item?id=10", "Hacker News"));
             }
 
             @Override
             public String sourceName() {
                 return "Hacker News";
+            }
+
+            @Override
+            public boolean needsAiFilter() {
+                return true;
             }
         };
     }

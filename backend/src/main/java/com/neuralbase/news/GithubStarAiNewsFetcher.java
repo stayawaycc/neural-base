@@ -30,22 +30,29 @@ public class GithubStarAiNewsFetcher implements NewsFetcher {
     @Override
     public List<NewsItem> fetch() {
         try {
-            String since = LocalDate.now().minusDays(7).toString();
-            String query = "created:>" + since + "+topic:ai";
-            String url = API + "?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8)
-                + "&sort=stars&order=desc&per_page=" + TOP_N;
+            String url = buildUrl(LocalDate.now());
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                 .header("User-Agent", "NeuralBase")
                 .header("Accept", "application/vnd.github+json")
                 .timeout(Duration.ofSeconds(15))
                 .GET()
                 .build();
-            String json = HttpClient.newBuilder().build()
+            String json = HttpClient.newBuilder()
+                .sslContext(WindowsTrustSslContext.create())
+                .build()
                 .send(request, HttpResponse.BodyHandlers.ofString()).body();
             return parseResponse(json);
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("GitHub Star AI 爬取失败", e);
         }
+    }
+
+    /** 分隔符必须是空格(编码后为 +):若原样用 "+" 会被编码成 %2B,GitHub 将日期解析为 "YYYY-MM-DD+topic:ai" 返回 422。 */
+    static String buildUrl(LocalDate today) {
+        String since = today.minusDays(7).toString();
+        String query = "created:>" + since + " topic:ai";
+        return API + "?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8)
+            + "&sort=stars&order=desc&per_page=" + TOP_N;
     }
 
     @Override

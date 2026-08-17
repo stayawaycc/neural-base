@@ -3,7 +3,6 @@ package com.neuralbase.controller;
 import com.neuralbase.common.Result;
 import com.neuralbase.entity.CrawlTask;
 import com.neuralbase.entity.CrawlerSource;
-import com.neuralbase.entity.DailyNews;
 import com.neuralbase.service.DailyNewsService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,11 +27,13 @@ public class DailyNewsController {
     }
 
     @GetMapping
-    public Result<List<DailyNews>> list(@RequestParam(required = false) String category,
-                                        @RequestParam(required = false) Boolean unreadOnly,
-                                        @RequestParam(required = false) Long sourceId,
-                                        @RequestParam(required = false) String sort) {
-        return Result.ok(dailyNewsService.list(category, unreadOnly, sourceId, sort));
+    public Result<DailyNewsService.NewsPage> list(@RequestParam(required = false) String category,
+                                                  @RequestParam(required = false) Boolean unreadOnly,
+                                                  @RequestParam(required = false) Long sourceId,
+                                                  @RequestParam(required = false) String sort,
+                                                  @RequestParam(defaultValue = "1") long page,
+                                                  @RequestParam(defaultValue = "20") long size) {
+        return Result.ok(dailyNewsService.list(category, unreadOnly, sourceId, sort, page, size));
     }
 
     @PostMapping("/crawl")
@@ -63,6 +64,11 @@ public class DailyNewsController {
     @GetMapping("/task/latest")
     public Result<CrawlTask> latestTask() {
         return Result.ok(dailyNewsService.latestTask());
+    }
+
+    @PostMapping("/cleanup")
+    public Result<Long> cleanup() {
+        return Result.ok(dailyNewsService.cleanupNonAi());
     }
 
     @GetMapping("/source")

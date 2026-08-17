@@ -53,6 +53,16 @@ class DailyNewsServiceTest {
     }
 
     @Test
+    void nonAiItemsFromFilteredSourcesAreDropped() {
+        service.startCrawl();
+        service.runCrawlNow();
+        var news = dailyNewsMapper.selectList(null);
+        // 2 条 GitHub 假件(上游已 AI,不参与过滤) + 1 条 HN AI 条目;HN 非 AI 假件被丢弃
+        assertThat(news).hasSize(3);
+        assertThat(news).noneMatch(n -> n.getTitle().equals("Plain weather forecast"));
+    }
+
+    @Test
     void crawlCreatesDeduplicatedNewsAndTaskSucceeds() {
         service.startCrawl();
         service.runCrawlNow();
@@ -101,14 +111,60 @@ class DailyNewsServiceTest {
     }
 
     @Test
+    void cleanupRemovesNonAiRowsOnlyFromGeneralSources() {
+        Long trendingId = sourceId("GitHub Trending");
+        Long hnId = sourceId("Hacker News");
+        Long infoqId = sourceId("InfoQ");
+        Long jqzxId = sourceId("机器之心");
+        jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://t/ai', 'AI 框架发布', FALSE)", trendingId);
+        jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://t/plain', 'Plain 维护笔记', FALSE)", trendingId);
+        jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://h/plain', 'Weather forecast', FALSE)", hnId);
+        jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://i/ai', 'LLM 评测', FALSE)", infoqId);
+        jdbcTemplate.update("INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://j/plain', '本周招聘汇总', FALSE)", jqzxId);
+
+        long deleted = service.cleanupNonAi();
+        assertThat(deleted).isEqualTo(2); // 三个通用源中的非 AI 条目;机器之心(非清理范围)保留
+        assertThat(dailyNewsMapper.selectList(null)).hasSize(3);
+        assertThat(service.cleanupNonAi()).isZero(); // 幂等
+    }
+
+    private Long sourceId(String name) {
+        return jdbcTemplate.queryForObject(
+            "SELECT id FROM crawler_source WHERE name = ?", Long.class, name);
+    }
+
+    @Test
     void markReadAndListFilters() {
         service.startCrawl();
         service.runCrawlNow();
         var news = dailyNewsMapper.selectList(null);
         service.markRead(news.get(0).getId(), true);
         // 3 条中 1 条已读 → 未读筛选返回 2 条,且全部未读
-        var unread = service.list(null, true, null, null);
-        assertThat(unread).hasSize(2);
-        assertThat(unread).allMatch(n -> !Boolean.TRUE.equals(n.getIsRead()));
+        var unread = service.list(null, true, null, null, 1, 20);
+        assertThat(unread.items()).hasSize(2);
+        assertThat(unread.items()).allMatch(n -> !Boolean.TRUE.equals(n.getIsRead()));
+    }
+
+    @Test
+    void listPaginatesAndReportsTotal() {
+        for (int i = 1; i <= 25; i++) {
+            jdbcTemplate.update(
+                "INSERT INTO daily_news (source_id, url, title, is_read) VALUES (NULL, ?, ?, FALSE)",
+                "https://example.com/p" + i, "AI 新闻 " + i);
+        }
+        var page = service.list(null, null, null, null, 2, 10);
+        assertThat(page.items()).hasSize(10);
+        assertThat(page.total()).isEqualTo(25);
+        assertThat(page.page()).isEqualTo(2);
+        assertThat(page.size()).isEqualTo(10);
+    }
+
+    @Test
+    void listClampsPageAndSize() {
+        jdbcTemplate.update(
+            "INSERT INTO daily_news (source_id, url, title, is_read) VALUES (NULL, 'https://x/1', 'AI 1', FALSE)");
+        var page = service.list(null, null, null, null, 0, 999);
+        assertThat(page.page()).isEqualTo(1);
+        assertThat(page.size()).isEqualTo(100);
     }
 }

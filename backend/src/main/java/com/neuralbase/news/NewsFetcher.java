@@ -9,4 +9,9 @@ public interface NewsFetcher {
     default String sourceName() {
         return null;
     }
+
+    /** 该源上游未保证 AI 主题时返回 true,入库前按标题关键词兜底过滤。 */
+    default boolean needsAiFilter() {
+        return false;
+    }
 }

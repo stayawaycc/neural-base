@@ -64,11 +64,11 @@ class DailyNewsControllerTest {
 
         mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(3));
+            .andExpect(jsonPath("$.data.items.length()").value(3));
 
         long id = objectMapper.readTree(mvc.perform(get("/api/news")
                 .header("Authorization", "Bearer " + tk)).andReturn().getResponse().getContentAsString())
-            .get("data").get(0).get("id").asLong();
+            .get("data").get("items").get(0).get("id").asLong();
 
         mvc.perform(put("/api/news/" + id + "/read")
                 .header("Authorization", "Bearer " + tk)
@@ -92,6 +92,13 @@ class DailyNewsControllerTest {
 
         mvc.perform(post("/api/news/crawl").header("Authorization", "Bearer " + tk))
             .andExpect(status().isOk());
+
+        // 等异步爬取结束,避免其假件插入泄漏到后续测试(分页 total 断言被污染)
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline
+            && !jdbcTemplate.queryForList("SELECT 1 FROM crawl_task WHERE status = 'RUNNING'").isEmpty()) {
+            Thread.sleep(100);
+        }
     }
 
     @Test
@@ -103,7 +110,7 @@ class DailyNewsControllerTest {
         mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk)
                 .param("sort", "source"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(3));
+            .andExpect(jsonPath("$.data.items.length()").value(3));
 
         mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk)
                 .param("sort", "bogus"))
@@ -114,7 +121,24 @@ class DailyNewsControllerTest {
         mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk)
                 .param("sourceId", String.valueOf(githubId)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(2)); // 假件 GitHub 源 2 条
+            .andExpect(jsonPath("$.data.items.length()").value(2)); // 假件 GitHub 源 2 条
+    }
+
+    @Test
+    void listSupportsPagination() throws Exception {
+        String tk = token();
+        for (int i = 1; i <= 25; i++) {
+            jdbcTemplate.update(
+                "INSERT INTO daily_news (source_id, url, title, is_read) VALUES (NULL, ?, ?, FALSE)",
+                "https://example.com/p" + i, "AI 新闻 " + i);
+        }
+        mvc.perform(get("/api/news").header("Authorization", "Bearer " + tk)
+                .param("page", "2").param("size", "10"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.items.length()").value(10))
+            .andExpect(jsonPath("$.data.total").value(25))
+            .andExpect(jsonPath("$.data.page").value(2))
+            .andExpect(jsonPath("$.data.size").value(10));
     }
 
     @Test
@@ -138,6 +162,19 @@ class DailyNewsControllerTest {
         mvc.perform(get("/api/news/source").header("Authorization", "Bearer " + tk))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.length()").value(7)); // 6 内置 + 1 自建
+    }
+
+    @Test
+    void cleanupEndpointReturnsDeletedCount() throws Exception {
+        String tk = token();
+        Long trendingId = jdbcTemplate.queryForObject(
+            "SELECT id FROM crawler_source WHERE name = 'GitHub Trending'", Long.class);
+        jdbcTemplate.update(
+            "INSERT INTO daily_news (source_id, url, title, is_read) VALUES (?, 'https://c/plain', 'Repair bicycle chain', FALSE)",
+            trendingId);
+        mvc.perform(post("/api/news/cleanup").header("Authorization", "Bearer " + tk))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data").value(1));
     }
 
     @Test

@@ -74,4 +74,9 @@ public class GenericHtmlNewsFetcher implements NewsFetcher {
         }
         return items;
     }
+
+    @Override
+    public boolean needsAiFilter() {
+        return true; // 自建源内容不可预知,AI 日报只收 AI 相关条目
+    }
 }

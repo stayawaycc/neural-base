@@ -49,6 +49,11 @@ public class InfoQNewsFetcher implements NewsFetcher {
         return "InfoQ";
     }
 
+    @Override
+    public boolean needsAiFilter() {
+        return true;
+    }
+
     static List<NewsItem> parseHtml(String html, String baseUri) {
         Document doc = Jsoup.parse(html, baseUri);
         List<NewsItem> items = new ArrayList<>();

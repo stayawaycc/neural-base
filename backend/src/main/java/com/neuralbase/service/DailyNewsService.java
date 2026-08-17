@@ -1,6 +1,7 @@
 package com.neuralbase.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.neuralbase.entity.CrawlTask;
 import com.neuralbase.entity.CrawlerSource;
 import com.neuralbase.entity.DailyNews;
@@ -9,6 +10,7 @@ import com.neuralbase.mapper.CrawlTaskMapper;
 import com.neuralbase.mapper.CrawlerSourceMapper;
 import com.neuralbase.mapper.DailyNewsMapper;
 import com.neuralbase.mapper.KbMapper;
+import com.neuralbase.news.AiKeywordFilter;
 import com.neuralbase.news.NewsFetcher;
 import com.neuralbase.news.NewsItem;
 import org.slf4j.Logger;
@@ -91,6 +93,15 @@ public class DailyNewsService {
                     log.warn("新闻源无条目(可能为 JS 渲染壳或结构变更): {}", fetcher.getClass().getSimpleName());
                     continue;
                 }
+                if (fetcher.needsAiFilter()) {
+                    items = items.stream()
+                        .filter(i -> AiKeywordFilter.isAiRelated(i.title()))
+                        .toList();
+                }
+                if (items.isEmpty()) {
+                    log.warn("新闻源过滤后无 AI 条目: {}", fetcher.getClass().getSimpleName());
+                    continue;
+                }
                 Long sourceId = sourceIdOf(items);
                 for (NewsItem item : items) {
                     if (exists(item.url())) continue; // 去重
@@ -137,7 +148,7 @@ public class DailyNewsService {
         }
     }
 
-    public List<DailyNews> list(String category, Boolean unreadOnly, Long sourceId, String sort) {
+    public NewsPage list(String category, Boolean unreadOnly, Long sourceId, String sort, long page, long size) {
         LambdaQueryWrapper<DailyNews> qw = new LambdaQueryWrapper<DailyNews>()
             .eq(category != null && !category.isBlank(), DailyNews::getCategory, category)
             .eq(Boolean.TRUE.equals(unreadOnly), DailyNews::getIsRead, false)
@@ -148,16 +159,21 @@ public class DailyNewsService {
             case "category" -> qw.orderByAsc(DailyNews::getCategory);
             default -> qw.orderByDesc(DailyNews::getCreatedAt); // 含非法值回退默认
         }
-        List<DailyNews> news = dailyNewsMapper.selectList(qw.last("LIMIT 200"));
+        long safePage = Math.max(1, page);
+        long safeSize = Math.min(100, Math.max(1, size));
+        Page<DailyNews> p = dailyNewsMapper.selectPage(new Page<>(safePage, safeSize), qw);
         // 透出来源名(前端卡片展示)
         Map<Long, String> sourceNames = new HashMap<>();
         for (CrawlerSource s : crawlerSourceMapper.selectList(null)) {
             sourceNames.put(s.getId(), s.getName());
         }
-        for (DailyNews n : news) {
+        for (DailyNews n : p.getRecords()) {
             n.setSourceName(n.getSourceId() == null ? null : sourceNames.get(n.getSourceId()));
         }
-        return news;
+        return new NewsPage(p.getRecords(), p.getTotal(), safePage, safeSize);
+    }
+
+    public record NewsPage(List<DailyNews> items, long total, long page, long size) {
     }
 
     public void markRead(Long id, boolean isRead) {
@@ -185,6 +201,25 @@ public class DailyNewsService {
         }
         String text = n.getTitle() + "\n" + (n.getSummary() == null ? "" : n.getSummary());
         documentService.createEmbeddedDocument(kbId, n.getTitle(), "NEWS", n.getUrl(), text);
+    }
+
+    /** 一次性清理:删除三个通用内置源历史条目中标题不命中 AI 关键词的脏数据,返回删除条数(可重复执行)。 */
+    public long cleanupNonAi() {
+        List<CrawlerSource> sources = crawlerSourceMapper.selectList(
+            new LambdaQueryWrapper<CrawlerSource>()
+                .in(CrawlerSource::getName, "GitHub Trending", "Hacker News", "InfoQ"));
+        List<Long> sourceIds = sources.stream().map(CrawlerSource::getId).toList();
+        if (sourceIds.isEmpty()) return 0;
+        List<DailyNews> candidates = dailyNewsMapper.selectList(
+            new LambdaQueryWrapper<DailyNews>().in(DailyNews::getSourceId, sourceIds));
+        List<Long> toDelete = candidates.stream()
+            .filter(n -> !AiKeywordFilter.isAiRelated(n.getTitle()))
+            .map(DailyNews::getId)
+            .toList();
+        if (!toDelete.isEmpty()) {
+            dailyNewsMapper.deleteByIds(toDelete);
+        }
+        return toDelete.size();
     }
 
     public CrawlTask latestTask() {

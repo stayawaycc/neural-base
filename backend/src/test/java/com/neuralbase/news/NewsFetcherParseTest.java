@@ -9,31 +9,68 @@ import static org.assertj.core.api.Assertions.assertThat;
 class NewsFetcherParseTest {
 
     @Test
-    void githubTrendingParsesRows() {
-        String html = """
-            <html><body>
-            <article class="Box-row"><h2><a href="/owner/repo">repo-name</a></h2><p>  A cool description </p></article>
-            <article class="Box-row"><h2><a href="/o2/r2">repo2</a></h2><p>desc2</p></article>
-            </body></html>
+    void githubTrendingParsesSearchResponse() {
+        String json = """
+            {"items":[
+              {"full_name":"openclaw/openclaw","html_url":"https://github.com/openclaw/openclaw",
+               "description":"Your own personal AI assistant."},
+              {"full_name":"comfyanonymous/ComfyUI","html_url":"https://github.com/comfyanonymous/ComfyUI",
+               "description":null}
+            ]}
             """;
-        List<NewsItem> items = GithubTrendingNewsFetcher.parseHtml(html);
+        List<NewsItem> items = GithubTrendingNewsFetcher.parseResponse(json);
         assertThat(items).hasSize(2);
-        assertThat(items.get(0).title()).isEqualTo("repo-name");
-        assertThat(items.get(0).url()).isEqualTo("https://github.com/owner/repo");
+        assertThat(items.get(0).title()).isEqualTo("openclaw/openclaw — Your own personal AI assistant.");
+        assertThat(items.get(0).url()).isEqualTo("https://github.com/openclaw/openclaw");
+        assertThat(items.get(0).sourceName()).isEqualTo("GitHub Trending");
+        assertThat(items.get(1).title()).isEqualTo("comfyanonymous/ComfyUI");
     }
 
     @Test
-    void hackerNewsParsesItem() {
-        String json = "{\"id\":1,\"title\":\"Show HN: Foo\",\"url\":\"https://foo.example\"}";
-        NewsItem item = new HackerNewsNewsFetcher().parseItemJson(json, 1L);
-        assertThat(item.title()).isEqualTo("Show HN: Foo");
-        assertThat(item.url()).isEqualTo("https://foo.example");
+    void githubTrendingSkipsMissingFields() {
+        String json = """
+            {"items":[
+              {"full_name":"a/b","html_url":"https://github.com/a/b"},
+              {"description":"no full_name","html_url":"https://example.com/x"}
+            ]}
+            """;
+        assertThat(GithubTrendingNewsFetcher.parseResponse(json)).hasSize(1);
     }
 
     @Test
-    void hackerNewsFallsBackToCommentsUrl() {
-        String json = "{\"id\":7,\"title\":\"Ask HN: Bar\"}";
-        NewsItem item = new HackerNewsNewsFetcher().parseItemJson(json, 7L);
-        assertThat(item.url()).isEqualTo("https://news.ycombinator.com/item?id=7");
+    void githubTrendingTruncatesLongDescription() {
+        String longDesc = "d".repeat(300);
+        String json = "{\"items\":[{\"full_name\":\"a/b\",\"html_url\":\"https://github.com/a/b\","
+            + "\"description\":\"" + longDesc + "\"}]}";
+        NewsItem item = GithubTrendingNewsFetcher.parseResponse(json).get(0);
+        assertThat(item.title()).hasSize("a/b — ".length() + 200);
+        assertThat(item.title()).startsWith("a/b — ");
+    }
+
+    @Test
+    void hackerNewsParsesAlgoliaResponse() {
+        String json = """
+            {"hits":[
+              {"title":"AI agents are coming","url":"https://x.example/1","objectID":"1"},
+              {"title":"Ask HN: AI in 2026?","url":null,"objectID":"7"}
+            ]}
+            """;
+        List<NewsItem> items = HackerNewsNewsFetcher.parseResponse(json);
+        assertThat(items).hasSize(2);
+        assertThat(items.get(0).title()).isEqualTo("AI agents are coming");
+        assertThat(items.get(0).url()).isEqualTo("https://x.example/1");
+        assertThat(items.get(0).sourceName()).isEqualTo("Hacker News");
+        assertThat(items.get(1).url()).isEqualTo("https://news.ycombinator.com/item?id=7");
+    }
+
+    @Test
+    void hackerNewsSkipsBlankTitles() {
+        String json = """
+            {"hits":[
+              {"title":"","url":"https://x.example/1","objectID":"1"},
+              {"title":"Show HN: LLM tool","url":"https://x.example/2","objectID":"2"}
+            ]}
+            """;
+        assertThat(HackerNewsNewsFetcher.parseResponse(json)).hasSize(1);
     }
 }

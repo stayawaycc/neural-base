@@ -12,14 +12,16 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
-/** Papers with Code 首页论文卡爬取。与 InfoQ 同理用 JDK HttpClient 拉取(指纹更接近真实浏览器),Jsoup 解析。 */
+/** Papers with Code 已 302 迁移至 HuggingFace papers/trending;源名保留。响应式布局同 URL 重复出现,按 URL 去重。 */
 @Component
 @Profile("!test")
 public class PapersWithCodeNewsFetcher implements NewsFetcher {
 
-    private static final String BASE_URL = "https://paperswithcode.com";
+    private static final String BASE_URL = "https://huggingface.co/papers/trending";
 
     @Override
     public List<NewsItem> fetch() {
@@ -27,12 +29,12 @@ public class PapersWithCodeNewsFetcher implements NewsFetcher {
             HttpRequest request = HttpRequest.newBuilder(URI.create(BASE_URL))
                 .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
                 .header("Accept", "text/html,application/xhtml+xml")
-                .header("Accept-Language", "en-US,en;q=0.9")
-                .timeout(Duration.ofSeconds(15))
+                .timeout(Duration.ofSeconds(20))
                 .GET()
                 .build();
             String html = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
+                .sslContext(WindowsTrustSslContext.create())
                 .build()
                 .send(request, HttpResponse.BodyHandlers.ofString())
                 .body();
@@ -42,7 +44,6 @@ public class PapersWithCodeNewsFetcher implements NewsFetcher {
         }
     }
 
-
     @Override
     public String sourceName() {
         return "Papers with Code";
@@ -51,12 +52,13 @@ public class PapersWithCodeNewsFetcher implements NewsFetcher {
     static List<NewsItem> parseHtml(String html, String baseUri) {
         Document doc = Jsoup.parse(html, baseUri);
         List<NewsItem> items = new ArrayList<>();
-        for (var card : doc.select("div.paper-card")) {
-            var a = card.selectFirst("h1 a");
-            if (a == null) continue;
+        Set<String> seen = new LinkedHashSet<>();
+        for (var a : doc.select("a[href^=\"/papers/\"]")) {
             String title = a.text().strip();
             if (title.isEmpty()) continue;
-            items.add(new NewsItem(title, a.absUrl("href"), "Papers with Code"));
+            String url = a.absUrl("href");
+            if (!seen.add(url)) continue;
+            items.add(new NewsItem(title, url, "Papers with Code"));
         }
         return items;
     }
