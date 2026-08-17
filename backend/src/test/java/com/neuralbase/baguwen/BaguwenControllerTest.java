@@ -168,7 +168,7 @@ class BaguwenControllerTest {
     }
 
     @Test
-    void deleteTaskRejectsNonFailed() throws Exception {
+    void deleteTaskRemovesSuccessTask() throws Exception {
         String tk = token();
         BaguwenImportTask task = baguwenService.importUrls(List.of("http://ok/1")).get(0);
         task.setStatus("SUCCESS");
@@ -176,9 +176,80 @@ class BaguwenControllerTest {
 
         mvc.perform(delete("/api/baguwen/tasks/" + task.getId())
                 .header("Authorization", "Bearer " + tk))
+            .andExpect(status().isOk());
+        assertThat(taskMapper.selectById(task.getId())).isNull();
+    }
+
+    @Test
+    void deleteTaskRejectsPending() throws Exception {
+        String tk = token();
+        BaguwenImportTask task = baguwenService.importUrls(List.of("http://ok/1")).get(0); // PENDING
+
+        mvc.perform(delete("/api/baguwen/tasks/" + task.getId())
+                .header("Authorization", "Bearer " + tk))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value(400));
         assertThat(taskMapper.selectById(task.getId())).isNotNull();
+    }
+
+    @Test
+    void deleteTasksByStatusClearsFailedOnly() throws Exception {
+        String tk = token();
+        BaguwenImportTask f1 = baguwenService.importUrls(List.of("http://fail/1")).get(0);
+        BaguwenImportTask f2 = baguwenService.importUrls(List.of("http://fail/2")).get(0);
+        BaguwenImportTask s1 = baguwenService.importUrls(List.of("http://ok/1")).get(0);
+        f1.setStatus("FAILED"); f2.setStatus("FAILED"); s1.setStatus("SUCCESS");
+        taskMapper.updateById(f1); taskMapper.updateById(f2); taskMapper.updateById(s1);
+
+        mvc.perform(delete("/api/baguwen/tasks").param("status", "FAILED")
+                .header("Authorization", "Bearer " + tk))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data").value(2));
+        assertThat(taskMapper.selectById(f1.getId())).isNull();
+        assertThat(taskMapper.selectById(f2.getId())).isNull();
+        assertThat(taskMapper.selectById(s1.getId())).isNotNull();
+    }
+
+    @Test
+    void deleteTasksByStatusRejectsNonTerminalStatus() throws Exception {
+        String tk = token();
+        mvc.perform(delete("/api/baguwen/tasks").param("status", "PENDING")
+                .header("Authorization", "Bearer " + tk))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    void tasksListPaginates() throws Exception {
+        String tk = token();
+        for (int i = 1; i <= 15; i++) {
+            BaguwenImportTask t = new BaguwenImportTask();
+            t.setUrl("http://p/" + i);
+            t.setStatus("FAILED");
+            t.setAttempt(0);
+            taskMapper.insert(t);
+        }
+        mvc.perform(get("/api/baguwen/tasks").param("page", "2").param("size", "10")
+                .header("Authorization", "Bearer " + tk))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.records.length()").value(5))
+            .andExpect(jsonPath("$.data.total").value(15))
+            .andExpect(jsonPath("$.data.current").value(2));
+    }
+
+    @Test
+    void tasksMultiStatusFilter() throws Exception {
+        String tk = token();
+        BaguwenImportTask p = baguwenService.importUrls(List.of("http://ok/1")).get(0); // PENDING
+        BaguwenImportTask f = baguwenService.importUrls(List.of("http://fail/1")).get(0);
+        f.setStatus("FAILED");
+        taskMapper.updateById(f);
+
+        mvc.perform(get("/api/baguwen/tasks").param("status", "PENDING,PROCESSING")
+                .header("Authorization", "Bearer " + tk))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.total").value(1))
+            .andExpect(jsonPath("$.data.records[0].id").value(p.getId()));
     }
 
     private void awaitStatus(Long taskId, String expected) throws Exception {

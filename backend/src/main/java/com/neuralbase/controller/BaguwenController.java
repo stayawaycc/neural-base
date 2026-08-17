@@ -39,8 +39,15 @@ public class BaguwenController {
     }
 
     @GetMapping("/tasks")
-    public Result<List<BaguwenImportTask>> tasks(@RequestParam(required = false) String status) {
-        return Result.ok(baguwenService.tasks(status));
+    public Result<Page<BaguwenImportTask>> tasks(@RequestParam(required = false) String status,
+                                                 @RequestParam(defaultValue = "1") long page,
+                                                 @RequestParam(defaultValue = "10") long size) {
+        return Result.ok(baguwenService.tasks(status, page, size));
+    }
+
+    @DeleteMapping("/tasks")
+    public Result<Long> deleteTasksByStatus(@RequestParam String status) {
+        return Result.ok(baguwenService.deleteTasksByStatus(status));
     }
 
     @PostMapping("/tasks/{id}/retry")

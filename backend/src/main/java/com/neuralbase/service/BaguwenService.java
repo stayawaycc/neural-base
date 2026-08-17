@@ -170,21 +170,42 @@ public class BaguwenService {
         return task;
     }
 
-    /** 删除失败任务(仅 FAILED;处理中的任务删除会与异步线程竞争,故禁止)。 */
+    /** 可删除的任务状态:终态任务行可清理(只删任务行,已导入文章保留);PENDING/PROCESSING 与异步线程竞争,禁止。 */
+    private static final List<String> DELETABLE_STATUSES = List.of("FAILED", "SUCCESS");
+
     public void deleteTask(Long taskId) {
         BaguwenImportTask task = requireTask(taskId);
-        if (!"FAILED".equals(task.getStatus())) {
-            throw new IllegalArgumentException("仅 FAILED 任务可删除，当前状态: " + task.getStatus());
+        if (!DELETABLE_STATUSES.contains(task.getStatus())) {
+            throw new IllegalArgumentException("仅 FAILED/SUCCESS 任务可删除，当前状态: " + task.getStatus());
         }
         taskMapper.deleteById(taskId);
     }
 
+    /** 批量删除指定终态任务,返回删除条数。 */
+    public long deleteTasksByStatus(String status) {
+        if (status == null || !DELETABLE_STATUSES.contains(status.strip())) {
+            throw new IllegalArgumentException("仅支持批量删除 FAILED/SUCCESS 任务，当前: " + status);
+        }
+        return taskMapper.delete(new LambdaQueryWrapper<BaguwenImportTask>()
+            .eq(BaguwenImportTask::getStatus, status.strip()));
+    }
+
     // ---------- 查询 ----------
 
-    public List<BaguwenImportTask> tasks(String status) {
-        return taskMapper.selectList(new LambdaQueryWrapper<BaguwenImportTask>()
-            .eq(status != null && !status.isBlank(), BaguwenImportTask::getStatus, status)
-            .orderByDesc(BaguwenImportTask::getId));
+    public Page<BaguwenImportTask> tasks(String status, long page, long size) {
+        long safePage = Math.max(page, 1);
+        long safeSize = Math.min(Math.max(size, 1), 100);
+        LambdaQueryWrapper<BaguwenImportTask> w = new LambdaQueryWrapper<>();
+        if (status != null && !status.isBlank()) {
+            // 逗号分隔多状态(轮询用 PENDING,PROCESSING)
+            List<String> statuses = java.util.Arrays.stream(status.split(","))
+                .map(String::strip).filter(s -> !s.isEmpty()).toList();
+            if (!statuses.isEmpty()) {
+                w.in(BaguwenImportTask::getStatus, statuses);
+            }
+        }
+        w.orderByDesc(BaguwenImportTask::getId);
+        return taskMapper.selectPage(new Page<>(safePage, safeSize), w);
     }
 
     public List<BaguwenQaPair> qaPairs(Long articleId) {

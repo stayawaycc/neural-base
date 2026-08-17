@@ -27,7 +27,9 @@ public class SecurityConfig {
             .headers(h -> h.frameOptions(f -> f.sameOrigin()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a
-                .requestMatchers("/api/auth/login", "/api/auth/logout", "/api/health").permitAll()
+                // /error 必须放行:容器级错误(404/405/415…)的 ERROR 二次分发会重新进入安全链,
+                // 若要求认证,401 入口点会把真实错误状态篡改成 401,前端误判为未登录而登出
+                .requestMatchers("/api/auth/login", "/api/auth/logout", "/api/health", "/error").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint((request, response, ex) -> {
                 response.setStatus(HttpStatus.UNAUTHORIZED.value());
