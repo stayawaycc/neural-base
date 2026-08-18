@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { NButton, NDrawer, NDrawerContent, NInput, NPopconfirm, NSelect, NSwitch, NTag } from 'naive-ui'
+import { NDrawer, NDrawerContent, NPopconfirm } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useChatStore } from '@/stores/chat'
 import { listKbs } from '@/api/kb'
@@ -17,11 +17,6 @@ const kbId = ref<number | null>(null)
 const input = ref('')
 const drawerOpen = ref(false)
 const scrollRef = ref<HTMLElement>()
-
-const modeOptions = [
-  { label: '普通模式', value: 'normal' },
-  { label: '知识库模式', value: 'rag' },
-]
 
 const activeKbName = computed(
   () => kbs.value.find((k) => k.id === kbId.value)?.name ?? '未选择',
@@ -42,11 +37,7 @@ function startRename(c: ConversationView) {
 
 async function commitRename(c: ConversationView) {
   const title = renameText.value.trim()
-  if (!title) {
-    renamingId.value = null
-    return
-  }
-  if (title === c.title) {
+  if (!title || title === c.title) {
     renamingId.value = null
     return
   }
@@ -54,7 +45,7 @@ async function commitRename(c: ConversationView) {
     await chatStore.renameConversation(c.id, title)
     renamingId.value = null
   } catch (e) {
-    message.error((e as Error).message) // 保持编辑态,输入不丢
+    message.error((e as Error).message)
   }
 }
 
@@ -65,7 +56,6 @@ onMounted(async () => {
   } catch {
     kbs.value = []
   }
-  // 支持从首页「最近会话」带 ?conv= 直达
   const conv = Number(route.query.conv)
   if (conv && chatStore.conversations.some((c) => c.id === conv)) {
     await chatStore.openConversation(conv)
@@ -100,101 +90,44 @@ async function onOpenConversation(id: number) {
   drawerOpen.value = false
   scrollToBottom()
 }
+
+function fmtTime(iso?: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const now = new Date()
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  }
+  return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+}
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-9.5rem)] gap-4">
+  <div class="chat-layout">
     <!-- 桌面端会话侧栏 -->
-    <aside class="hidden w-64 shrink-0 flex-col md:flex">
-      <div class="mb-3 flex items-center justify-between">
-        <span class="text-sm text-gray-600 dark:text-gray-400">会话</span>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">仅看收藏</span>
-          <n-switch v-model:value="onlyFavorites" size="small" />
-          <n-button size="small" quaternary @click="onNewConversation">
-            <template #icon><Icon icon="mdi:plus" class="h-4 w-4" /></template>
-            新建
-          </n-button>
+    <aside class="chat-sidebar">
+      <div class="chat-sidebar__header">
+        <span class="chat-sidebar__title cy-mono">// 会话</span>
+        <div class="chat-sidebar__actions">
+          <button class="chat-sidebar__filter" :class="{ 'chat-sidebar__filter--active': onlyFavorites }" @click="onlyFavorites = !onlyFavorites">
+            <Icon :icon="onlyFavorites ? 'mdi:star' : 'mdi:star-outline'" class="h-3.5 w-3.5" />
+          </button>
+          <button class="chat-new-btn" @click="onNewConversation">
+            <Icon icon="mdi:plus" class="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
-      <div class="flex-1 space-y-1.5 overflow-y-auto pr-1">
+      <div class="chat-sidebar__list">
         <button
           v-for="c in visibleConversations"
           :key="c.id"
-          class="group glass-card btn-press relative w-full !p-3 text-left transition-colors"
-          :class="c.id === chatStore.currentId ? 'glass-card--selected' : 'hover:!border-gray-300 dark:hover:!border-white/10'"
+          class="conv-item group"
+          :class="c.id === chatStore.currentId ? 'conv-item--active' : ''"
           @click="onOpenConversation(c.id)"
         >
-          <span
-            v-if="c.id === chatStore.currentId"
-            class="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-cyan-500 dark:bg-cyan-400"
-          />
-          <div class="flex items-center justify-between gap-2">
-            <n-input
-              v-if="renamingId === c.id"
-              v-model:value="renameText"
-              size="tiny"
-              autofocus
-              class="min-w-0 flex-1"
-              @keyup.enter="commitRename(c)"
-              @keyup.esc="renamingId = null"
-              @blur="commitRename(c)"
-            />
-            <span v-else class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>
-            <div class="flex shrink-0 items-center gap-1">
-              <!-- 内层用 span + .stop:button 嵌套 button 非法且点击会冒泡误开会话 -->
-              <span
-                class="btn-press cursor-pointer rounded p-0.5 transition-colors"
-                :class="c.favorite ? 'text-amber-400' : 'text-gray-400 hover:text-amber-400 dark:text-gray-600'"
-                title="收藏"
-                @click.stop="chatStore.toggleFavorite(c.id)"
-              >
-                <Icon :icon="c.favorite ? 'mdi:star' : 'mdi:star-outline'" class="h-4 w-4" />
-              </span>
-              <span
-                v-if="renamingId !== c.id"
-                class="btn-press cursor-pointer rounded p-0.5 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300"
-                title="重命名"
-                @click.stop="startRename(c)"
-              >
-                <Icon icon="mdi:pencil-outline" class="h-4 w-4" />
-              </span>
-              <n-popconfirm @positive-click="chatStore.removeConversation(c.id)">
-                <template #trigger>
-                  <span class="text-gray-400 hover:text-red-400 dark:text-gray-600">
-                    <Icon icon="mdi:trash-can-outline" class="h-4 w-4" />
-                  </span>
-                </template>
-                删除该会话?
-              </n-popconfirm>
-            </div>
-          </div>
-          <div v-if="c.lastMessageContent" class="mt-1 truncate text-xs text-gray-500">
-            {{ c.lastMessageContent }}
-          </div>
-        </button>
-        <div v-if="!visibleConversations.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
-          {{ onlyFavorites ? '没有收藏的会话' : '暂无会话,直接提问即可创建' }}
-        </div>
-      </div>
-    </aside>
-
-    <!-- 移动端会话抽屉 -->
-    <n-drawer v-model:show="drawerOpen" placement="left" :width="280">
-      <n-drawer-content title="会话">
-        <div class="mb-3 flex items-center justify-between">
-          <span class="text-xs text-gray-500">仅看收藏</span>
-          <n-switch v-model:value="onlyFavorites" size="small" />
-        </div>
-        <div class="space-y-1.5">
-          <button
-            v-for="c in visibleConversations"
-            :key="c.id"
-            class="glass-card btn-press w-full !p-3 text-left"
-            :class="c.id === chatStore.currentId ? 'glass-card--selected' : ''"
-            @click="onOpenConversation(c.id)"
-          >
-            <div class="flex items-center justify-between gap-2">
+          <span v-if="c.id === chatStore.currentId" class="conv-item__bar" />
+          <div class="conv-item__body">
+            <div class="conv-item__top">
               <n-input
                 v-if="renamingId === c.id"
                 v-model:value="renameText"
@@ -205,28 +138,64 @@ async function onOpenConversation(id: number) {
                 @keyup.esc="renamingId = null"
                 @blur="commitRename(c)"
               />
-              <span v-else class="truncate text-sm text-gray-800 dark:text-gray-200">{{ c.title }}</span>
-              <div class="flex shrink-0 items-center gap-1">
-                <span
-                  class="btn-press cursor-pointer rounded p-0.5 transition-colors"
-                  :class="c.favorite ? 'text-amber-400' : 'text-gray-400 hover:text-amber-400 dark:text-gray-600'"
-                  title="收藏"
-                  @click.stop="chatStore.toggleFavorite(c.id)"
-                >
-                  <Icon :icon="c.favorite ? 'mdi:star' : 'mdi:star-outline'" class="h-4 w-4" />
+              <span v-else class="conv-item__title">{{ c.title }}</span>
+              <span class="conv-item__time">{{ fmtTime(c.createdAt) }}</span>
+            </div>
+            <div v-if="c.lastMessageContent" class="conv-item__preview">
+              {{ c.lastMessageContent }}
+            </div>
+          </div>
+          <div class="conv-item__actions">
+            <span
+              class="conv-item__action"
+              :class="c.favorite ? 'conv-item__action--star' : ''"
+              title="收藏"
+              @click.stop="chatStore.toggleFavorite(c.id)"
+            >
+              <Icon :icon="c.favorite ? 'mdi:star' : 'mdi:star-outline'" class="h-3.5 w-3.5" />
+            </span>
+            <span
+              v-if="renamingId !== c.id"
+              class="conv-item__action conv-item__action--edit"
+              title="重命名"
+              @click.stop="startRename(c)"
+            >
+              <Icon icon="mdi:pencil-outline" class="h-3.5 w-3.5" />
+            </span>
+            <n-popconfirm @positive-click="chatStore.removeConversation(c.id)">
+              <template #trigger>
+                <span class="conv-item__action conv-item__action--delete">
+                  <Icon icon="mdi:trash-can-outline" class="h-3.5 w-3.5" />
                 </span>
-                <span
-                  v-if="renamingId !== c.id"
-                  class="btn-press cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-300"
-                  title="重命名"
-                  @click.stop="startRename(c)"
-                >
-                  <Icon icon="mdi:pencil-outline" class="h-4 w-4" />
-                </span>
-              </div>
+              </template>
+              删除该会话?
+            </n-popconfirm>
+          </div>
+        </button>
+        <div v-if="!visibleConversations.length" class="chat-sidebar__empty">
+          <Icon icon="mdi:message-text-outline" class="h-8 w-8 text-gray-300 dark:text-gray-600" />
+          <span class="cy-mono">{{ onlyFavorites ? '// NO FAVORITES' : '// TYPE TO START' }}</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 移动端会话抽屉 -->
+    <n-drawer v-model:show="drawerOpen" placement="left" :width="280">
+      <n-drawer-content title="会话">
+        <div class="space-y-1.5">
+          <button
+            v-for="c in visibleConversations"
+            :key="c.id"
+            class="conv-item w-full"
+            :class="c.id === chatStore.currentId ? 'conv-item--active' : ''"
+            @click="onOpenConversation(c.id)"
+          >
+            <div class="conv-item__body">
+              <span class="conv-item__title">{{ c.title }}</span>
+              <div v-if="c.lastMessageContent" class="conv-item__preview">{{ c.lastMessageContent }}</div>
             </div>
           </button>
-          <div v-if="!visibleConversations.length" class="py-8 text-center text-xs text-gray-400 dark:text-gray-600">
+          <div v-if="!visibleConversations.length" class="py-8 text-center text-xs text-gray-400">
             {{ onlyFavorites ? '没有收藏的会话' : '暂无会话' }}
           </div>
         </div>
@@ -234,38 +203,46 @@ async function onOpenConversation(id: number) {
     </n-drawer>
 
     <!-- 消息区 -->
-    <div class="flex min-w-0 flex-1 flex-col">
-      <div class="mb-3 flex items-center gap-2">
-        <n-button class="md:hidden" quaternary size="small" @click="drawerOpen = true">
-          <template #icon><Icon icon="mdi:menu" class="h-4 w-4" /></template>
-          会话
-        </n-button>
-        <n-select
-          v-model:value="mode"
-          :options="modeOptions"
-          size="small"
-          class="w-32"
-        />
+    <div class="chat-main">
+      <!-- 工具栏 -->
+      <div class="chat-toolbar">
+        <button class="chat-toolbar__menu md:hidden" @click="drawerOpen = true">
+          <Icon icon="mdi:menu" class="h-4 w-4" />
+        </button>
+        <div class="chat-mode">
+          <button
+            class="chat-mode__btn"
+            :class="mode === 'normal' ? 'chat-mode__btn--active' : ''"
+            @click="mode = 'normal'"
+          >
+            普通
+          </button>
+          <button
+            class="chat-mode__btn"
+            :class="mode === 'rag' ? 'chat-mode__btn--active' : ''"
+            @click="mode = 'rag'"
+          >
+            知识库
+          </button>
+        </div>
         <template v-if="mode === 'rag'">
-          <n-select
-            v-model:value="kbId"
-            size="small"
-            class="w-40"
-            placeholder="选择知识库"
-            :options="kbs.map((k) => ({ label: k.name, value: k.id }))"
-          />
-          <n-tag v-if="kbId" size="small" :bordered="false" type="info">{{ activeKbName }}</n-tag>
+          <select v-model="kbId" class="chat-kb-select">
+            <option :value="null" disabled>选择知识库</option>
+            <option v-for="k in kbs" :key="k.id" :value="k.id">{{ k.name }}</option>
+          </select>
+          <span v-if="kbId" class="chat-kb-tag">{{ activeKbName }}</span>
         </template>
       </div>
 
-      <div ref="scrollRef" class="flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
-        <div v-if="!chatStore.messages.length" class="flex h-full flex-col items-center justify-center gap-4">
-          <span class="nb-brand-badge h-12 w-12">
-            <Icon icon="mdi:message-text-outline" class="h-6 w-6 text-white" />
-          </span>
-          <div class="text-center">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">开始提问吧</p>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">支持普通模式与知识库模式</p>
+      <!-- 消息列表 -->
+      <div ref="scrollRef" class="chat-messages">
+        <div v-if="!chatStore.messages.length" class="chat-empty">
+          <div class="chat-empty__icon">
+            <Icon icon="mdi:message-text-outline" class="h-7 w-7" />
+          </div>
+          <div>
+            <p class="chat-empty__title cy-mono">&gt; 开始提问吧</p>
+            <p class="chat-empty__desc">普通模式 / 知识库 RAG 模式</p>
           </div>
         </div>
         <ChatMessage
@@ -278,54 +255,492 @@ async function onOpenConversation(id: number) {
           :feedback="m.feedback"
           @feedback="(fb) => chatStore.setFeedback(i, fb)"
         />
-        <div v-if="chatStore.streamError" class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-300">
-          ⚠️ {{ chatStore.streamError }}(已生成内容保留)
+        <div v-if="chatStore.streamError" class="chat-error">
+          <Icon icon="mdi:alert-circle-outline" class="h-4 w-4 shrink-0" />
+          {{ chatStore.streamError }}(已生成内容保留)
         </div>
       </div>
 
-      <!-- 输入区:玻璃容器 + 无边框输入 + 胶囊按钮 -->
-      <div class="input-shell mt-4 flex items-end gap-2 p-2.5">
-        <n-input
-          v-model:value="input"
-          type="textarea"
-          :autosize="{ minRows: 1, maxRows: 6 }"
-          placeholder="输入问题,Enter 发送,Shift+Enter 换行"
-          :disabled="chatStore.streaming"
-          @keydown.enter.exact.prevent="onSend"
-        />
-        <n-button v-if="chatStore.streaming" round secondary @click="chatStore.stopStream()">
-          停止
-        </n-button>
-        <n-button v-else round type="primary" :disabled="!input.trim()" @click="onSend">
-          <template #icon><Icon icon="mdi:send" class="h-4 w-4" /></template>
-          发送
-        </n-button>
+      <!-- 输入区 -->
+      <div class="chat-input-shell">
+        <div class="chat-input">
+          <textarea
+            v-model="input"
+            class="chat-input__field"
+            placeholder="输入问题,Enter 发送,Shift+Enter 换行"
+            :disabled="chatStore.streaming"
+            rows="1"
+            @keydown.enter.exact.prevent="onSend"
+            @input="(e: Event) => { const t = e.target as HTMLTextAreaElement; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 150) + 'px' }"
+          />
+          <button
+            v-if="chatStore.streaming"
+            class="chat-input__stop"
+            @click="chatStore.stopStream()"
+          >
+            <Icon icon="mdi:stop" class="h-4 w-4" />
+            停止
+          </button>
+          <button
+            v-else
+            class="chat-input__send"
+            :disabled="!input.trim()"
+            @click="onSend"
+          >
+            <Icon icon="mdi:arrow-up" class="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* 输入区玻璃容器:内部 n-input 去边框融入容器 */
-.input-shell {
+/* ==================== 布局 ==================== */
+.chat-layout {
+  display: flex;
+  height: calc(100vh - 9.5rem);
+  gap: 16px;
+}
+
+/* ==================== 侧栏 ==================== */
+.chat-sidebar {
+  display: none;
+  flex-direction: column;
+  width: 260px;
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .chat-sidebar {
+    display: flex;
+  }
+}
+.chat-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+.chat-sidebar__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nb-text-secondary);
+}
+.chat-sidebar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.chat-sidebar__filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--nb-text-faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chat-sidebar__filter:hover {
+  background: var(--nb-nav-active-bg);
+  color: var(--nb-text-secondary);
+}
+.chat-sidebar__filter--active {
+  background: var(--nb-alert-soft);
+  border-color: color-mix(in srgb, var(--nb-alert) 40%, transparent);
+  color: var(--nb-alert);
+}
+.chat-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--nb-accent) 50%, transparent);
+  background: transparent;
+  color: var(--nb-accent);
+  cursor: pointer;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  transition: all 0.2s var(--nb-ease-spring);
+}
+.chat-new-btn:hover {
+  background: var(--nb-accent);
+  color: #050508;
+  box-shadow: var(--nb-glow-accent);
+}
+.chat-sidebar__list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chat-sidebar__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 0;
+  font-size: 11px;
+  color: var(--nb-text-faint);
+}
+
+/* ==================== 会话项 ==================== */
+.conv-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s var(--nb-ease-spring);
+}
+.conv-item:hover {
+  background: var(--nb-nav-active-bg);
+  transform: translateX(2px);
+}
+.conv-item--active {
+  background: var(--nb-card-bg);
+  border-color: var(--nb-border-strong);
+  box-shadow: 0 0 12px -6px var(--nb-accent);
+}
+.conv-item__bar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 20px;
+  width: 2px;
+  background: var(--nb-accent);
+  box-shadow: 0 0 6px var(--nb-accent);
+  transform: translateY(-50%);
+}
+.conv-item__body {
+  flex: 1;
+  min-width: 0;
+}
+.conv-item__top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.conv-item__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--nb-text-primary);
+}
+.conv-item__time {
+  font-size: 11px;
+  color: var(--nb-text-faint);
+  flex-shrink: 0;
+}
+.conv-item__preview {
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--nb-text-faint);
+  line-height: 1.4;
+}
+.conv-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+.conv-item:hover .conv-item__actions {
+  opacity: 1;
+}
+.conv-item__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: var(--nb-text-faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.conv-item__action:hover {
+  background: var(--nb-nav-active-bg);
+  color: var(--nb-text-secondary);
+}
+.conv-item__action--star {
+  color: var(--nb-alert);
+  opacity: 1;
+}
+.conv-item__action--edit {
+  display: none;
+}
+.conv-item:hover .conv-item__action--edit {
+  display: flex;
+}
+.conv-item__action--delete:hover {
+  color: var(--nb-alert);
+  background: var(--nb-alert-soft);
+}
+
+/* ==================== 消息主区 ==================== */
+.chat-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 工具栏 */
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.chat-toolbar__menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--nb-border);
+  background: var(--nb-card-bg);
+  color: var(--nb-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chat-toolbar__menu:hover {
+  background: var(--nb-nav-active-bg);
+}
+
+/* 模式切换胶囊 */
+.chat-mode {
+  display: flex;
+  padding: 3px;
+  border-radius: 0;
+  background: var(--nb-nav-active-bg);
+  border: 1px solid var(--nb-border);
+}
+.chat-mode__btn {
+  padding: 5px 14px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  font-family: var(--nb-font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nb-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s var(--nb-ease-spring);
+}
+.chat-mode__btn--active {
+  background: var(--nb-accent);
+  color: #050508;
+  box-shadow: var(--nb-glow-accent);
+}
+
+/* 知识库选择 */
+.chat-kb-select {
+  padding: 5px 10px;
+  border-radius: 0;
+  border: 1px solid var(--nb-border);
+  background: var(--nb-card-bg);
+  font-family: var(--nb-font-mono);
+  font-size: 12px;
+  color: var(--nb-text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.chat-kb-select:focus {
+  border-color: var(--nb-accent);
+  box-shadow: 0 0 10px -4px var(--nb-accent);
+}
+.chat-kb-tag {
+  padding: 3px 10px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--nb-accent) 50%, transparent);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nb-accent);
+  background: var(--nb-accent-soft);
+}
+
+/* ==================== 消息列表 ==================== */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 16px;
+  padding-right: 4px;
+}
+
+/* 空态 */
+.chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  justify-content: center;
+}
+.chat-empty__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
-  border-radius: 18px;
   box-shadow: var(--nb-card-shadow);
-  backdrop-filter: blur(12px);
-  transition:
-    border-color 0.25s ease,
-    box-shadow 0.25s ease;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
 }
-.input-shell:focus-within {
-  border-color: var(--nb-accent-cyan);
-  box-shadow: var(--nb-card-shadow-hover), 0 0 0 3px color-mix(in srgb, var(--nb-accent-cyan) 12%, transparent);
+.chat-empty__icon :deep(svg) {
+  color: var(--nb-text-faint);
 }
-.input-shell :deep(.n-input) {
+.chat-empty__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--nb-text-primary);
+  text-align: center;
+}
+.chat-empty__desc {
+  font-size: 13px;
+  color: var(--nb-text-faint);
+  text-align: center;
+}
+
+/* 错误提示 */
+.chat-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 0;
+  font-size: 13px;
+  color: var(--nb-alert);
+  background: var(--nb-alert-soft);
+  border: 1px solid color-mix(in srgb, var(--nb-alert) 30%, transparent);
+}
+
+/* ==================== 输入区 ==================== */
+.chat-input-shell {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.chat-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 12px 12px 18px;
+  border-radius: 0;
+  background: var(--nb-card-bg);
+  border: 1px solid var(--nb-border);
+  border-left: 2px solid var(--nb-accent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--nb-card-shadow);
+  clip-path: polygon(
+    12px 0, 100% 0, 100% calc(100% - 12px),
+    calc(100% - 12px) 100%, 0 100%, 0 12px
+  );
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.chat-input:focus-within {
+  border-color: var(--nb-border-strong);
+  border-left-color: var(--nb-accent);
+  box-shadow: var(--nb-card-shadow), 0 0 16px -4px var(--nb-accent);
+}
+.chat-input__field {
+  flex: 1;
+  min-height: 24px;
+  max-height: 150px;
+  resize: none;
+  border: none;
+  outline: none;
   background: transparent;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--nb-text-primary);
+  font-family: inherit;
 }
-.input-shell :deep(.n-input .n-input__border),
-.input-shell :deep(.n-input .n-input__state-border) {
+.chat-input__field::placeholder {
+  color: var(--nb-text-faint);
+}
+.chat-input__field:disabled {
+  opacity: 0.6;
+}
+/* 隐藏 textarea 滚动条 */
+.chat-input__field::-webkit-scrollbar {
   display: none;
+}
+.chat-input__send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  border: 1px solid var(--nb-accent);
+  background: var(--nb-accent);
+  color: #050508;
+  cursor: pointer;
+  flex-shrink: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  transition: all 0.2s var(--nb-ease-spring);
+}
+.chat-input__send:hover:not(:disabled) {
+  background: var(--nb-accent-hover);
+  box-shadow: var(--nb-glow-accent);
+  transform: scale(1.05);
+}
+.chat-input__send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.chat-input__stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 0;
+  border: 1px solid var(--nb-border);
+  background: var(--nb-card-bg);
+  font-family: var(--nb-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nb-text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.chat-input__stop:hover {
+  background: var(--nb-alert-soft);
+  border-color: color-mix(in srgb, var(--nb-alert) 40%, transparent);
+  color: var(--nb-alert);
 }
 </style>

@@ -198,7 +198,7 @@ watch(
     <!-- 右:阅读区 -->
     <main class="flex min-w-0 flex-1 flex-col gap-3">
       <header class="flex items-center gap-3 border-b border-gray-100 pb-3 dark:border-white/5">
-        <RouterLink :to="{ name: 'kb' }" class="shrink-0 text-xs text-gray-500 hover:text-cyan-600 dark:hover:text-cyan-300">← 返回知识库</RouterLink>
+        <RouterLink :to="{ name: 'kb' }" class="shrink-0 text-xs text-gray-500 hover:text-[var(--nb-accent)]">← 返回知识库</RouterLink>
         <span class="truncate text-base text-gray-900 dark:text-gray-100">{{ content?.title ?? currentDoc?.title ?? '文档阅读' }}</span>
         <n-tag v-if="currentDoc" size="small" :bordered="false">
           {{ currentDoc.fileType.toUpperCase() }}<template v-if="currentDoc.chunkCount"> · {{ currentDoc.chunkCount }} 块</template>
@@ -206,13 +206,13 @@ watch(
         <div class="ml-auto flex shrink-0 items-center gap-3">
           <a
             v-if="docId != null && hasOriginal"
-            class="download-link text-xs text-gray-500 hover:text-cyan-600 dark:hover:text-cyan-300"
+            class="download-link text-xs text-gray-500 hover:text-[var(--nb-accent)]"
             :href="documentFileUrl(docId)"
             :download="currentDoc?.title"
           >下载原文</a>
           <a
             v-if="kind === 'baguwen' && currentDoc?.sourceUrl"
-            class="text-xs text-gray-500 hover:text-cyan-600 dark:hover:text-cyan-300"
+            class="text-xs text-gray-500 hover:text-[var(--nb-accent)]"
             :href="currentDoc.sourceUrl"
             target="_blank"
             rel="noopener"
@@ -222,14 +222,15 @@ watch(
       <div ref="readerPane" class="relative flex-1 overflow-y-auto" @scroll="onPaneScroll">
         <button
           v-if="kind === 'markdown'"
-          class="outline-trigger btn-press absolute right-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-full border border-gray-200 bg-white/90 px-3 text-xs text-gray-600 backdrop-blur hover:text-cyan-600 dark:border-white/10 dark:bg-[#15151f]/90 dark:text-gray-300 dark:hover:text-cyan-300"
+          class="outline-trigger btn-press absolute right-4 top-4 z-10 flex h-9 items-center gap-1.5 rounded-none border px-3 text-xs backdrop-blur hover:text-[var(--nb-accent)]"
+          style="border-color: var(--nb-border); background: var(--nb-card-bg); color: var(--nb-text-secondary)"
           @click="showOutline = true"
         >
-          <span class="text-sm leading-none">☰</span> 目录
+          <span class="text-sm leading-none">☰</span> <span class="cy-mono">目录</span>
         </button>
         <div v-if="loading" class="py-20 text-center text-sm text-gray-500">加载中…</div>
         <div v-else-if="loadError" class="py-20 text-center text-sm text-gray-500">
-          <p class="text-red-500 dark:text-red-400">{{ loadError }}</p>
+          <p style="color: var(--nb-alert)">{{ loadError }}</p>
           <p v-if="loadError.includes('内容缺失')" class="mt-2 text-gray-400 dark:text-gray-600">请删除该文档后重新上传。</p>
           <p v-else-if="loadError.includes('尚未处理')" class="mt-2 text-gray-400 dark:text-gray-600">处理完成后自动可用,稍后重新选择即可。</p>
         </div>
@@ -244,8 +245,8 @@ watch(
         </div>
         <template v-else>
           <MarkdownRenderer v-if="kind === 'markdown'" :content="content.content" anchor-headings />
-          <iframe v-else-if="kind === 'pdf'" :src="documentFileUrl(content.id)" class="h-full min-h-[60vh] w-full rounded-xl border border-gray-200 dark:border-white/5" />
-          <pre v-else class="whitespace-pre-wrap py-2 text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ content.content }}</pre>
+          <iframe v-else-if="kind === 'pdf'" :src="documentFileUrl(content.id)" class="h-full min-h-[60vh] w-full rounded-none border" style="border-color: var(--nb-border)" />
+          <pre v-else class="whitespace-pre-wrap py-2 text-sm leading-relaxed" style="color: var(--nb-text-primary)">{{ content.content }}</pre>
         </template>
       </div>
     </main>
@@ -261,9 +262,10 @@ watch(
             :class="[
               o.level === 2 ? 'pl-4' : o.level === 3 ? 'pl-8' : '',
               o.id === activeId
-                ? 'bg-cyan-50 text-cyan-600 dark:bg-cyan-400/10 dark:text-cyan-300'
+                ? 'text-[var(--nb-accent)]'
                 : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200',
             ]"
+            :style="o.id === activeId ? { background: 'var(--nb-accent-soft)' } : undefined"
             @click="jumpTo(o.id)"
           >
             {{ o.text }}

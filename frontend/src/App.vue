@@ -32,7 +32,7 @@ function onEnter(el: Element, done: () => void) {
   gsap.fromTo(
     el,
     { opacity: 0, y: 14 },
-    { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', onComplete: done },
+    { opacity: 1, y: 0, duration: 0.45, ease: 'cubic-bezier(0.25, 1, 0.5, 1)', onComplete: done },
   )
 }
 function onLeave(_el: Element, done: () => void) {
@@ -48,7 +48,7 @@ function onLeave(_el: Element, done: () => void) {
     <NeuralBackground />
     <template v-if="!isLogin">
       <AppHeader />
-      <main class="mx-auto max-w-7xl px-4 pb-20 pt-24 md:pb-10">
+      <main class="mx-auto max-w-[1200px] px-6 pb-24 pt-28 md:pb-12 md:pt-24">
         <router-view v-slot="{ Component }">
           <transition name="page" :css="false" @enter="onEnter" @leave="onLeave">
             <component :is="Component" :key="route.fullPath" />

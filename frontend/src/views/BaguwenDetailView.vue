@@ -67,17 +67,18 @@ async function onFavoriteConfirm() {
     <!-- 头部:返回 + 徽章 + 标题/标签 + 收藏 -->
     <div class="flex items-center gap-3">
       <button
-        class="btn-press flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
+        class="btn-press flex h-9 w-9 shrink-0 items-center justify-center rounded-none border transition-colors hover:text-[var(--nb-accent)]"
+        style="border-color: var(--nb-border); color: var(--nb-text-secondary)"
         title="返回"
         @click="router.back()"
       >
         <Icon icon="mdi:arrow-left" class="h-5 w-5" />
       </button>
       <span class="nb-brand-badge h-9 w-9 shrink-0">
-        <Icon icon="mdi:file-document-multiple-outline" class="h-5 w-5 text-white" />
+        <Icon icon="mdi:file-document-multiple-outline" class="h-5 w-5" />
       </span>
       <div class="min-w-0 flex-1">
-        <h1 class="truncate text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+        <h1 class="truncate text-xl font-semibold tracking-tight" style="color: var(--nb-text-primary)">
           {{ detail.title }}
         </h1>
         <div class="mt-1 flex flex-wrap items-center gap-2">
@@ -89,7 +90,8 @@ async function onFavoriteConfirm() {
             :href="detail.url"
             target="_blank"
             rel="noopener"
-            class="text-xs text-cyan-600 hover:underline dark:text-cyan-400"
+            class="text-xs hover:underline"
+            style="color: var(--nb-accent)"
           >
             原文链接 ↗
           </a>
@@ -102,7 +104,7 @@ async function onFavoriteConfirm() {
     </div>
 
     <!-- Vuetify tabs:滑动指示器 + 玻璃容器融合 -->
-    <div class="overflow-hidden rounded-2xl border border-gray-100/80 dark:border-white/5">
+    <div class="overflow-hidden rounded-none border" style="border-color: var(--nb-border)">
       <v-tabs v-model="activeTab" bg-color="transparent" slider-color="primary" density="compact">
         <v-tab value="qa">问答</v-tab>
         <v-tab value="article">原文</v-tab>
@@ -119,7 +121,7 @@ async function onFavoriteConfirm() {
                 <span class="qa-badge">{{ i + 1 }}</span>
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center justify-between gap-2">
-                    <span class="text-[15px] font-medium text-gray-900 dark:text-gray-100">{{ qa.question }}</span>
+                    <span class="text-[15px] font-medium" style="color: var(--nb-text-primary)">{{ qa.question }}</span>
                     <n-tag
                       v-if="difficultyMeta[qa.difficulty]"
                       size="tiny"
@@ -130,7 +132,7 @@ async function onFavoriteConfirm() {
                       {{ difficultyMeta[qa.difficulty].label }}
                     </n-tag>
                   </div>
-                  <div class="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                  <div class="mt-2.5 whitespace-pre-wrap text-sm leading-relaxed" style="color: var(--nb-text-secondary)">
                     {{ qa.answer }}
                   </div>
                 </div>
@@ -145,7 +147,8 @@ async function onFavoriteConfirm() {
           <div class="p-4">
             <pre
               v-if="detail.content"
-              class="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 dark:text-gray-400"
+              class="whitespace-pre-wrap text-sm leading-relaxed"
+              style="color: var(--nb-text-secondary)"
             >{{ detail.content }}</pre>
             <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
               未提取到原文
@@ -176,7 +179,7 @@ async function onFavoriteConfirm() {
 </template>
 
 <style scoped>
-/* 问答序号徽章:琥珀淡底数字 */
+/* 问答序号徽章:霓虹空心数字 */
 .qa-badge {
   display: inline-flex;
   align-items: center;
@@ -185,11 +188,12 @@ async function onFavoriteConfirm() {
   height: 22px;
   flex-shrink: 0;
   margin-top: 2px;
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--nb-alert) 45%, transparent);
+  font-family: var(--nb-font-mono);
+  font-size: 11px;
   font-weight: 600;
-  color: var(--nb-accent-amber);
-  background: color-mix(in srgb, var(--nb-accent-amber) 14%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--nb-accent-amber) 22%, transparent);
+  color: var(--nb-alert);
+  background: var(--nb-alert-soft);
 }
 </style>

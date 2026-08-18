@@ -1,89 +1,88 @@
 /** @type {import('tailwindcss').Config} */
-// NeuralBase 设计系统 · 深色玻璃拟态 + 霓虹渐变
-// 设计哲学:8px 基准网格、5 级圆角、6 级字号、霓虹青色主色 + 紫色强调
+// NeuralBase 设计系统 · Cyberpunk Terminal
+// 深渊蓝黑 #0A0E17 · 电光蓝 #00F0FF + 警告橙 #FF6B00 · 双霓虹限制
 export default {
   content: ['./index.html', './src/**/*.{vue,ts}'],
   darkMode: 'class',
   theme: {
     extend: {
-      /* ---- 色彩系统:主色/强调/模块专属/语义 ---- */
       colors: {
-        brand: {
-          // 主色:霓虹青
-          DEFAULT: '#06b6d4',
-          light: '#22d3ee',
-          dark: '#0e7490',
-          // 强调:霓虹紫
-          accent: '#6366f1',
-          'accent-light': '#a78bfa',
+        void: '#0a0e17',
+        'void-deep': '#050508',
+        surface: '#0f1522',
+        neon: {
+          DEFAULT: '#00f0ff',
+          bright: '#35f5ff',
+          dim: '#00c8d6',
         },
-        // 模块专属色
+        alert: {
+          DEFAULT: '#ff6b00',
+          bright: '#ff8c3a',
+          dim: '#d95f00',
+        },
         module: {
-          kb: '#0891b2',
-          chat: '#7c3aed',
-          baguwen: '#d97706',
-          news: '#059669',
+          kb: '#00f0ff',
+          chat: '#00f0ff',
+          baguwen: '#ff6b00',
+          news: '#00f0ff',
         },
-        // 语义色(与 naive-ui 对齐)
         semantic: {
-          success: '#059669',
-          warning: '#d97706',
-          danger: '#dc2626',
-          info: '#7c3aed',
+          success: '#00f0ff',
+          warning: '#ff6b00',
+          danger: '#ff6b00',
+          info: '#00f0ff',
         },
       },
 
-      /* ---- 字体:Inter + 中文系统栈 ---- */
       fontFamily: {
-        sans: ['Inter', 'PingFang SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'PingFang SC', 'Microsoft YaHei', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'Space Mono', 'SF Mono', 'Consolas', 'monospace'],
       },
 
-      /* ---- 6 级字号层级(caption → display) ---- */
       fontSize: {
-        'caption': ['12px', { lineHeight: '18px' }],
-        'body-sm': ['13px', { lineHeight: '20px' }],
-        'body': ['14px', { lineHeight: '22px' }],
-        'body-lg': ['15px', { lineHeight: '24px' }],
-        'title': ['18px', { lineHeight: '26px', letterSpacing: '-0.01em' }],
-        'title-lg': ['24px', { lineHeight: '32px', letterSpacing: '-0.02em' }],
+        'caption': ['11px', { lineHeight: '16px', letterSpacing: '0.08em' }],
+        'body-sm': ['13px', { lineHeight: '18px' }],
+        'body': ['14px', { lineHeight: '20px' }],
+        'body-lg': ['16px', { lineHeight: '24px' }],
+        'title': ['20px', { lineHeight: '26px', letterSpacing: '-0.01em' }],
+        'title-lg': ['28px', { lineHeight: '34px', letterSpacing: '-0.015em' }],
+        'display': ['44px', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'display-lg': ['60px', { lineHeight: '1.02', letterSpacing: '-0.025em', fontWeight: '700' }],
       },
 
-      /* ---- 5 级圆角体系(8px 基准网格) ---- */
       borderRadius: {
-        nb1: '6px', // 徽章/小元素
-        nb2: '8px', // 紧凑控件
-        nb3: '12px', // 输入框/按钮
-        nb4: '16px', // 卡片
-        nb5: '24px', // 大容器/浮层
+        nb1: '2px',
+        nb2: '4px',
+        nb3: '6px',
+        nb4: '8px',
+        'nb-card': '4px',
+        pill: '999px',
       },
 
-      /* ---- 玻璃阴影 ---- */
       boxShadow: {
-        'glass': '0 1px 2px rgba(15,23,42,0.04), 0 4px 12px -4px rgba(15,23,42,0.05)',
-        'glass-hover': '0 4px 10px -2px rgba(15,23,42,0.06), 0 12px 24px -12px rgba(15,23,42,0.1)',
-        'neon': '0 0 20px -4px rgba(34,211,238,0.45), 0 0 40px -12px rgba(99,102,241,0.35)',
+        'card': '0 0 0 1px rgba(0, 240, 255, 0.06), 0 8px 24px -4px rgba(0, 0, 0, 0.5)',
+        'card-hover': '0 0 0 1px rgba(0, 240, 255, 0.28), 0 0 16px rgba(0, 240, 255, 0.1), 0 12px 40px -8px rgba(0, 0, 0, 0.6)',
+        'glow-neon': '0 0 10px rgba(0, 240, 255, 0.35)',
+        'glow-alert': '0 0 10px rgba(255, 107, 0, 0.35)',
+        'focus-neon': '0 0 0 1px rgba(0, 240, 255, 0.6), 0 0 12px rgba(0, 240, 255, 0.25)',
       },
 
-      /* ---- 动效:入场/呼吸 ---- */
+      transitionTimingFunction: {
+        spring: 'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
       keyframes: {
         'fade-up': {
-          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'neon-pulse': {
-          '0%, 100%': { opacity: '0.6' },
-          '50%': { opacity: '1' },
-        },
-        shimmer: {
-          '0%': { transform: 'translateX(-100%)' },
-          '100%': { transform: 'translateX(100%)' },
+        'led-blink': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.3' },
         },
       },
       animation: {
-        'fade-up': 'fade-up 0.4s ease both',
-        'neon-pulse': 'neon-pulse 3s ease-in-out infinite',
-        shimmer: 'shimmer 1.6s infinite',
+        'fade-up': 'fade-up 0.45s cubic-bezier(0.25, 1, 0.5, 1) both',
+        'led': 'led-blink 1.6s ease-in-out infinite',
       },
     },
   },

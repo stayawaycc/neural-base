@@ -34,17 +34,17 @@ async function onUpload({ file, onFinish, onError, onProgress }: UploadCustomReq
     <n-upload-dragger class="glass-card upload-ripple !border-dashed">
       <div class="flex flex-col items-center gap-3 py-4">
         <span class="nb-brand-badge h-12 w-12">
-          <n-icon size="22" color="#fff">
+          <n-icon size="22">
             <Icon
               :icon="uploading ? 'mdi:loading' : 'mdi:cloud-upload-outline'"
               :class="uploading ? 'animate-spin' : ''"
             />
           </n-icon>
         </span>
-        <span class="text-sm text-gray-700 dark:text-gray-300">
+        <span class="text-sm" style="color: var(--nb-text-primary)">
           {{ uploading ? '上传中…' : '点击或拖拽文件到此处上传' }}
         </span>
-        <span class="text-xs text-gray-400 dark:text-gray-600">支持 PDF / Word / Markdown / TXT,上传后自动切片入库</span>
+        <span class="cy-mono text-[11px]" style="color: var(--nb-text-faint)">PDF // WORD // MD // TXT — 自动切片入库</span>
       </div>
     </n-upload-dragger>
   </n-upload>

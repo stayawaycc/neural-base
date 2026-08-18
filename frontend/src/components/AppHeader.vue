@@ -12,14 +12,13 @@ const route = useRoute()
 const themeStore = useThemeStore()
 
 const navs = [
-  { name: 'dashboard', label: '首页', path: '/' },
-  { name: 'kb', label: '知识库', path: '/kb' },
-  { name: 'chat', label: 'AI 对话', path: '/chat' },
-  { name: 'baguwen', label: '八股文', path: '/baguwen' },
-  { name: 'news', label: 'AI 日报', path: '/news' },
+  { name: 'dashboard', label: '首页', prefix: '//', path: '/' },
+  { name: 'kb', label: '知识库', prefix: '[KB]', path: '/kb' },
+  { name: 'chat', label: 'AI 对话', prefix: '[SYNC]', path: '/chat' },
+  { name: 'baguwen', label: '八股文', prefix: '[EXAM]', path: '/baguwen' },
+  { name: 'news', label: 'AI 日报', prefix: '[FEED]', path: '/news' },
 ]
 
-// 详情子路径(如 /baguwen/1、/kb/1/reader/3)也保持对应导航高亮
 function isActive(path: string) {
   return route.path === path || route.path.startsWith(path + '/')
 }
@@ -38,42 +37,46 @@ async function onUserSelect(key: string) {
 
 <template>
   <header
-    class="fixed inset-x-0 top-0 z-40 h-16 border-b backdrop-blur-xl"
+    class="app-header fixed inset-x-0 top-0 z-40"
     style="background: var(--nb-header-bg); border-color: var(--nb-border)"
   >
-    <div class="mx-auto flex h-full max-w-7xl items-center gap-2 px-4">
+    <div class="mx-auto flex h-14 max-w-[1200px] items-center gap-2 px-6">
       <RouterLink to="/" class="flex shrink-0 items-center gap-2.5">
         <span class="nb-brand-badge h-8 w-8">
-          <Icon icon="mdi:brain" class="h-5 w-5 text-white" />
+          <Icon icon="mdi:brain" class="h-4 w-4" />
         </span>
-        <span class="text-[15px] font-semibold tracking-tight text-gray-900 dark:text-gray-100">NeuralBase</span>
+        <span class="text-[15px] font-semibold tracking-[0.08em] text-gray-900 dark:text-gray-100">
+          NeuralBase
+        </span>
       </RouterLink>
-      <nav class="ml-6 hidden items-center gap-1 md:flex">
+      <nav class="ml-8 hidden items-center gap-0.5 md:flex">
         <RouterLink
           v-for="n in navs"
           :key="n.name"
           :to="n.path"
-          class="nav-link rounded-lg px-3 py-1.5 text-sm transition-colors"
+          class="nav-link relative rounded-none px-3 py-1.5 text-[12px] font-medium transition-colors"
           :class="{ 'nav-link--active': isActive(n.path) }"
         >
+          <span class="nav-link__prefix">{{ n.prefix }}</span>
           {{ n.label }}
         </RouterLink>
       </nav>
-      <div class="ml-auto flex items-center">
+      <div class="ml-auto flex items-center gap-1">
         <button
-          class="theme-toggle btn-press mr-2 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
+          class="theme-toggle btn-press flex h-8 w-8 items-center justify-center rounded-none text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
           title="切换主题"
           @click="themeStore.toggleTheme()"
         >
-          <Icon v-if="themeStore.isDark" icon="mdi:white-balance-sunny" class="h-5 w-5" />
-          <Icon v-else icon="mdi:weather-night" class="h-5 w-5" />
+          <Icon v-if="themeStore.isDark" icon="mdi:white-balance-sunny" class="h-4 w-4" />
+          <Icon v-else icon="mdi:weather-night" class="h-4 w-4" />
         </button>
         <n-dropdown :options="userOptions" trigger="click" @select="onUserSelect">
           <button
-            class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+            class="flex items-center gap-2 rounded-none px-2 py-1.5 text-[13px] text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
           >
             <span
-              class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-purple-400 text-xs font-semibold text-white"
+              class="flex h-6 w-6 items-center justify-center rounded-none text-[11px] font-semibold text-white"
+              style="background: var(--nb-accent)"
             >
               {{ initial }}
             </span>
@@ -86,30 +89,40 @@ async function onUserSelect(key: string) {
 </template>
 
 <style scoped>
+.app-header {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--nb-border);
+}
 .nav-link {
+  font-family: var(--nb-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--nb-text-secondary);
-  position: relative;
+}
+.nav-link__prefix {
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 .nav-link:hover {
   color: var(--nb-text-primary);
   background: var(--nb-nav-active-bg);
 }
-.nav-link.router-link-active,
 .nav-link--active {
-  color: var(--nb-text-primary);
-  font-weight: 500;
+  color: var(--nb-accent);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--nb-accent) 50%, transparent);
 }
-/* 激活导航:品牌渐变下划线 */
-.nav-link.router-link-active::after,
+.nav-link--active .nav-link__prefix {
+  opacity: 1;
+}
 .nav-link--active::after {
   content: '';
   position: absolute;
-  left: 50%;
-  bottom: 1px;
-  transform: translateX(-50%);
-  width: 14px;
+  left: 0;
+  bottom: 0;
+  width: 100%;
   height: 2px;
-  border-radius: 2px;
-  background: var(--nb-grad-brand);
+  background: var(--nb-accent);
+  box-shadow: 0 0 8px var(--nb-accent);
 }
 </style>

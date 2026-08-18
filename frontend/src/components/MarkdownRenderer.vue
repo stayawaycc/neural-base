@@ -101,8 +101,8 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
 <style scoped>
 /* AI 回答排版:全部走 CSS 变量双主题化(旧版深色专用样式在浅色下隐形,已修复) */
 .md-body {
-  font-size: 15px;
-  line-height: 1.75;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--nb-text-primary);
 }
 .md-body :deep(p) {
@@ -145,13 +145,13 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
 .md-body :deep(li::marker) {
   color: var(--nb-text-faint);
 }
-/* 引用块:青色光条 + 淡青底(签名元素) */
+/* 引用块:霓虹光条 + 淡底 */
 .md-body :deep(blockquote) {
   margin: 0.9em 0;
   padding: 0.6em 1em;
-  border-left: 3px solid var(--nb-accent-cyan);
-  border-radius: 0 10px 10px 0;
-  background: color-mix(in srgb, var(--nb-accent-cyan) 6%, transparent);
+  border-left: 3px solid var(--nb-accent);
+  border-radius: 0;
+  background: var(--nb-accent-soft);
   color: var(--nb-text-secondary);
 }
 .md-body :deep(blockquote p) {
@@ -163,15 +163,16 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
   font-size: 0.88em;
   background: var(--nb-nav-active-bg);
   border: 1px solid var(--nb-border);
-  border-radius: 5px;
+  border-radius: 2px;
   padding: 0.15em 0.4em;
 }
-/* 代码块(背景由 hljs 主题 css 提供,这里补边框/圆角/复制按钮) */
+/* 代码块(背景由 hljs 主题 css 提供,这里补边框/复制按钮) */
 .md-body :deep(pre.code-block) {
   position: relative;
   margin: 0.9em 0;
-  border-radius: 12px;
+  border-radius: 0;
   border: 1px solid var(--nb-border);
+  border-left: 2px solid var(--nb-accent);
   overflow: hidden;
 }
 .md-body :deep(pre.code-block code) {
@@ -185,26 +186,30 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
   top: 8px;
   right: 8px;
   padding: 2px 10px;
-  font-size: 12px;
+  font-size: 11px;
+  font-family: var(--nb-font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--nb-text-faint);
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
-  border-radius: 6px;
+  border-radius: 0;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 .md-body :deep(.code-copy-btn:hover) {
-  color: var(--nb-text-primary);
+  color: var(--nb-accent);
+  border-color: var(--nb-border-strong);
 }
-/* 链接:下划线用淡化青色,悬停加深 */
+/* 链接:下划线用淡化品牌蓝,悬停加深 */
 .md-body :deep(a) {
-  color: var(--nb-accent-cyan);
+  color: var(--nb-accent);
   text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--nb-accent-cyan) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--nb-accent) 40%, transparent);
   transition: border-color 0.2s ease;
 }
 .md-body :deep(a:hover) {
-  border-color: var(--nb-accent-cyan);
+  border-color: var(--nb-accent);
 }
 /* 分隔线 */
 .md-body :deep(hr) {

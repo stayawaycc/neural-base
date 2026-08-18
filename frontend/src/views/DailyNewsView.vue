@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { NButton, NInput, NModal, NPagination, NPopconfirm, NSelect, NSwitch, NTag, type SelectOption } from 'naive-ui'
+import { NButton, NInput, NModal, NPagination, NPopconfirm, NSelect, NSwitch, type SelectOption } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useNewsStore } from '@/stores/news'
 import { listKbs } from '@/api/kb'
@@ -54,12 +54,12 @@ async function onCreateSource() {
   }
 }
 
-const categoryMeta: Record<string, string> = {
-  大模型: 'text-violet-600 dark:text-violet-300',
-  框架: 'text-cyan-600 dark:text-cyan-300',
-  工具: 'text-emerald-600 dark:text-emerald-300',
-  论文: 'text-amber-600 dark:text-amber-300',
-  其他: 'text-gray-500',
+/* 分类收敛:仅青/橙/灰,无彩虹 */
+const categoryStyles: Record<string, { color: string; bg: string }> = {
+  '大模型': { color: 'var(--nb-accent)', bg: 'transparent' },
+  '框架': { color: 'var(--nb-accent)', bg: 'transparent' },
+  '工具': { color: 'var(--nb-alert)', bg: 'transparent' },
+  '论文': { color: 'var(--nb-alert)', bg: 'transparent' },
 }
 
 onMounted(async () => {
@@ -130,152 +130,152 @@ async function onCleanupNonAi() {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <!-- 页面头部:标题 + 任务状态 + 立即爬取 -->
-    <div class="flex flex-wrap items-center gap-3">
-      <span class="nb-brand-badge h-9 w-9">
-        <Icon icon="mdi:newspaper-variant-outline" class="h-5 w-5 text-white" />
-      </span>
-      <div>
-        <h1 class="text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">AI 日报</h1>
-        <p class="text-xs text-gray-500 dark:text-gray-400">前沿资讯定时爬取,AI 单篇摘要</p>
+  <div class="news-layout">
+    <!-- 页面头部 -->
+    <div class="news-header">
+      <div class="news-header__icon">
+        <Icon icon="mdi:newspaper-variant-outline" class="h-5 w-5" />
       </div>
-      <div class="ml-auto flex items-center gap-2">
-        <div v-if="newsStore.task?.status === 'RUNNING'" class="flex items-center gap-2">
-          <div class="nb-progress w-20">
-            <div class="nb-progress__bar" :style="{ width: `${newsStore.task.progress ?? 0}%` }" />
+      <div>
+        <h1 class="news-header__title">AI 日报 [FEED]</h1>
+        <p class="news-header__desc">前沿资讯定时爬取,AI 单篇摘要</p>
+      </div>
+      <div class="news-header__right">
+        <div v-if="newsStore.task?.status === 'RUNNING'" class="news-crawl-progress">
+          <div class="news-crawl-progress__bar">
+            <div class="news-crawl-progress__fill" :style="{ width: (newsStore.task.progress || 0) + '%' }" />
           </div>
+          <span class="news-crawl-progress__text">{{ newsStore.task.progress }}%</span>
         </div>
-        <n-tag
-          v-if="newsStore.task"
-          size="small"
-          :bordered="false"
-          :type="newsStore.task.status === 'SUCCESS' ? 'success' : newsStore.task.status === 'FAILED' ? 'error' : 'info'"
+        <span
+          v-if="newsStore.task && newsStore.task.status !== 'RUNNING'"
+          class="news-header__badge"
+          :class="newsStore.task.status === 'SUCCESS' ? 'news-header__badge--success' : newsStore.task.status === 'FAILED' ? 'news-header__badge--error' : ''"
         >
-          {{ newsStore.task.status === 'RUNNING' ? `爬取中 ${newsStore.task.progress}%` : newsStore.task.status }}
-        </n-tag>
-        <n-button
-          round
-          type="primary"
-          size="small"
-          :loading="crawling || newsStore.task?.status === 'RUNNING'"
+          {{ newsStore.task.status === 'SUCCESS' ? '已完成' : newsStore.task.status === 'FAILED' ? '失败' : '排队中' }}
+        </span>
+        <button
+          class="news-crawl-btn"
+          :disabled="crawling || newsStore.task?.status === 'RUNNING'"
           @click="onCrawl"
         >
-          <template #icon><Icon icon="mdi:cloud-download-outline" class="h-4 w-4" /></template>
-          立即爬取
-        </n-button>
+          <Icon icon="mdi:cloud-download-outline" class="h-4 w-4" />
+          {{ crawling || newsStore.task?.status === 'RUNNING' ? '// CRAWLING...' : '> 立即爬取' }}
+        </button>
       </div>
     </div>
 
-    <!-- 工具栏:排序 + 来源筛选 + 分类筛选 + 已读 -->
-    <div class="flex flex-wrap items-center gap-2">
-      <n-select v-model:value="newsStore.sort" :options="sortOptions" size="small" class="w-28" />
-      <div class="flex flex-wrap gap-1.5">
-        <button
-          class="nb-chip"
-          :class="newsStore.sourceFilter === null ? 'nb-chip--active' : ''"
-          @click="newsStore.sourceFilter = null"
-        >
-          全部来源
-        </button>
-        <button
-          v-for="s in newsStore.sources"
-          :key="s.id"
-          class="nb-chip"
-          :class="newsStore.sourceFilter === s.id ? 'nb-chip--active' : ''"
-          @click="newsStore.sourceFilter = newsStore.sourceFilter === s.id ? null : s.id"
-        >
-          {{ s.name }}
-        </button>
+    <!-- 工具栏 -->
+    <div class="news-toolbar">
+      <div class="news-toolbar__left">
+        <!-- 排序 -->
+        <select v-model="newsStore.sort" class="news-select">
+          <option v-for="o in sortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+        <!-- 来源筛选 -->
+        <div class="news-chips">
+          <button
+            class="news-chip"
+            :class="newsStore.sourceFilter === null ? 'news-chip--active' : ''"
+            @click="newsStore.sourceFilter = null"
+          >
+            全部来源
+          </button>
+          <button
+            v-for="s in newsStore.sources"
+            :key="s.id"
+            class="news-chip"
+            :class="newsStore.sourceFilter === s.id ? 'news-chip--active' : ''"
+            @click="newsStore.sourceFilter = newsStore.sourceFilter === s.id ? null : s.id"
+          >
+            {{ s.name }}
+          </button>
+        </div>
+        <!-- 分类筛选 -->
+        <div class="news-chips">
+          <button
+            class="news-chip"
+            :class="newsStore.filterCategory === '' ? 'news-chip--active' : ''"
+            @click="newsStore.filterCategory = ''"
+          >
+            全部
+          </button>
+          <button
+            v-for="c in newsStore.categories"
+            :key="c"
+            class="news-chip"
+            :class="newsStore.filterCategory === c ? 'news-chip--active' : ''"
+            @click="newsStore.filterCategory = newsStore.filterCategory === c ? '' : c"
+          >
+            {{ c }}
+          </button>
+        </div>
       </div>
-      <div class="flex flex-wrap gap-1.5">
-        <button
-          class="nb-chip"
-          :class="newsStore.filterCategory === '' ? 'nb-chip--active' : ''"
-          @click="newsStore.filterCategory = ''"
-        >
-          全部
-        </button>
-        <button
-          v-for="c in newsStore.categories"
-          :key="c"
-          class="nb-chip"
-          :class="newsStore.filterCategory === c ? 'nb-chip--active' : ''"
-          @click="newsStore.filterCategory = newsStore.filterCategory === c ? '' : c"
-        >
-          {{ c }}
-        </button>
-      </div>
-      <div class="ml-auto flex items-center gap-2">
-        <n-button size="small" quaternary @click="sourceModal = true">来源管理</n-button>
-        <span class="text-xs text-gray-500">仅未读</span>
-        <n-switch v-model:value="newsStore.unreadOnly" size="small" />
-        <n-button size="small" quaternary @click="newsStore.markAllRead()">全部已读</n-button>
+      <div class="news-toolbar__right">
+        <button class="news-tool-btn" @click="sourceModal = true">来源管理</button>
+        <label class="news-toggle">
+          <input type="checkbox" :checked="newsStore.unreadOnly" @change="newsStore.unreadOnly = !newsStore.unreadOnly" />
+          <span class="news-toggle__label">仅未读</span>
+        </label>
+        <button class="news-tool-btn" @click="newsStore.markAllRead()">全部已读</button>
       </div>
     </div>
 
-    <!-- 卡片时间线 -->
-    <div class="space-y-2">
+    <!-- 新闻列表 -->
+    <div class="news-list">
       <div
         v-for="n in newsStore.items"
         :key="n.id"
-        class="glass-card !p-4 transition-all hover:-translate-y-0.5 hover:shadow-[var(--nb-card-shadow-hover)]"
-        :class="!n.isRead ? 'glass-card--selected' : ''"
+        class="news-card"
+        :class="!n.isRead ? 'news-card--unread' : ''"
       >
-        <div class="flex items-start justify-between gap-2">
-          <button
-            class="text-left text-sm font-medium text-gray-900 hover:text-cyan-600 dark:text-gray-100 dark:hover:text-cyan-300"
-            @click="openAndMarkRead(n)"
-          >
-            {{ n.title }}
-          </button>
-          <div class="flex shrink-0 items-center gap-2">
-            <span
-              v-if="n.category"
-              class="rounded-full px-2 py-0.5 text-[11px]"
-              :class="[
-                categoryMeta[n.category] ?? categoryMeta['其他'],
-                { 'bg-violet-50 dark:bg-violet-400/10': n.category === '大模型' },
-                { 'bg-cyan-50 dark:bg-cyan-400/10': n.category === '框架' },
-                { 'bg-emerald-50 dark:bg-emerald-400/10': n.category === '工具' },
-                { 'bg-amber-50 dark:bg-amber-400/10': n.category === '论文' },
-              ]"
-            >
-              {{ n.category }}
+        <div class="news-card__main">
+          <div class="news-card__top">
+            <button class="news-card__title" @click="openAndMarkRead(n)">
+              {{ n.title }}
+            </button>
+            <div class="news-card__actions">
+              <span
+                v-if="n.category"
+                class="news-card__category"
+                :style="{
+                  color: categoryStyles[n.category]?.color ?? 'var(--nb-text-faint)',
+                  background: categoryStyles[n.category]?.bg ?? 'var(--nb-nav-active-bg)',
+                }"
+              >
+                {{ n.category }}
+              </span>
+              <button class="news-card__action" title="收藏到知识库" @click="openFavorite(n.id)">
+                <Icon icon="mdi:bookmark-plus-outline" class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <p v-if="n.summary" class="news-card__summary">{{ n.summary }}</p>
+          <p v-else class="news-card__summary news-card__summary--empty">暂无摘要</p>
+          <div class="news-card__meta">
+            <span v-if="n.sourceName" class="news-card__source">
+              <span class="news-card__source-dot" />
+              {{ n.sourceName }}
             </span>
-            <span
-              class="btn-press cursor-pointer rounded p-1 text-gray-400 hover:text-amber-400 dark:text-gray-600"
-              title="收藏到知识库"
-              @click="openFavorite(n.id)"
-            >
-              <Icon icon="mdi:bookmark-plus-outline" class="h-4 w-4" />
+            <span class="news-card__time">
+              <Icon icon="mdi:clock-outline" class="h-3 w-3" />
+              {{ fmtTime(n.createdAt) }}
+            </span>
+            <span v-if="!n.isRead" class="news-card__unread">
+              <span class="news-card__unread-dot" />
+              未读
             </span>
           </div>
         </div>
-        <p v-if="n.summary" class="mt-1.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ n.summary }}</p>
-        <p v-else class="mt-1.5 text-xs text-gray-400 dark:text-gray-600">暂无摘要</p>
-        <div class="mt-2 flex items-center gap-3 text-[11px] text-gray-400 dark:text-gray-600">
-          <span v-if="n.sourceName" class="flex items-center gap-1.5">
-            <span class="h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
-            {{ n.sourceName }}
-          </span>
-          <span class="flex items-center gap-1">
-            <Icon icon="mdi:clock-outline" class="h-3 w-3" />
-            {{ fmtTime(n.createdAt) }}
-          </span>
-          <span v-if="!n.isRead" class="ml-auto flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400">
-            <span class="h-1.5 w-1.5 rounded-full bg-cyan-500" />
-            未读
-          </span>
-        </div>
       </div>
-      <div v-if="!newsStore.items.length" class="py-16 text-center text-sm text-gray-400 dark:text-gray-600">
-        还没有日报,点击右上角「立即爬取」
+      <div v-if="!newsStore.items.length" class="news-empty">
+        <Icon icon="mdi:newspaper-variant-outline" class="h-10 w-10" style="color: var(--nb-text-faint)" />
+        <span class="cy-mono text-[12px]">// NO FEED — 点击「立即爬取」获取资讯</span>
       </div>
     </div>
 
     <!-- 分页 -->
-    <div v-if="newsStore.total > newsStore.size" class="flex justify-center pt-2">
+    <div v-if="newsStore.total > newsStore.size" class="news-pagination">
       <n-pagination
         :page="newsStore.page"
         :page-size="newsStore.size"
@@ -315,11 +315,12 @@ async function onCleanupNonAi() {
           <div
             v-for="s in newsStore.sources"
             :key="s.id"
-            class="flex items-center justify-between gap-2 rounded-lg border border-gray-100 px-3 py-2 dark:border-white/5"
+            class="flex items-center justify-between gap-2 rounded-none border px-3 py-2"
+            style="border-color: var(--nb-border)"
           >
             <div class="min-w-0">
-              <div class="truncate text-sm text-gray-800 dark:text-gray-200">{{ s.name }}</div>
-              <div class="truncate text-xs text-gray-400 dark:text-gray-600">{{ s.url }}</div>
+              <div class="truncate text-sm" style="color: var(--nb-text-primary)">{{ s.name }}</div>
+              <div class="truncate text-xs" style="color: var(--nb-text-faint)">{{ s.url }}</div>
             </div>
             <div class="flex shrink-0 items-center gap-2">
               <n-switch
@@ -329,7 +330,7 @@ async function onCleanupNonAi() {
               />
               <button
                 v-if="!BUILTIN_SOURCE_NAMES.includes(s.name)"
-                class="btn-press text-gray-400 hover:text-red-400 dark:text-gray-600"
+                class="text-gray-400 hover:text-[var(--nb-alert)] dark:text-gray-600"
                 @click="newsStore.removeSource(s.id)"
               >
                 <Icon icon="mdi:trash-can-outline" class="h-4 w-4" />
@@ -365,3 +366,416 @@ async function onCleanupNonAi() {
     </n-modal>
   </div>
 </template>
+
+<style scoped>
+/* ==================== 布局 ==================== */
+.news-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ==================== 页面头部 ==================== */
+.news-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.news-header__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: var(--nb-accent);
+  color: #050508;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  box-shadow: var(--nb-glow-accent);
+  flex-shrink: 0;
+}
+.news-header__title {
+  font-family: var(--nb-font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--nb-text-primary);
+}
+.news-header__desc {
+  font-size: 12px;
+  color: var(--nb-text-faint);
+  margin-top: 1px;
+}
+.news-header__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.news-header__badge {
+  padding: 3px 10px;
+  border-radius: 0;
+  border: 1px solid var(--nb-border);
+  font-family: var(--nb-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--nb-text-secondary);
+  background: transparent;
+}
+.news-header__badge--success {
+  color: var(--nb-accent);
+  border-color: color-mix(in srgb, var(--nb-accent) 40%, transparent);
+  background: var(--nb-accent-soft);
+}
+.news-header__badge--error {
+  color: var(--nb-alert);
+  border-color: color-mix(in srgb, var(--nb-alert) 40%, transparent);
+  background: var(--nb-alert-soft);
+}
+
+/* 爬取进度:分段式 */
+.news-crawl-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.news-crawl-progress__bar {
+  position: relative;
+  width: 90px;
+  height: 5px;
+  border-radius: 0;
+  background: var(--nb-nav-active-bg);
+  border: 1px solid var(--nb-border);
+  overflow: hidden;
+}
+.news-crawl-progress__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 8px,
+    var(--nb-bg) 8px 10px
+  );
+}
+.news-crawl-progress__fill {
+  height: 100%;
+  border-radius: 0;
+  background: var(--nb-accent);
+  box-shadow: 0 0 8px var(--nb-accent);
+  transition: width 0.3s ease;
+}
+.news-crawl-progress__text {
+  font-family: var(--nb-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--nb-accent);
+  min-width: 36px;
+}
+
+/* 爬取按钮 */
+.news-crawl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 0;
+  border: 1px solid var(--nb-accent);
+  background: var(--nb-accent);
+  color: #050508;
+  font-family: var(--nb-font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  cursor: pointer;
+  transition: all 0.2s var(--nb-ease-spring);
+}
+.news-crawl-btn:hover:not(:disabled) {
+  background: var(--nb-accent-hover);
+  box-shadow: var(--nb-glow-accent);
+  transform: scale(1.02);
+}
+.news-crawl-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==================== 工具栏 ==================== */
+.news-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.news-toolbar__left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.news-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 排序选择 */
+.news-select {
+  padding: 6px 12px;
+  border-radius: 0;
+  border: 1px solid var(--nb-border);
+  background: var(--nb-card-bg);
+  font-family: var(--nb-font-mono);
+  font-size: 12px;
+  color: var(--nb-text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.news-select:focus {
+  border-color: var(--nb-accent);
+  box-shadow: 0 0 10px -4px var(--nb-accent);
+}
+
+/* Chips:空心等宽 */
+.news-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.news-chip {
+  padding: 5px 12px;
+  border-radius: 0;
+  border: 1px solid var(--nb-border);
+  background: transparent;
+  font-family: var(--nb-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nb-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s var(--nb-ease-spring);
+}
+.news-chip:hover {
+  border-color: var(--nb-border-strong);
+  background: var(--nb-nav-active-bg);
+  transform: translateX(2px);
+}
+.news-chip--active {
+  border-color: var(--nb-accent);
+  background: var(--nb-accent-soft);
+  color: var(--nb-accent);
+  box-shadow: 0 0 8px -3px var(--nb-accent);
+}
+
+/* 工具按钮 */
+.news-tool-btn {
+  padding: 5px 12px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--nb-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nb-text-faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.news-tool-btn:hover {
+  background: var(--nb-nav-active-bg);
+  border-color: var(--nb-border);
+  color: var(--nb-text-secondary);
+}
+
+/* Toggle */
+.news-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.news-toggle input {
+  accent-color: var(--nb-accent);
+}
+.news-toggle__label {
+  font-size: 12px;
+  color: var(--nb-text-faint);
+}
+
+/* ==================== 新闻列表 ==================== */
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 新闻卡片 */
+.news-card {
+  padding: 20px 22px;
+  border-radius: 0;
+  background: var(--nb-card-bg);
+  border: 1px solid var(--nb-border);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--nb-card-shadow);
+  transition: all 0.25s var(--nb-ease-spring);
+}
+.news-card:hover {
+  border-color: var(--nb-border-strong);
+  box-shadow: var(--nb-card-shadow-hover);
+  transform: translateX(2px);
+}
+.news-card--unread {
+  border-left: 2px solid var(--nb-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--nb-accent) 20%, transparent), var(--nb-card-shadow);
+}
+.news-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.news-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.news-card__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--nb-text-primary);
+  line-height: 1.45;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.news-card__title:hover {
+  color: var(--nb-accent);
+}
+.news-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.news-card__category {
+  padding: 3px 10px;
+  border-radius: 0;
+  border: 1px solid currentColor;
+  font-family: var(--nb-font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+.news-card__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--nb-text-faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0;
+}
+.news-card:hover .news-card__action {
+  opacity: 1;
+}
+.news-card__action:hover {
+  background: var(--nb-nav-active-bg);
+  border-color: var(--nb-border);
+  color: var(--nb-accent);
+}
+.news-card__summary {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--nb-text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.news-card__summary--empty {
+  color: var(--nb-text-faint);
+  font-style: italic;
+}
+.news-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--nb-text-faint);
+}
+.news-card__source {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.news-card__source-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 0;
+  background: var(--nb-text-faint);
+}
+.news-card__time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.news-card__unread {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--nb-accent);
+  font-weight: 500;
+}
+.news-card__unread-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  background: var(--nb-accent);
+  box-shadow: 0 0 5px var(--nb-accent);
+  animation: news-led 1.8s ease-in-out infinite;
+}
+@keyframes news-led {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .news-card__unread-dot { animation: none; }
+}
+
+/* ==================== 空态 ==================== */
+.news-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 0;
+  color: var(--nb-text-faint);
+}
+
+/* ==================== 分页 ==================== */
+.news-pagination {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+</style>

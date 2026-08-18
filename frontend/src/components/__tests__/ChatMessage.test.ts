@@ -6,7 +6,6 @@ import ChatMessage from '@/components/ChatMessage.vue'
 const sources = [{ docId: 2, title: '参考文档', content: '片段内容', score: 0.9 }]
 
 describe('ChatMessage', () => {
-  // 内嵌 MarkdownRenderer 依赖 theme store
   beforeEach(() => {
     setActivePinia(createPinia())
   })
@@ -16,7 +15,7 @@ describe('ChatMessage', () => {
       props: { role: 'USER', content: '你好' },
     })
     expect(wrapper.text()).toContain('你好')
-    expect(wrapper.classes()).toContain('justify-end')
+    expect(wrapper.classes()).toContain('msg-row--user')
   })
 
   it('助手消息展示引用来源与流式光标', () => {
@@ -39,13 +38,12 @@ describe('ChatMessage', () => {
     const wrapper = mount(ChatMessage, {
       props: { role: 'ASSISTANT', content: '回答', feedback: 'LIKE' },
     })
-    const likeBtn = wrapper.find('button.fb-like')
-    const dislikeBtn = wrapper.find('button.fb-dislike')
+    const likeBtn = wrapper.find('.msg-action-btn')
     expect(likeBtn.exists()).toBe(true)
-    expect(dislikeBtn.exists()).toBe(true)
-    expect(likeBtn.attributes('class')).toContain('fb-active')
+    expect(likeBtn.attributes('class')).toContain('msg-action-btn--active')
     await likeBtn.trigger('click')
     expect(wrapper.emitted('feedback')?.[0]).toEqual([null])
+    const dislikeBtn = wrapper.findAll('.msg-action-btn')[1]
     await dislikeBtn.trigger('click')
     expect(wrapper.emitted('feedback')?.[1]).toEqual(['DISLIKE'])
   })
@@ -54,8 +52,8 @@ describe('ChatMessage', () => {
     const streaming = mount(ChatMessage, {
       props: { role: 'ASSISTANT', content: '', streaming: true },
     })
-    expect(streaming.find('button.fb-like').exists()).toBe(false)
+    expect(streaming.find('.msg-action-btn').exists()).toBe(false)
     const user = mount(ChatMessage, { props: { role: 'USER', content: '你好' } })
-    expect(user.find('button.fb-like').exists()).toBe(false)
+    expect(user.find('.msg-action-btn').exists()).toBe(false)
   })
 })

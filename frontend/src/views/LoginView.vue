@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NButton, NForm, NFormItem, NInput } from 'naive-ui'
+import { NForm, NFormItem, NInput } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useUserStore } from '@/stores/user'
 import { message } from '@/utils/feedback'
@@ -33,35 +33,60 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
-    <!-- 局部氛围光晕(叠加在 body 全局氛围之上) -->
-    <div class="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/15 blur-3xl dark:bg-cyan-400/10" />
-    <div class="pointer-events-none absolute -bottom-32 right-1/5 h-80 w-80 rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-400/10" />
-
-    <div class="glass-card relative w-full max-w-sm !p-10">
-      <div class="mb-10 flex flex-col items-center gap-4">
-        <span class="nb-brand-badge h-14 w-14">
-          <Icon icon="mdi:brain" class="h-7 w-7 text-white" />
+  <div class="login-page relative flex min-h-screen items-center justify-center overflow-hidden px-5">
+    <div class="glass-card relative w-full max-w-[380px] px-8 py-12">
+      <div class="mb-10 flex flex-col items-center gap-5">
+        <span class="nb-brand-badge h-16 w-16">
+          <Icon icon="mdi:brain" class="h-8 w-8" />
         </span>
         <div class="text-center">
-          <h1 class="text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">NeuralBase</h1>
-          <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">个人 AI 知识中枢 · 构建你的第二大脑</p>
+          <div class="cy-mono mb-2 flex items-center justify-center gap-1.5 text-[11px]" style="color: var(--nb-text-faint)">
+            <Icon icon="mdi:lock-outline" class="h-3.5 w-3.5" />
+            [SEC] AUTH_GATE // ACCESS REQUIRED
+          </div>
+          <h1
+            class="cy-glitch text-[32px] font-bold leading-none"
+            data-text="NeuralBase"
+            style="color: var(--nb-text-primary); font-family: var(--nb-font-mono); letter-spacing: 0.06em"
+          >
+            NeuralBase
+          </h1>
+          <p class="mt-3 text-[14px] leading-relaxed" style="color: var(--nb-text-secondary)">
+            个人 AI 知识中枢 · 终端接入
+          </p>
         </div>
       </div>
       <n-form label-placement="top" @keyup.enter="onSubmit">
         <n-form-item label="用户名">
-          <n-input v-model:value="username" placeholder="请输入用户名" size="large" />
+          <n-input v-model:value="username" placeholder="USERNAME" size="large" />
         </n-form-item>
         <n-form-item label="密码">
-          <n-input v-model:value="password" type="password" placeholder="请输入密码" show-password-on="click" size="large" />
+          <n-input v-model:value="password" type="password" placeholder="PASSWORD" show-password-on="click" size="large" />
         </n-form-item>
-        <n-button type="primary" block size="large" :loading="loading" class="!mt-2" @click="onSubmit">
-          登 录
-        </n-button>
+        <button
+          type="button"
+          class="nb-btn nb-btn--primary !mt-3 w-full"
+          :disabled="loading"
+          @click="onSubmit"
+        >
+          {{ loading ? '// CONNECTING...' : '> 登 录' }}
+        </button>
       </n-form>
-      <p class="mt-8 text-center text-[11px] tracking-wide text-gray-400 dark:text-gray-600">
-        知识库 · AI 对话 · 八股文库 · AI 日报
+      <p class="mt-10 text-center cy-mono text-[10px]" style="color: var(--nb-text-faint)">
+        KB // CHAT // EXAM // FEED
       </p>
     </div>
   </div>
 </template>
+
+<style scoped>
+:deep(.n-form-item-label) {
+  font-family: var(--nb-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+:deep(.n-form-item-label__text) {
+  color: var(--nb-text-secondary);
+}
+</style>

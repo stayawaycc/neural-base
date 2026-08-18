@@ -13,12 +13,13 @@ const props = withDefaults(
   { accent: 'cyan' },
 )
 
-// 图标容器:强调色柔光底 + 同色描边,随卡片 accent 联动
-function iconStyle(accent: string) {
-  return {
-    background: `color-mix(in srgb, var(--nb-accent-${accent}) 14%, transparent)`,
-    boxShadow: `0 0 0 1px color-mix(in srgb, var(--nb-accent-${accent}) 22%, transparent), 0 6px 16px -6px color-mix(in srgb, var(--nb-accent-${accent}) 45%, transparent)`,
-  }
+// 图标容器:暗色 HUD 数据帧 + 霓虹强调
+const iconContainerStyle = {
+  background: 'var(--nb-surface)',
+  border: '1px solid color-mix(in srgb, var(--nb-accent) 35%, transparent)',
+  boxShadow: '0 0 10px -4px var(--nb-accent)',
+  clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)',
+  borderRadius: '0',
 }
 </script>
 
@@ -26,17 +27,26 @@ function iconStyle(accent: string) {
   <RouterLink :to="to" class="module-card group block">
     <GlassCard :accent="accent" hoverable class="btn-press h-full">
       <div class="flex items-start justify-between">
-        <div class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl" :style="iconStyle(accent)">
-          <Icon :icon="icon" class="h-5 w-5" :style="{ color: `var(--nb-accent)` }" />
+        <div
+          class="mb-4 flex h-11 w-11 items-center justify-center"
+          :style="iconContainerStyle"
+        >
+          <Icon :icon="icon" class="h-5 w-5" style="color: var(--nb-accent)" />
         </div>
         <Icon
           icon="mdi:arrow-top-right"
           class="h-4 w-4 opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100"
-          :style="{ color: `var(--nb-accent)` }"
+          style="color: var(--nb-accent)"
         />
       </div>
-      <div class="text-[15px] font-semibold text-gray-900 dark:text-gray-100">{{ title }}</div>
-      <div class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ desc }}</div>
+      <div class="cy-mono text-[13px] font-semibold tracking-[0.08em]" style="color: var(--nb-text-primary)">
+        {{ title }}
+      </div>
+      <div class="mt-1.5 text-xs leading-relaxed" style="color: var(--nb-text-secondary)">{{ desc }}</div>
+      <div class="mt-3 flex items-center gap-1.5 text-[11px]" style="color: var(--nb-accent)">
+        <span class="cy-led" />
+        <span class="cy-mono">ENTER &gt;&gt;</span>
+      </div>
     </GlassCard>
   </RouterLink>
 </template>
