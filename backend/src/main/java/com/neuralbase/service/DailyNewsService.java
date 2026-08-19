@@ -22,11 +22,17 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 @Service
 public class DailyNewsService {
 
     private static final Logger log = LoggerFactory.getLogger(DailyNewsService.class);
+    // AI 摘要并发数:单条 ~5s,串行一轮 10+ 分钟;4 并发可将等待压缩到 1/4
+    private static final int SUMMARIZE_PARALLELISM = 4;
     private static final String TASK_TYPE = "DAILY_NEWS";
     private static final String STATUS_RUNNING = "RUNNING";
     private static final String STATUS_SUCCESS = "SUCCESS";
@@ -128,25 +134,38 @@ public class DailyNewsService {
                 updateTask(task.getId(), STATUS_RUNNING, 50, null);
             }
 
-            // 汇总:补齐所有 summary 为空的条目(天然支持重试),单条失败保留 null
+            // 汇总:补齐所有 summary 为空的条目(天然支持重试),单条失败保留 null;并行加速
             List<DailyNews> pending = dailyNewsMapper.selectList(
                 new LambdaQueryWrapper<DailyNews>().isNull(DailyNews::getSummary));
-            int done = 0;
-            for (DailyNews n : pending) {
-                try {
-                    var r = newsAiService.summarize(n.getTitle());
-                    n.setSummary(r.summary());
-                    n.setCategory(r.category());
-                } catch (Exception e) {
-                    log.warn("新闻摘要失败 id={}: {}", n.getId(), e.getMessage());
+            ExecutorService pool = Executors.newFixedThreadPool(SUMMARIZE_PARALLELISM);
+            try {
+                var futures = pending.stream()
+                    .map(n -> pool.submit(() -> {
+                        try {
+                            var r = newsAiService.summarize(n.getTitle());
+                            n.setSummary(r.summary());
+                            n.setCategory(r.category());
+                        } catch (Exception e) {
+                            log.warn("新闻摘要失败 id={}: {}", n.getId(), e.getMessage());
+                        }
+                        dailyNewsMapper.updateById(n);
+                    }))
+                    .toList();
+                for (Future<?> f : futures) {
+                    f.get();
                 }
-                dailyNewsMapper.updateById(n);
-                done++;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("新闻摘要被中断", e);
+            } catch (ExecutionException e) {
+                throw new IllegalStateException("新闻摘要失败", e.getCause());
+            } finally {
+                pool.shutdown();
             }
             if (task != null) {
                 updateTask(task.getId(), STATUS_SUCCESS, 100, null);
             }
-            log.info("新闻爬取完成:{} 条待汇总,{} 条处理", pending.size(), done);
+            log.info("新闻爬取完成:{} 条待汇总已处理", pending.size());
         } catch (Exception e) {
             if (task != null) {
                 updateTask(task.getId(), STATUS_FAILED, 0, e.getMessage());

@@ -85,6 +85,7 @@ public class BaguwenService {
             task.setAttempt(0);
             taskMapper.insert(task);
             created.add(task);
+            log.info("[baguwen] 提交导入任务 task={} url={}", task.getId(), task.getUrl());
         }
         if (created.isEmpty()) {
             throw new IllegalArgumentException("urls 不能为空");
@@ -143,6 +144,8 @@ public class BaguwenService {
         saveQaPairs(article.getId(), result.qaPairs());
         task.setStatus("SUCCESS");
         taskMapper.updateById(task);
+        log.info("[baguwen] 任务完成 task={} articleId={} title={} qaPairs={}", taskId, article.getId(),
+            article.getTitle(), result.qaPairs().size());
     }
 
     private void saveQaPairs(Long articleId, List<BaguwenAiService.QaPair> pairs) {
@@ -168,6 +171,7 @@ public class BaguwenService {
         task.setStatus("PENDING");
         task.setErrorMsg(null);
         taskMapper.updateById(task);
+        log.info("[baguwen] 重试任务 task={} url={}", taskId, task.getUrl());
         return task;
     }
 
@@ -264,6 +268,7 @@ public class BaguwenService {
         BaguwenArticle article = getArticle(id);
         // qa_pair 由 FK ON DELETE CASCADE 删除；import_task.article_id 由 FK ON DELETE SET NULL 置空
         articleMapper.deleteById(article.getId());
+        log.info("[baguwen] 删除文章 articleId={} title={}", id, article.getTitle());
     }
 
     private List<String> parseTags(String json) {

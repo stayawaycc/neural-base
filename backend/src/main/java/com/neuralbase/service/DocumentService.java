@@ -3,12 +3,14 @@ package com.neuralbase.service;
 import com.neuralbase.dto.DocumentContentView;
 import com.neuralbase.dto.SearchResult;
 import com.neuralbase.entity.Document;
+import com.neuralbase.entity.Kb;
 import com.neuralbase.mapper.DocumentMapper;
 import com.neuralbase.mapper.KbMapper;
 import org.apache.tika.exception.TikaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -19,8 +21,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class DocumentService {
@@ -34,10 +39,12 @@ public class DocumentService {
     private final VectorStore vectorStore;
     private final JdbcTemplate jdbcTemplate;
     private final KbMapper kbMapper;
+    private final double minScore;
 
     public DocumentService(DocumentMapper documentMapper, FileStorageService fileStorageService,
                            TextExtractorService textExtractorService, TextChunker textChunker,
-                           VectorStore vectorStore, JdbcTemplate jdbcTemplate, KbMapper kbMapper) {
+                           VectorStore vectorStore, JdbcTemplate jdbcTemplate, KbMapper kbMapper,
+                           @Value("${neuralbase.ai.search-min-score:0.5}") double minScore) {
         this.documentMapper = documentMapper;
         this.fileStorageService = fileStorageService;
         this.textExtractorService = textExtractorService;
@@ -45,6 +52,7 @@ public class DocumentService {
         this.vectorStore = vectorStore;
         this.jdbcTemplate = jdbcTemplate;
         this.kbMapper = kbMapper;
+        this.minScore = minScore;
     }
 
     public Document upload(MultipartFile file, Long kbId) throws IOException {
@@ -60,6 +68,7 @@ public class DocumentService {
         doc.setFilePath(path);
         doc.setStatus("PENDING");
         documentMapper.insert(doc);
+        log.info("上传文档 id={} title={} size={} kbId={}", doc.getId(), doc.getTitle(), file.getSize(), kbId);
         return doc;
     }
 
@@ -109,6 +118,7 @@ public class DocumentService {
             doc.setChunkCount(chunks.size());
             doc.setContent(text);
             documentMapper.updateById(doc);
+            log.info("文档处理完成 id={} title={} chunks={}", doc.getId(), doc.getTitle(), chunks.size());
         }
     }
 
@@ -128,6 +138,7 @@ public class DocumentService {
             }
         }
         documentMapper.deleteById(documentId);
+        log.info("删除文档 id={} title={} kbId={}", documentId, doc.getTitle(), doc.getKbId());
     }
 
     public DocumentContentView content(Long documentId) {
@@ -221,18 +232,51 @@ public class DocumentService {
         if (k < 1 || k > 20) {
             throw new IllegalArgumentException("topK 必须在 1~20 之间");
         }
+        long start = System.currentTimeMillis();
         org.springframework.ai.vectorstore.SearchRequest.Builder builder =
-            org.springframework.ai.vectorstore.SearchRequest.builder().query(query).topK(k);
+            org.springframework.ai.vectorstore.SearchRequest.builder().query(query).topK(k * 4);
         if (kbId != null) {
             builder.filterExpression("kbId == " + kbId);
         }
         var matches = vectorStore.similaritySearch(builder.build());
-        return matches.stream().map(d -> {
+
+        // 同一文档只保留相似度最高的片段(去重)
+        Map<Long, org.springframework.ai.document.Document> bestByDoc = new LinkedHashMap<>();
+        for (var d : matches) {
             Object rawDocId = d.getMetadata().get("docId");
-            Long docId = rawDocId instanceof Number n ? n.longValue() : null;
-            Document doc = docId == null ? null : documentMapper.selectById(docId);
-            return new SearchResult(docId, doc == null ? null : doc.getTitle(), d.getText(), d.getScore());
-        }).toList();
+            if (!(rawDocId instanceof Number n)) {
+                continue;
+            }
+            Long docId = n.longValue();
+            org.springframework.ai.document.Document prev = bestByDoc.get(docId);
+            if (prev == null || d.getScore() > prev.getScore()) {
+                bestByDoc.put(docId, d);
+            }
+        }
+        List<Long> docIds = new ArrayList<>(bestByDoc.keySet());
+        Map<Long, Document> docs = docIds.isEmpty() ? Map.of()
+            : documentMapper.selectBatchIds(docIds).stream()
+                .collect(Collectors.toMap(Document::getId, Function.identity()));
+        Map<Long, Kb> kbs = docs.isEmpty() ? Map.of()
+            : kbMapper.selectBatchIds(docs.values().stream().map(Document::getKbId).filter(java.util.Objects::nonNull).distinct().toList()).stream()
+                .collect(Collectors.toMap(Kb::getId, Function.identity()));
+
+        List<SearchResult> results = bestByDoc.values().stream()
+            .filter(d -> d.getScore() != null && d.getScore() >= minScore)
+            .sorted((a, b) -> Double.compare(b.getScore() == null ? -1 : b.getScore(),
+                a.getScore() == null ? -1 : a.getScore()))
+            .limit(k)
+            .map(d -> {
+                Long docId = ((Number) d.getMetadata().get("docId")).longValue();
+                Document doc = docs.get(docId);
+                Kb kb = doc != null && doc.getKbId() != null ? kbs.get(doc.getKbId()) : null;
+                return new SearchResult(docId, doc == null ? null : doc.getTitle(), d.getText(), d.getScore(),
+                    kb == null ? null : kb.getName());
+            })
+            .toList();
+        log.info("搜索完成 query=[{}] kbId={} 候选={} 命中={} 耗时={}ms", query, kbId, matches.size(), results.size(),
+            System.currentTimeMillis() - start);
+        return results;
     }
 
     public List<Document> list(Long kbId) {

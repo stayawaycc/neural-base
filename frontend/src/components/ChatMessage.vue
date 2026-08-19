@@ -20,9 +20,14 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
 
 <template>
   <div class="msg-row" :class="role === 'USER' ? 'msg-row--user' : 'msg-row--ai'">
-    <!-- 问题在上 / 回答在下,均为全宽垂直堆叠 -->
     <div class="msg-content" :class="role === 'USER' ? 'msg-content--user' : 'msg-content--ai'">
-      <!-- 参考来源(RAG 模式) -->
+      <!-- 消息正文 -->
+      <div class="msg-text">
+        <MarkdownRenderer :content="content" />
+        <span v-if="streaming" class="nb-cursor" />
+      </div>
+
+      <!-- 参考来源(RAG 模式,放在回复后面,仅展示文件名) -->
       <div v-if="sources?.length" class="msg-sources">
         <div class="msg-sources__header">
           <Icon icon="mdi:book-open-variant" class="h-3.5 w-3.5" />
@@ -32,16 +37,11 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
           v-for="(s, i) in sources"
           :key="i"
           class="msg-sources__item"
+          :title="s.content"
         >
-          <div class="msg-sources__title">{{ s.title }}</div>
-          <div class="msg-sources__excerpt">{{ s.content }}</div>
+          <Icon icon="mdi:file-document-outline" class="msg-sources__icon" />
+          <span class="msg-sources__title">{{ s.title }}</span>
         </div>
-      </div>
-
-      <!-- 消息正文 -->
-      <div class="msg-text">
-        <MarkdownRenderer :content="content" />
-        <span v-if="streaming" class="nb-cursor" />
       </div>
 
       <!-- 反馈按钮(AI 消息) -->
@@ -69,67 +69,47 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
 </template>
 
 <style scoped>
-/* ==================== 上下问答布局 ==================== */
+/* ==================== 左右对话布局:AI 靠左 / 用户靠右 ==================== */
 .msg-row {
   display: flex;
-  flex-direction: column;
   width: 100%;
-  max-width: 100%;
-  gap: 8px;
 }
 .msg-row--user {
-  align-items: stretch;
+  justify-content: flex-end;
 }
 .msg-row--ai {
-  align-items: stretch;
+  justify-content: flex-start;
 }
 
 /* 消息内容容器 */
 .msg-content {
   min-width: 0;
-  width: 100%;
+  max-width: 78%;
 }
 
-/* ==================== 问题块(上方):终端回显风格 ==================== */
+/* ==================== 用户消息(右侧) ==================== */
 .msg-content--user .msg-text {
-  padding: 14px 18px 14px 20px;
-  border-radius: 0;
-  background: var(--nb-surface);
-  border: 1px solid var(--nb-border);
-  border-left: 2px solid var(--nb-accent);
-  box-shadow: 0 0 16px -8px var(--nb-accent);
+  padding: 12px 16px;
+  border-radius: 12px 12px 4px 12px;
+  background: var(--nb-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--nb-accent) 45%, transparent);
   color: var(--nb-text-primary);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.65;
   word-break: break-word;
 }
-.msg-content--user .msg-text::before {
-  content: '[USER] >';
-  display: block;
-  font-family: var(--nb-font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  color: var(--nb-accent);
-  margin-bottom: 8px;
-  opacity: 0.85;
-}
 
-/* ==================== 回答块(下方):HUD 面板 ==================== */
-.msg-content--ai {
-  padding-left: 4px;
-}
+/* ==================== AI 消息(左侧) ==================== */
 .msg-content--ai .msg-text {
-  padding: 16px 20px;
-  border-radius: 0;
+  padding: 14px 18px;
+  border-radius: 12px 12px 12px 4px;
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
-  border-left: 2px solid var(--nb-accent);
   backdrop-filter: blur(16px) saturate(130%);
   -webkit-backdrop-filter: blur(16px) saturate(130%);
   box-shadow: var(--nb-card-shadow);
   font-size: 15px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--nb-text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -137,60 +117,48 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
   border-color: var(--nb-border-strong);
   box-shadow: var(--nb-card-shadow-hover);
 }
-.msg-content--ai .msg-text::before {
-  content: '// AI_RESPONSE';
-  display: block;
-  font-family: var(--nb-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--nb-text-faint);
-  margin-bottom: 8px;
-}
 
-/* ==================== 参考来源 ==================== */
+/* ==================== 参考来源(回复之后,仅文件名) ==================== */
 .msg-sources {
-  margin-bottom: 10px;
-  padding: 12px 16px;
-  border-radius: 0;
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
-  border-left: 2px solid var(--nb-accent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 .msg-sources__header {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-size: 12px;
   font-weight: 500;
   color: var(--nb-accent);
 }
 .msg-sources__item {
-  padding: 8px 10px;
-  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
   background: var(--nb-nav-active-bg);
   border: 1px solid var(--nb-border);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  overflow: hidden;
 }
 .msg-sources__item:last-child {
   margin-bottom: 0;
 }
-.msg-sources__title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--nb-text-primary);
+.msg-sources__icon {
+  flex-shrink: 0;
+  color: var(--nb-text-faint);
 }
-.msg-sources__excerpt {
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 1.5;
+.msg-sources__title {
+  font-size: 13px;
   color: var(--nb-text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ==================== 反馈按钮 ==================== */
@@ -198,8 +166,7 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 8px;
-  padding-left: 20px;
+  margin-top: 6px;
 }
 .msg-action-btn {
   display: flex;
@@ -207,7 +174,7 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 0;
+  border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--nb-text-faint);

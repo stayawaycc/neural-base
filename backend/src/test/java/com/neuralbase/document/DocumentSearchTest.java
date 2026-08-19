@@ -76,7 +76,40 @@ class DocumentSearchTest {
                 .content(objectMapper.writeValueAsString(
                     java.util.Map.of("query", "zzz qqq xxx 无意义", "topK", 3))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.code").value(0));
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void searchDeduplicatesChunksPerDocument() throws Exception {
+        MockMultipartFile multi = new MockMultipartFile(
+            "file", "multi.md", "text/markdown",
+            ("ABCDEFGH 内容一,同一文档的第一段。\n\n" +
+                "ABCDEFGH 内容二,同一文档的第二段,前缀与第一段相同。").getBytes());
+        Document multiDoc = documentService.upload(multi, 1L);
+        documentService.process(multiDoc.getId());
+
+        mvc.perform(post("/api/document/search")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                    java.util.Map.of("query", "ABCDEFGH 内容一", "topK", 5))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].docId").value(multiDoc.getId()));
+    }
+
+    @Test
+    void searchReturnsKbName() throws Exception {
+        mvc.perform(post("/api/document/search")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                    java.util.Map.of("query", "NeuralBase 测试文档内容，用于检索验证。", "topK", 3))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.code").value(0))
+            .andExpect(jsonPath("$.data[0].kbName").isNotEmpty());
     }
 
     @Test

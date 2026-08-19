@@ -46,6 +46,7 @@ export interface SearchResult {
   title: string | null
   content: string
   score: number
+  kbName?: string | null
 }
 
 export interface ChatRequest {

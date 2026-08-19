@@ -83,8 +83,24 @@ function confirmDeleteKb(id: number, name: string) {
     content: `确定删除「${name}」?文档列表不会自动删除。`,
     positiveText: '删除',
     negativeText: '取消',
-    onPositiveClick: () => void docStore.removeKb(id),
+    onPositiveClick: async () => {
+      try {
+        await docStore.removeKb(id)
+        message.success('已删除')
+      } catch (e) {
+        message.error((e as Error).message)
+      }
+    },
   })
+}
+
+async function onRemoveDoc(id: number) {
+  try {
+    await docStore.remove(id)
+    message.success('已删除')
+  } catch (e) {
+    message.error((e as Error).message)
+  }
 }
 
 function openReader(d: DocumentItem) {
@@ -165,7 +181,8 @@ function getFileMeta(ft?: string) {
           <span v-else class="nb-dot h-2.5 w-2.5" />
           <span class="truncate text-sm">{{ k.name }}</span>
           <span
-            class="ml-auto shrink-0 cursor-pointer rounded-none p-0.5 text-gray-400 opacity-0 transition-all hover:text-[var(--nb-alert)] group-hover:opacity-100 dark:text-gray-600"
+            class="ml-auto shrink-0 cursor-pointer rounded-none p-0.5 text-gray-400 transition-all hover:text-[var(--nb-alert)] group-hover:opacity-100 dark:text-gray-600"
+            style="opacity: 0.55"
             title="删除知识库"
             @click.stop="confirmDeleteKb(k.id, k.name)"
           >
@@ -210,7 +227,10 @@ function getFileMeta(ft?: string) {
           class="doc-card doc-card--search"
         >
           <div class="flex items-center justify-between">
-            <span class="text-sm font-medium" style="color: var(--nb-text-primary)">{{ r.title ?? `文档#${r.docId}` }}</span>
+            <div class="flex min-w-0 items-center gap-2">
+              <span class="truncate text-sm font-medium" style="color: var(--nb-text-primary)">{{ r.title ?? `文档#${r.docId}` }}</span>
+              <span v-if="r.kbName" class="cy-mono shrink-0 border border-[var(--nb-border)] px-1.5 py-0.5 text-[10px]" style="color: var(--nb-text-secondary)">{{ r.kbName }}</span>
+            </div>
             <span class="cy-mono shrink-0 border border-[var(--nb-border)] px-2 py-0.5 text-[10px]" style="color: var(--nb-accent)">
               0x{{ r.score.toFixed(3) }}
             </span>
@@ -268,9 +288,9 @@ function getFileMeta(ft?: string) {
                 {{ statusMeta[d.status].label }}
                 <template v-if="d.chunkCount"> · {{ d.chunkCount }}</template>
               </span>
-              <n-popconfirm @positive-click="docStore.remove(d.id)">
+              <n-popconfirm @positive-click="onRemoveDoc(d.id)">
                 <template #trigger>
-                  <span class="cursor-pointer rounded-none p-1 text-gray-400 opacity-0 transition-all hover:text-[var(--nb-alert)] group-hover:opacity-100 dark:text-gray-600">
+                  <span class="cursor-pointer rounded-none p-1 text-gray-400 transition-all hover:text-[var(--nb-alert)] group-hover:opacity-100 dark:text-gray-600" style="opacity: 0.55" title="删除文档">
                     <Icon icon="mdi:trash-can-outline" class="h-3.5 w-3.5" />
                   </span>
                 </template>

@@ -50,10 +50,13 @@ public class ChatService {
     }
 
     public Flux<ServerSentEvent<String>> stream(ChatRequest req) {
+        long start = System.currentTimeMillis();
         Conversation conv = req.conversationId() == null
             ? conversationService.create(deriveTitle(req.question()), req.kbId())
             : conversationService.get(req.conversationId());
         Long convId = conv.getId();
+        log.info("[chat] 请求开始 conversationId={} kbId={} questionLen={} 新会话={}", convId, req.kbId(),
+            req.question().length(), req.conversationId() == null);
 
         Message userMsg = new Message();
         userMsg.setConversationId(convId);
@@ -91,6 +94,8 @@ public class ChatService {
                 if (persisted.compareAndSet(false, true)) {
                     try {
                         persistAssistant(convId, full.toString(), sources);
+                        log.info("[chat] 完成 conversationId={} 字符数={} 引用片段={} 耗时={}ms", convId,
+                            full.length(), sources.size(), System.currentTimeMillis() - start);
                     } catch (Exception ex) {
                         log.warn("persist assistant message failed for conversation {}", convId, ex);
                     }

@@ -245,7 +245,8 @@ async function onFavoriteConfirm() {
           <Icon icon="mdi:close" class="h-3.5 w-3.5" />
         </button>
       </div>
-      <div class="bw-tags">
+      <!-- 标签 chips:无文章数据时不展示孤儿标签;有筛选条件时保留以便取消 -->
+      <div v-if="baguwenStore.tags.length && (baguwenStore.articles.length || baguwenStore.filter.tag || baguwenStore.filter.keyword)" class="bw-tags">
         <button
           v-for="t in baguwenStore.tags"
           :key="t.tag"
