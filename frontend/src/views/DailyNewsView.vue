@@ -38,10 +38,13 @@ function onCardEnter(e: MouseEvent, n: NewsItem) {
     if (y + h > window.innerHeight - 8) y = my - h - gap
     hoverPreview.value = { n, x: Math.max(8, x), y: Math.max(8, y) }
   }, 300)
+  // 滚动时 fixed 浮层会与鼠标错位,监听捕获滚动立即关闭
+  window.addEventListener('scroll', onCardLeave, { capture: true, passive: true })
 }
 function onCardLeave() {
   clearPreviewTimer()
   hoverPreview.value = null
+  window.removeEventListener('scroll', onCardLeave, { capture: true })
 }
 
 const sortOptions: SelectOption[] = [
@@ -93,7 +96,11 @@ const categoryStyles: Record<string, { color: string; bg: string }> = {
 }
 
 onMounted(async () => {
-  await newsStore.refreshTask()
+  try {
+    await newsStore.refreshTask()
+  } catch {
+    /* 任务状态拉取失败不阻塞列表加载 */
+  }
   try {
     await newsStore.load()
   } catch {

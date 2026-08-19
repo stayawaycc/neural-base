@@ -72,7 +72,12 @@ export const useNewsStore = defineStore('news', () => {
     if (task.value && task.value.status === 'RUNNING') {
       startPolling()
     } else if (prev === 'RUNNING') {
-      await load() // 爬取完成自动刷新列表,否则修复后仍需手动刷新才能看到新数据
+      // 爬取完成:静默刷新列表展示最新数据;失败不阻塞轮询停止,保持旧数据
+      try {
+        await load()
+      } catch {
+        /* 列表刷新失败保持旧数据 */
+      }
     }
   }
 
