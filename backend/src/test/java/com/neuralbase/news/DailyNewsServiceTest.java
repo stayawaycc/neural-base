@@ -15,6 +15,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -143,7 +146,7 @@ class DailyNewsServiceTest {
         var news = dailyNewsMapper.selectList(null);
         service.markRead(news.get(0).getId(), true);
         // 3 条中 1 条已读 → 未读筛选返回 2 条,且全部未读
-        var unread = service.list(null, true, null, null, 1, 20);
+        var unread = service.list(null, true, null, null, 1, 20, null, null);
         assertThat(unread.items()).hasSize(2);
         assertThat(unread.items()).allMatch(n -> !Boolean.TRUE.equals(n.getIsRead()));
     }
@@ -155,19 +158,46 @@ class DailyNewsServiceTest {
                 "INSERT INTO daily_news (source_id, url, title, is_read) VALUES (NULL, ?, ?, FALSE)",
                 "https://example.com/p" + i, "AI 新闻 " + i);
         }
-        var page = service.list(null, null, null, null, 2, 10);
+        var page = service.list(null, null, null, null, 2, 10, null, null);
         assertThat(page.items()).hasSize(10);
         assertThat(page.total()).isEqualTo(25);
         assertThat(page.page()).isEqualTo(2);
         assertThat(page.size()).isEqualTo(10);
     }
 
-    @Test
+@Test
     void listClampsPageAndSize() {
         jdbcTemplate.update(
             "INSERT INTO daily_news (source_id, url, title, is_read) VALUES (NULL, 'https://x/1', 'AI 1', FALSE)");
-        var page = service.list(null, null, null, null, 0, 999);
+        var page = service.list(null, null, null, null, 0, 999, null, null);
         assertThat(page.page()).isEqualTo(1);
         assertThat(page.size()).isEqualTo(100);
+    }
+
+    @Test
+    void listFiltersByDateRange() {
+        jdbcTemplate.update(
+            "INSERT INTO daily_news (source_id, url, title, is_read, created_at) VALUES (NULL, 'https://d1', 'AI 昨天', FALSE, now() - interval '1 day')");
+        jdbcTemplate.update(
+            "INSERT INTO daily_news (source_id, url, title, is_read, created_at) VALUES (NULL, 'https://d2', 'AI 今天', FALSE, now())");
+        jdbcTemplate.update(
+            "INSERT INTO daily_news (source_id, url, title, is_read, created_at) VALUES (NULL, 'https://d3', 'AI 前天', FALSE, now() - interval '2 day')");
+        LocalDate today = LocalDate.now();
+        var todayOnly = service.list(null, null, null, null, 1, 20, today, today);
+        assertThat(todayOnly.items()).extracting(n -> n.getTitle()).containsExactly("AI 今天");
+        var fromYesterday = service.list(null, null, null, null, 1, 20, today.minusDays(1), null);
+        assertThat(fromYesterday.items()).extracting(n -> n.getTitle()).containsExactlyInAnyOrder("AI 昨天", "AI 今天");
+    }
+
+    @Test
+    void batchDeleteRemovesSelectedRows() {
+        service.startCrawl();
+        service.runCrawlNow();
+        var news = dailyNewsMapper.selectList(null);
+        List<Long> ids = news.stream().map(n -> n.getId()).toList();
+        long removed = service.deleteByIds(ids);
+        assertThat(removed).isEqualTo(ids.size());
+        assertThat(dailyNewsMapper.selectList(null)).isEmpty();
+        assertThat(service.deleteByIds(List.of())).isZero();
     }
 }

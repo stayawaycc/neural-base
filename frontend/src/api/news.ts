@@ -6,6 +6,8 @@ export const listNews = (params?: {
   unreadOnly?: boolean
   sourceId?: number
   sort?: NewsSort
+  startDate?: string
+  endDate?: string
   page?: number
   size?: number
 }) => http.get<NewsPage>('/news', params)
@@ -33,3 +35,5 @@ export const updateSource = (id: number, payload: { name?: string; url?: string;
   http.put<NewsSource>(`/news/source/${id}`, payload)
 
 export const deleteSource = (id: number) => http.del<null>(`/news/source/${id}`)
+
+export const batchDeleteNews = (ids: number[]) => http.post<number>('/news/batch-delete', { ids })

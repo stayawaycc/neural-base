@@ -11,16 +11,19 @@ export const useNewsStore = defineStore('news', () => {
   const unreadOnly = ref(false)
   const sort = ref<NewsSort>('created_desc')
   const sourceFilter = ref<number | null>(null)
+  const startDate = ref<string>('')
+  const endDate = ref<string>('')
   const sources = ref<NewsSource[]>([])
   const page = ref(1)
   const size = 20
   const total = ref(0)
+  const selection = ref<number[]>([])
 
   // 固定五类 chips(规格:全部/大模型/框架/工具/论文/其他)
   const categories = ['大模型', '框架', '工具', '论文', '其他'] as const
 
   // 服务端分页:筛选/排序变化回第 1 页;分页变化直接重拉;本地不再过滤
-  watch([unreadOnly, sort, sourceFilter, filterCategory], () => {
+  watch([unreadOnly, sort, sourceFilter, filterCategory, startDate, endDate], () => {
     if (page.value !== 1) {
       page.value = 1 // 触发 page watch → load
     } else {
@@ -40,11 +43,18 @@ export const useNewsStore = defineStore('news', () => {
       unreadOnly: unreadOnly.value || undefined,
       sourceId: sourceFilter.value ?? undefined,
       sort: sort.value,
+      startDate: startDate.value || undefined,
+      endDate: endDate.value || undefined,
       page: page.value,
       size,
     })
     items.value = r.items
     total.value = r.total
+    // 删除后当前页可能为空,自动回退上一页
+    if (items.value.length === 0 && page.value > 1) {
+      page.value -= 1
+      await load()
+    }
   }
 
   async function loadSources() {
@@ -108,11 +118,30 @@ export const useNewsStore = defineStore('news', () => {
     return deleted
   }
 
+  function toggleSelect(id: number) {
+    const i = selection.value.indexOf(id)
+    if (i >= 0) selection.value.splice(i, 1)
+    else selection.value.push(id)
+  }
+
+  function clearSelection() {
+    selection.value = []
+  }
+
+  async function batchDelete() {
+    if (selection.value.length === 0) return 0
+    const deleted = await newsApi.batchDeleteNews([...selection.value])
+    selection.value = []
+    await load()
+    return deleted
+  }
+
   return {
     items, task, filterCategory, unreadOnly, sort, sourceFilter, sources, categories,
-    page, size, total,
+    page, size, total, startDate, endDate, selection,
     load, loadSources, createSource, updateSource, removeSource,
     refreshTask, triggerCrawl, markRead, markAllRead, favorite, cleanupNonAi,
+    toggleSelect, clearSelection, batchDelete,
     startPolling, stopPolling,
   }
 })

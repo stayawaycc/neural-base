@@ -20,6 +20,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -206,11 +208,17 @@ public class DailyNewsService {
         }
     }
 
-    public NewsPage list(String category, Boolean unreadOnly, Long sourceId, String sort, long page, long size) {
+    public NewsPage list(String category, Boolean unreadOnly, Long sourceId, String sort, long page, long size,
+                         LocalDate startDate, LocalDate endDate) {
+        // 先判空计算,避免 lambda 参数在条件为 false 时仍被求值导致 NPE
+        LocalDateTime from = startDate == null ? null : startDate.atStartOfDay();
+        LocalDateTime to = endDate == null ? null : endDate.plusDays(1).atStartOfDay();
         LambdaQueryWrapper<DailyNews> qw = new LambdaQueryWrapper<DailyNews>()
             .eq(category != null && !category.isBlank(), DailyNews::getCategory, category)
             .eq(Boolean.TRUE.equals(unreadOnly), DailyNews::getIsRead, false)
-            .eq(sourceId != null, DailyNews::getSourceId, sourceId);
+            .eq(sourceId != null, DailyNews::getSourceId, sourceId)
+            .ge(startDate != null, DailyNews::getCreatedAt, from)
+            .lt(endDate != null, DailyNews::getCreatedAt, to);
         switch (sort == null ? "created_desc" : sort) {
             case "created_asc" -> qw.orderByAsc(DailyNews::getCreatedAt);
             case "source" -> qw.orderByAsc(DailyNews::getSourceId);
@@ -243,6 +251,12 @@ public class DailyNewsService {
 
     public void markAllRead() {
         jdbcTemplate.update("UPDATE daily_news SET is_read = TRUE WHERE is_read = FALSE");
+    }
+
+    /** 批量删除:空列表直接返回 0,不做校验。 */
+    public int deleteByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return 0;
+        return dailyNewsMapper.deleteByIds(ids);
     }
 
     /** 收藏进知识库:标题+摘要拼接 → 通用嵌入管线(fileType=NEWS);按 sourceUrl 去重,重复收藏报 400。 */

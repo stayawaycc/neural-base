@@ -47,6 +47,30 @@ function onCardLeave() {
   window.removeEventListener('scroll', onCardLeave, { capture: true })
 }
 
+function isSelected(id: number) {
+  return newsStore.selection.includes(id)
+}
+
+function clearDateRange() {
+  newsStore.startDate = ''
+  newsStore.endDate = ''
+}
+
+function onStartDateChange() {
+  if (newsStore.startDate && newsStore.endDate && newsStore.endDate < newsStore.startDate) {
+    newsStore.endDate = newsStore.startDate
+  }
+}
+
+async function onBatchDelete() {
+  try {
+    const deleted = await newsStore.batchDelete()
+    message.success(`已删除 ${deleted} 条日报`)
+  } catch (e) {
+    message.error((e as Error).message)
+  }
+}
+
 const sortOptions: SelectOption[] = [
   { label: '最新', value: 'created_desc' },
   { label: '最早', value: 'created_asc' },
@@ -217,6 +241,24 @@ async function onCleanupNonAi() {
         <select v-model="newsStore.sort" class="news-select">
           <option v-for="o in sortOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
+        <!-- 时间区间 -->
+        <div class="news-date-range">
+          <input
+            v-model="newsStore.startDate"
+            type="date"
+            class="news-select news-date"
+            @change="onStartDateChange"
+          />
+          <span class="news-date-sep">→</span>
+          <input v-model="newsStore.endDate" type="date" class="news-select news-date" />
+          <button
+            v-if="newsStore.startDate || newsStore.endDate"
+            class="news-tool-btn"
+            @click="clearDateRange"
+          >
+            清除
+          </button>
+        </div>
         <!-- 来源筛选 -->
         <div class="news-chips">
           <button
@@ -263,6 +305,14 @@ async function onCleanupNonAi() {
           <span class="news-toggle__label">仅未读</span>
         </label>
         <button class="news-tool-btn" @click="newsStore.markAllRead()">全部已读</button>
+        <n-popconfirm v-if="newsStore.selection.length" @positive-click="onBatchDelete">
+          <template #trigger>
+            <button class="news-tool-btn news-tool-btn--danger">
+              删除选中({{ newsStore.selection.length }})
+            </button>
+          </template>
+          将删除选中的 {{ newsStore.selection.length }} 条日报,确认继续?
+        </n-popconfirm>
       </div>
     </div>
 
@@ -272,12 +322,19 @@ async function onCleanupNonAi() {
         v-for="n in newsStore.items"
         :key="n.id"
         class="news-card"
-        :class="!n.isRead ? 'news-card--unread' : ''"
+        :class="{ 'news-card--unread': !n.isRead, 'news-card--selected': isSelected(n.id) }"
         @mouseenter="onCardEnter($event, n)"
         @mouseleave="onCardLeave"
       >
         <div class="news-card__main">
           <div class="news-card__top">
+            <label class="news-card__check" @click.stop>
+              <input
+                type="checkbox"
+                :checked="isSelected(n.id)"
+                @change="newsStore.toggleSelect(n.id)"
+              />
+            </label>
             <button class="news-card__title" @click="openAndMarkRead(n)">
               {{ n.title }}
             </button>
@@ -607,6 +664,21 @@ async function onCleanupNonAi() {
   box-shadow: 0 0 10px -4px var(--nb-accent);
 }
 
+/* 时间区间 */
+.news-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.news-date {
+  padding: 5px 8px;
+}
+.news-date-sep {
+  font-family: var(--nb-font-mono);
+  font-size: 11px;
+  color: var(--nb-text-faint);
+}
+
 /* Chips:空心等宽 */
 .news-chips {
   display: flex;
@@ -659,6 +731,14 @@ async function onCleanupNonAi() {
   border-color: var(--nb-border);
   color: var(--nb-text-secondary);
 }
+.news-tool-btn--danger {
+  color: var(--nb-alert);
+}
+.news-tool-btn--danger:hover {
+  background: var(--nb-alert-soft);
+  border-color: color-mix(in srgb, var(--nb-alert) 40%, transparent);
+  color: var(--nb-alert);
+}
 
 /* Toggle */
 .news-toggle {
@@ -706,6 +786,23 @@ async function onCleanupNonAi() {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.news-card--selected {
+  border-color: var(--nb-accent);
+  background: color-mix(in srgb, var(--nb-accent) 4%, var(--nb-card-bg));
+  box-shadow: 0 0 0 1px var(--nb-accent), var(--nb-card-shadow);
+}
+.news-card__check {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.news-card__check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--nb-accent);
+  cursor: pointer;
 }
 .news-card__top {
   display: flex;

@@ -14,9 +14,10 @@ vi.mock('@/api/news', () => ({
   updateSource: vi.fn(),
   deleteSource: vi.fn(),
   cleanupNonAi: vi.fn(),
+  batchDeleteNews: vi.fn(),
 }))
 
-import { cleanupNonAi, listNews, latestTask, markRead, triggerCrawl, listSources, createSource } from '@/api/news'
+import { cleanupNonAi, listNews, latestTask, markRead, triggerCrawl, listSources, createSource, batchDeleteNews } from '@/api/news'
 
 const item = {
   id: 1, title: 'cool', url: 'https://x', category: '工具',
@@ -138,5 +139,32 @@ describe('news store', () => {
     expect(store.sources).toHaveLength(1)
     await store.createSource({ name: '新源', url: 'https://y', selector: 'ul a' })
     expect(createSource).toHaveBeenCalled()
+  })
+
+  it('日期区间变化触发带参 load', async () => {
+    vi.mocked(listNews).mockResolvedValue(pageOf([item]))
+    const store = useNewsStore()
+    await store.load()
+    store.startDate = '2026-08-01'
+    store.endDate = '2026-08-19'
+    await vi.advanceTimersByTimeAsync(0)
+    expect(listNews).toHaveBeenLastCalledWith(
+      expect.objectContaining({ startDate: '2026-08-01', endDate: '2026-08-19', page: 1 }),
+    )
+  })
+
+  it('batchDelete 调接口、清空选中并刷新列表', async () => {
+    vi.mocked(listNews).mockResolvedValue(pageOf([item]))
+    vi.mocked(batchDeleteNews).mockResolvedValue(2)
+    const store = useNewsStore()
+    await store.load()
+    store.toggleSelect(1)
+    store.toggleSelect(2)
+    expect(store.selection).toHaveLength(2)
+    const deleted = await store.batchDelete()
+    expect(deleted).toBe(2)
+    expect(batchDeleteNews).toHaveBeenCalledWith([1, 2])
+    expect(store.selection).toHaveLength(0)
+    expect(listNews).toHaveBeenCalledTimes(2) // load + 删除后刷新
   })
 })

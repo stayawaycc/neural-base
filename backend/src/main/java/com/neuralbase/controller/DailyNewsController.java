@@ -4,6 +4,7 @@ import com.neuralbase.common.Result;
 import com.neuralbase.entity.CrawlTask;
 import com.neuralbase.entity.CrawlerSource;
 import com.neuralbase.service.DailyNewsService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -31,9 +33,11 @@ public class DailyNewsController {
                                                   @RequestParam(required = false) Boolean unreadOnly,
                                                   @RequestParam(required = false) Long sourceId,
                                                   @RequestParam(required = false) String sort,
+                                                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                  @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
                                                   @RequestParam(defaultValue = "1") long page,
                                                   @RequestParam(defaultValue = "20") long size) {
-        return Result.ok(dailyNewsService.list(category, unreadOnly, sourceId, sort, page, size));
+        return Result.ok(dailyNewsService.list(category, unreadOnly, sourceId, sort, page, size, startDate, endDate));
     }
 
     @PostMapping("/crawl")
@@ -53,6 +57,11 @@ public class DailyNewsController {
     public Result<Void> markAllRead() {
         dailyNewsService.markAllRead();
         return Result.ok(null);
+    }
+
+    @PostMapping("/batch-delete")
+    public Result<Integer> batchDelete(@RequestBody BatchDeleteRequest req) {
+        return Result.ok(dailyNewsService.deleteByIds(req == null ? null : req.ids()));
     }
 
     @PostMapping("/{id}/favorite")
@@ -103,5 +112,8 @@ public class DailyNewsController {
     }
 
     public record SourceRequest(String name, String url, String selector, Boolean enabled) {
+    }
+
+    public record BatchDeleteRequest(List<Long> ids) {
     }
 }
