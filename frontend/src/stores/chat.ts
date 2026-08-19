@@ -53,7 +53,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // 发送:本地先加 USER+空 ASSISTANT,流式回调更新;AbortError 不算错误
-  async function send(question: string, kbId?: number) {
+  async function send(question: string, kbId?: number, rag?: boolean) {
     if (streaming.value || !question.trim()) return
     streamError.value = null
     messages.value.push({ id: NEW_MESSAGE_ID, role: 'USER', content: question })
@@ -64,7 +64,7 @@ export const useChatStore = defineStore('chat', () => {
     let aborted = false
     try {
       await streamChat(
-        { conversationId: currentId.value ?? undefined, kbId, question },
+        { conversationId: currentId.value ?? undefined, kbId, question, rag },
         {
           onMeta: (meta) => {
             currentId.value = meta.conversationId

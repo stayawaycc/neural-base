@@ -290,7 +290,7 @@ function getFileMeta(ft?: string) {
               </span>
               <n-popconfirm @positive-click="onRemoveDoc(d.id)">
                 <template #trigger>
-                  <span class="cursor-pointer rounded-none p-1 text-gray-400 transition-all hover:text-[var(--nb-alert)] group-hover:opacity-100 dark:text-gray-600" style="opacity: 0.55" title="删除文档">
+                  <span class="cursor-pointer rounded-none p-1 text-gray-400 transition-all hover:text-[var(--nb-alert)] group-hover:opacity-100 dark:text-gray-600" style="opacity: 0.55" title="删除文档" @click.stop>
                     <Icon icon="mdi:trash-can-outline" class="h-3.5 w-3.5" />
                   </span>
                 </template>

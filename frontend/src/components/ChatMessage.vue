@@ -11,7 +11,7 @@ const props = defineProps<{
   feedback?: 'LIKE' | 'DISLIKE' | null
 }>()
 
-const emit = defineEmits<{ feedback: ['LIKE' | 'DISLIKE' | null] }>()
+const emit = defineEmits<{ feedback: ['LIKE' | 'DISLIKE' | null]; 'open-source': [RagSource] }>()
 
 function onFeedback(type: 'LIKE' | 'DISLIKE') {
   emit('feedback', props.feedback === type ? null : type)
@@ -37,10 +37,14 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
           v-for="(s, i) in sources"
           :key="i"
           class="msg-sources__item"
-          :title="s.content"
+          :class="s.kbId != null ? 'msg-sources__item--link' : ''"
+          :title="`${s.title}${s.kbName ? ' · ' + s.kbName : ''} · 点击查看`"
+          @click="emit('open-source', s)"
         >
           <Icon icon="mdi:file-document-outline" class="msg-sources__icon" />
           <span class="msg-sources__title">{{ s.title }}</span>
+          <span v-if="s.kbName" class="msg-sources__kb">{{ s.kbName }}</span>
+          <Icon v-if="s.kbId != null" icon="mdi:open-in-new" class="msg-sources__open" />
         </div>
       </div>
 
@@ -84,98 +88,107 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
 /* 消息内容容器 */
 .msg-content {
   min-width: 0;
-  max-width: 78%;
+  max-width: 82%;
 }
 
-/* ==================== 用户消息(右侧) ==================== */
+/* ==================== 用户消息(右侧):淡青气泡 ==================== */
 .msg-content--user .msg-text {
-  padding: 12px 16px;
-  border-radius: 12px 12px 4px 12px;
+  padding: 9px 14px;
+  border-radius: 14px 14px 6px 14px;
   background: var(--nb-accent-soft);
-  border: 1px solid color-mix(in srgb, var(--nb-accent) 45%, transparent);
   color: var(--nb-text-primary);
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: 10px;
+  line-height: 1.7;
   word-break: break-word;
 }
 
-/* ==================== AI 消息(左侧) ==================== */
+/* ==================== AI 消息(左侧):去卡片化,文字直排 ==================== */
 .msg-content--ai .msg-text {
-  padding: 14px 18px;
-  border-radius: 12px 12px 12px 4px;
-  background: var(--nb-card-bg);
-  border: 1px solid var(--nb-border);
-  backdrop-filter: blur(16px) saturate(130%);
-  -webkit-backdrop-filter: blur(16px) saturate(130%);
-  box-shadow: var(--nb-card-shadow);
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 10px;
+  line-height: 1.8;
   color: var(--nb-text-primary);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.msg-content--ai .msg-text:hover {
-  border-color: var(--nb-border-strong);
-  box-shadow: var(--nb-card-shadow-hover);
+  word-break: break-word;
 }
 
-/* ==================== 参考来源(回复之后,仅文件名) ==================== */
+/* ==================== 参考来源:Notion Callout 风格 ==================== */
 .msg-sources {
-  margin-top: 8px;
-  padding: 10px 14px;
+  margin-top: 10px;
+  padding: 9px 12px 10px;
   border-radius: 10px;
-  background: var(--nb-card-bg);
-  border: 1px solid var(--nb-border);
+  background: var(--nb-nav-active-bg);
+  border-left: 3px solid var(--nb-accent);
 }
 .msg-sources__header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   margin-bottom: 6px;
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 500;
   color: var(--nb-accent);
+  opacity: 0.9;
 }
 .msg-sources__item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 6px;
-  background: var(--nb-nav-active-bg);
-  border: 1px solid var(--nb-border);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   overflow: hidden;
 }
 .msg-sources__item:last-child {
   margin-bottom: 0;
 }
+.msg-sources__item--link {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.msg-sources__item--link:hover {
+  background: var(--nb-accent-soft);
+}
 .msg-sources__icon {
   flex-shrink: 0;
+  font-size: 11px;
   color: var(--nb-text-faint);
 }
 .msg-sources__title {
-  font-size: 13px;
-  color: var(--nb-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--nb-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.msg-sources__kb {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border: 1px solid var(--nb-border);
+  border-radius: 999px;
+  font-size: 9.5px;
+  color: var(--nb-text-secondary);
+}
+.msg-sources__open {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--nb-text-faint);
 }
 
 /* ==================== 反馈按钮 ==================== */
 .msg-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 2px;
+  margin-top: 4px;
 }
 .msg-action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid transparent;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
   background: transparent;
   color: var(--nb-text-faint);
   cursor: pointer;
@@ -183,17 +196,14 @@ function onFeedback(type: 'LIKE' | 'DISLIKE') {
 }
 .msg-action-btn:hover {
   background: var(--nb-nav-active-bg);
-  border-color: var(--nb-border);
   color: var(--nb-text-secondary);
 }
 .msg-action-btn--active {
   background: var(--nb-accent-soft);
-  border-color: var(--nb-border-strong);
   color: var(--nb-accent);
 }
 .msg-action-btn--dislike {
   background: var(--nb-alert-soft);
-  border-color: color-mix(in srgb, var(--nb-alert) 40%, transparent);
   color: var(--nb-alert);
 }
 </style>

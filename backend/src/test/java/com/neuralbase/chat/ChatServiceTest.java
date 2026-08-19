@@ -52,7 +52,7 @@ class ChatServiceTest {
     @Test
     void firstMessageCreatesConversationAndPersistsBothSides() throws Exception {
         List<ServerSentEvent<String>> events =
-            chatService.stream(new ChatRequest(null, null, "你好")).collectList().block();
+            chatService.stream(new ChatRequest(null, null, "你好", null)).collectList().block();
 
         assertThat(events).isNotNull();
         assertThat(events.get(0).event()).isEqualTo("meta");
@@ -84,7 +84,7 @@ class ChatServiceTest {
         documentService.process(doc.getId());
 
         List<ServerSentEvent<String>> events =
-            chatService.stream(new ChatRequest(null, 1L, "NeuralBase RAG 测试内容。")).collectList().block();
+            chatService.stream(new ChatRequest(null, 1L, "NeuralBase RAG 测试内容。", true)).collectList().block();
         assertThat(events).isNotNull();
 
         ServerSentEvent<String> sourcesEvent = events.stream()
@@ -104,10 +104,10 @@ class ChatServiceTest {
     @Test
     void secondTurnLoadsHistoryServerSide() throws Exception {
         List<ServerSentEvent<String>> first =
-            chatService.stream(new ChatRequest(null, null, "问题一")).collectList().block();
+            chatService.stream(new ChatRequest(null, null, "问题一", null)).collectList().block();
         long convId = objectMapper.readTree(first.get(0).data()).get("conversationId").asLong();
 
-        chatService.stream(new ChatRequest(convId, null, "问题二")).collectList().block();
+        chatService.stream(new ChatRequest(convId, null, "问题二", null)).collectList().block();
 
         Prompt lastPrompt = MockChatConfig.PROMPTS.get(MockChatConfig.PROMPTS.size() - 1);
         assertThat(lastPrompt.getInstructions()).anySatisfy(m -> {

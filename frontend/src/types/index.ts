@@ -53,6 +53,7 @@ export interface ChatRequest {
   conversationId?: number
   kbId?: number
   question: string
+  rag?: boolean
 }
 
 export interface RagSource {
@@ -60,6 +61,8 @@ export interface RagSource {
   title: string
   content: string
   score: number
+  kbId?: number | null
+  kbName?: string | null
 }
 
 export interface ConversationView {

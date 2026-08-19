@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { NDrawer, NDrawerContent, NPopconfirm } from 'naive-ui'
 import { Icon } from '@iconify/vue'
 import { useChatStore } from '@/stores/chat'
 import { listKbs } from '@/api/kb'
 import { message } from '@/utils/feedback'
 import ChatMessage from '@/components/ChatMessage.vue'
-import type { ConversationView, Kb } from '@/types'
+import type { ConversationView, Kb, RagSource } from '@/types'
 
 const chatStore = useChatStore()
 const route = useRoute()
+const router = useRouter()
 const kbs = ref<Kb[]>([])
 const mode = ref<'normal' | 'rag'>('normal')
 const kbId = ref<number | null>(null)
@@ -76,7 +77,12 @@ async function onSend() {
   const question = input.value.trim()
   if (!question || chatStore.streaming) return
   input.value = ''
-  await chatStore.send(question, mode.value === 'rag' && kbId.value ? kbId.value : undefined)
+  const ragMode = mode.value === 'rag'
+  await chatStore.send(
+    question,
+    ragMode ? (kbId.value ?? undefined) : undefined,
+    ragMode,
+  )
   scrollToBottom()
 }
 
@@ -99,6 +105,11 @@ function fmtTime(iso?: string): string {
     return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   }
   return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+}
+
+function onOpenSource(s: RagSource) {
+  if (s.kbId == null) return
+  void router.push({ name: 'kb-reader', params: { kbId: String(s.kbId), docId: String(s.docId) } })
 }
 </script>
 
@@ -227,7 +238,7 @@ function fmtTime(iso?: string): string {
         </div>
         <template v-if="mode === 'rag'">
           <select v-model="kbId" class="chat-kb-select">
-            <option :value="null" disabled>选择知识库</option>
+            <option :value="null">全部知识库</option>
             <option v-for="k in kbs" :key="k.id" :value="k.id">{{ k.name }}</option>
           </select>
           <span v-if="kbId" class="chat-kb-tag">{{ activeKbName }}</span>
@@ -254,6 +265,7 @@ function fmtTime(iso?: string): string {
           :streaming="m.streaming"
           :feedback="m.feedback"
           @feedback="(fb) => chatStore.setFeedback(i, fb)"
+          @open-source="onOpenSource"
         />
         <div v-if="chatStore.streamError" class="chat-error">
           <Icon icon="mdi:alert-circle-outline" class="h-4 w-4 shrink-0" />
@@ -396,29 +408,31 @@ function fmtTime(iso?: string): string {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 10px 12px;
-  border-radius: 0;
-  border: 1px solid transparent;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: none;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s var(--nb-ease-spring);
+  transition: background 0.15s ease;
 }
 .conv-item:hover {
   background: var(--nb-nav-active-bg);
-  transform: translateX(2px);
 }
 .conv-item--active {
-  background: var(--nb-card-bg);
-  border-color: var(--nb-border-strong);
-  box-shadow: 0 0 12px -6px var(--nb-accent);
+  background: var(--nb-accent-soft);
+}
+.conv-item--active .conv-item__title {
+  font-weight: 600;
+  color: var(--nb-text-primary);
 }
 .conv-item__bar {
   position: absolute;
   left: 0;
   top: 50%;
-  height: 20px;
-  width: 2px;
+  height: 18px;
+  width: 3px;
+  border-radius: 2px;
   background: var(--nb-accent);
   box-shadow: 0 0 6px var(--nb-accent);
   transform: translateY(-50%);
@@ -443,9 +457,11 @@ function fmtTime(iso?: string): string {
   color: var(--nb-text-primary);
 }
 .conv-item__time {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--nb-text-faint);
   flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
 }
 .conv-item__preview {
   margin-top: 3px;
@@ -529,32 +545,30 @@ function fmtTime(iso?: string): string {
   background: var(--nb-nav-active-bg);
 }
 
-/* 模式切换胶囊 */
+/* 模式切换分段控制器(iOS Segmented Control) */
 .chat-mode {
   display: flex;
   padding: 3px;
-  border-radius: 0;
+  border-radius: 12px;
   background: var(--nb-nav-active-bg);
-  border: 1px solid var(--nb-border);
+  gap: 2px;
 }
 .chat-mode__btn {
-  padding: 5px 14px;
-  border-radius: 0;
+  padding: 5px 16px;
+  border-radius: 9px;
   border: none;
   background: transparent;
-  font-family: var(--nb-font-mono);
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--nb-text-secondary);
   cursor: pointer;
-  transition: all 0.2s var(--nb-ease-spring);
+  transition: all 0.2s ease;
 }
 .chat-mode__btn--active {
-  background: var(--nb-accent);
-  color: #050508;
-  box-shadow: var(--nb-glow-accent);
+  background: var(--nb-card-bg-solid);
+  color: var(--nb-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
 }
 
 /* 知识库选择 */
@@ -646,44 +660,36 @@ function fmtTime(iso?: string): string {
   border: 1px solid color-mix(in srgb, var(--nb-alert) 30%, transparent);
 }
 
-/* ==================== 输入区 ==================== */
+/* ==================== 输入区:悬浮胶囊 ==================== */
 .chat-input-shell {
   margin-top: auto;
-  padding-top: 12px;
+  padding: 12px 0 20px;
 }
 .chat-input {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 12px 12px 12px 18px;
-  border-radius: 0;
-  background: var(--nb-card-bg);
+  padding: 10px 10px 10px 18px;
+  border-radius: 24px;
+  background: var(--nb-card-bg-solid);
   border: 1px solid var(--nb-border);
-  border-left: 2px solid var(--nb-accent);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--nb-card-shadow);
-  clip-path: polygon(
-    12px 0, 100% 0, 100% calc(100% - 12px),
-    calc(100% - 12px) 100%, 0 100%, 0 12px
-  );
+  box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.12);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .chat-input:focus-within {
-  border-color: var(--nb-border-strong);
-  border-left-color: var(--nb-accent);
-  box-shadow: var(--nb-card-shadow), 0 0 16px -4px var(--nb-accent);
+  border-color: color-mix(in srgb, var(--nb-accent) 55%, var(--nb-border));
+  box-shadow: 0 0 0 3px var(--nb-accent-soft), 0 4px 24px -6px rgba(0, 0, 0, 0.12);
 }
 .chat-input__field {
   flex: 1;
-  min-height: 24px;
+  min-height: 22px;
   max-height: 150px;
   resize: none;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--nb-text-primary);
   font-family: inherit;
 }
@@ -703,36 +709,35 @@ function fmtTime(iso?: string): string {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 0;
-  border: 1px solid var(--nb-accent);
+  border-radius: 50%;
+  border: none;
   background: var(--nb-accent);
   color: #050508;
   cursor: pointer;
   flex-shrink: 0;
-  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
-  transition: all 0.2s var(--nb-ease-spring);
+  transition: all 0.2s ease;
 }
 .chat-input__send:hover:not(:disabled) {
   background: var(--nb-accent-hover);
-  box-shadow: var(--nb-glow-accent);
-  transform: scale(1.05);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--nb-accent) 50%, transparent);
+  transform: scale(1.06);
+}
+.chat-input__send:active:not(:disabled) {
+  transform: scale(0.96);
 }
 .chat-input__send:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 .chat-input__stop {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 14px;
-  border-radius: 0;
+  padding: 7px 16px;
+  border-radius: 999px;
   border: 1px solid var(--nb-border);
   background: var(--nb-card-bg);
-  font-family: var(--nb-font-mono);
   font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--nb-text-secondary);
   cursor: pointer;
   flex-shrink: 0;

@@ -271,7 +271,7 @@ public class DocumentService {
                 Document doc = docs.get(docId);
                 Kb kb = doc != null && doc.getKbId() != null ? kbs.get(doc.getKbId()) : null;
                 return new SearchResult(docId, doc == null ? null : doc.getTitle(), d.getText(), d.getScore(),
-                    kb == null ? null : kb.getName());
+                    doc == null ? null : doc.getKbId(), kb == null ? null : kb.getName());
             })
             .toList();
         log.info("搜索完成 query=[{}] kbId={} 候选={} 命中={} 耗时={}ms", query, kbId, matches.size(), results.size(),

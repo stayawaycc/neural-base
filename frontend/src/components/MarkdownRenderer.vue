@@ -99,14 +99,19 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
 </template>
 
 <style scoped>
-/* AI 回答排版:全部走 CSS 变量双主题化(旧版深色专用样式在浅色下隐形,已修复) */
+/* AI 回答排版:参考 DeepSeek/Kimi 的回复格式(标题层级/段落呼吸/列表/代码块/表格),
+   配色保留赛博双主题 token */
 .md-body {
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.75;
   color: var(--nb-text-primary);
+  word-break: break-word;
 }
 .md-body :deep(p) {
-  margin: 0.6em 0;
+  margin: 1.2em 0;
+}
+.md-body :deep(p:first-child) {
+  margin-top: 0;
 }
 /* 标题层级 */
 .md-body :deep(h1),
@@ -116,76 +121,85 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.4;
-  margin: 1.4em 0 0.5em;
+  margin: 1.5em 0 0.6em;
 }
 .md-body :deep(h1) {
-  font-size: 1.35em;
+  font-size: 1.25em;
 }
 .md-body :deep(h2) {
-  font-size: 1.2em;
+  font-size: 1.12em;
   padding-bottom: 0.35em;
   border-bottom: 1px solid var(--nb-border);
 }
 .md-body :deep(h3) {
-  font-size: 1.08em;
+  font-size: 1em;
 }
 .md-body :deep(h4) {
-  font-size: 1em;
+  font-size: 0.95em;
   color: var(--nb-text-secondary);
 }
-/* 列表 */
+/* 列表:清晰的项目符号 + 舒适缩进 */
 .md-body :deep(ul),
 .md-body :deep(ol) {
   margin: 0.5em 0;
-  padding-left: 1.5em;
+  padding-left: 1.6em;
 }
 .md-body :deep(li) {
-  margin: 0.3em 0;
+  margin: 0.35em 0;
+  line-height: 1.7;
 }
 .md-body :deep(li::marker) {
-  color: var(--nb-text-faint);
+  color: var(--nb-text-secondary);
+  font-weight: 600;
+}
+.md-body :deep(li > ul),
+.md-body :deep(li > ol) {
+  margin: 0.2em 0;
 }
 /* 引用块:霓虹光条 + 淡底 */
 .md-body :deep(blockquote) {
-  margin: 0.9em 0;
+  margin: 1em 0;
   padding: 0.6em 1em;
   border-left: 3px solid var(--nb-accent);
-  border-radius: 0;
+  border-radius: 4px;
   background: var(--nb-accent-soft);
   color: var(--nb-text-secondary);
 }
 .md-body :deep(blockquote p) {
-  margin: 0.3em 0;
+  margin: 0.35em 0;
 }
 /* 行内代码 */
 .md-body :deep(code) {
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-  font-size: 0.88em;
+  font-size: 0.85em;
   background: var(--nb-nav-active-bg);
   border: 1px solid var(--nb-border);
-  border-radius: 2px;
+  border-radius: 4px;
   padding: 0.15em 0.4em;
 }
-/* 代码块(背景由 hljs 主题 css 提供,这里补边框/复制按钮) */
+/* 代码块:圆角 + 内边距 + 横向滚动(DeepSeek 风格) */
 .md-body :deep(pre.code-block) {
   position: relative;
-  margin: 0.9em 0;
-  border-radius: 0;
+  margin: 1em 0;
+  padding: 14px 16px;
+  border-radius: 8px;
   border: 1px solid var(--nb-border);
-  border-left: 2px solid var(--nb-accent);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--nb-code-bg, var(--nb-surface));
 }
 .md-body :deep(pre.code-block code) {
   background: transparent;
   border: none;
   padding: 0;
-  font-size: 0.9em;
+  font-size: 13px;
+  line-height: 1.6;
 }
 .md-body :deep(.code-copy-btn) {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 2px 10px;
+  top: 10px;
+  right: 10px;
+  padding: 3px 12px;
   font-size: 11px;
   font-family: var(--nb-font-mono);
   letter-spacing: 0.06em;
@@ -193,9 +207,9 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
   color: var(--nb-text-faint);
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
-  border-radius: 0;
+  border-radius: 4px;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 .md-body :deep(.code-copy-btn:hover) {
   color: var(--nb-accent);
@@ -215,30 +229,41 @@ watch(() => props.content, () => void nextTick(injectCopyButtons))
 .md-body :deep(hr) {
   border: none;
   border-top: 1px solid var(--nb-border);
-  margin: 1.4em 0;
+  margin: 1.5em 0;
 }
-/* 表格:极淡分隔线 + 悬停行高亮(隐形结构) */
+/* 表格:整块边框包裹 + 行悬停(Kimi 风格) */
 .md-body :deep(table) {
   width: 100%;
   border-collapse: collapse;
-  margin: 0.9em 0;
-  font-size: 0.9em;
+  margin: 1em 0;
+  font-size: 12px;
+  border: 1px solid var(--nb-border);
+  border-radius: 8px;
+  overflow: hidden;
 }
 .md-body :deep(th) {
   text-align: left;
   font-weight: 600;
   color: var(--nb-text-primary);
+  background: var(--nb-nav-active-bg);
   border-bottom: 1px solid var(--nb-border);
-  padding: 8px 12px;
+  padding: 9px 12px;
 }
 .md-body :deep(td) {
   border-bottom: 1px solid var(--nb-border);
-  padding: 8px 12px;
+  padding: 9px 12px;
 }
 .md-body :deep(tr:hover) {
   background: var(--nb-nav-active-bg);
 }
 .md-body :deep(tr:last-child td) {
   border-bottom: none;
+}
+/* 强调词:极淡品牌色底,像荧光笔标记 */
+.md-body :deep(strong) {
+  font-weight: 600;
+  background: var(--nb-accent-soft);
+  border-radius: 3px;
+  padding: 0 3px;
 }
 </style>

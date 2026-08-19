@@ -67,10 +67,10 @@ public class ChatService {
         conversationService.touch(convId);
 
         List<Message> history = messageMapper.selectRecentAsc(convId, HISTORY_WINDOW);
-        List<RagSource> sources = req.kbId() == null ? List.of()
-            : documentService.search(req.question(), req.kbId(), TOP_K).stream()
-                .map(r -> new RagSource(r.docId(), r.title(), r.content(), r.score()))
-                .toList();
+        boolean ragMode = Boolean.TRUE.equals(req.rag()) || req.kbId() != null;
+        List<RagSource> sources = ragMode ? documentService.search(req.question(), req.kbId(), TOP_K).stream()
+            .map(r -> new RagSource(r.docId(), r.title(), r.content(), r.score(), r.kbId(), r.kbName()))
+            .toList() : List.of();
 
         List<org.springframework.ai.chat.messages.Message> promptMessages = new ArrayList<>();
         promptMessages.add(new SystemMessage(buildSystemPrompt(req.kbId(), sources)));
