@@ -13,6 +13,7 @@ import com.neuralbase.mapper.KbMapper;
 import com.neuralbase.news.AiKeywordFilter;
 import com.neuralbase.news.NewsFetcher;
 import com.neuralbase.news.NewsItem;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,6 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class DailyNewsService {
@@ -33,6 +37,8 @@ public class DailyNewsService {
     private static final Logger log = LoggerFactory.getLogger(DailyNewsService.class);
     // AI 摘要并发数:单条 ~5s,串行一轮 10+ 分钟;4 并发可将等待压缩到 1/4
     private static final int SUMMARIZE_PARALLELISM = 4;
+    // 单源爬取兜底超时:JDK HttpClient 的 timeout 不覆盖 DNS 解析,坏域名可能无限挂起
+    private static final int FETCH_TIMEOUT_SECONDS = 60;
     private static final String TASK_TYPE = "DAILY_NEWS";
     private static final String STATUS_RUNNING = "RUNNING";
     private static final String STATUS_SUCCESS = "SUCCESS";
@@ -70,6 +76,17 @@ public class DailyNewsService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /** 启动补偿:上一进程遗留的 RUNNING 日报任务(进程崩溃/重启中断)置为 FAILED,否则 WHERE NOT EXISTS 会永久拒绝新爬取。 */
+    @PostConstruct
+    void recoverStuckTasks() {
+        int n = jdbcTemplate.update(
+            "UPDATE crawl_task SET status = ?, error = ? WHERE type = ? AND status = ?",
+            STATUS_FAILED, "服务重启,任务中断", TASK_TYPE, STATUS_RUNNING);
+        if (n > 0) {
+            log.info("清理遗留 RUNNING 日报爬取任务 {} 个", n);
+        }
+    }
+
     /** 手动/定时入口:原子创建 RUNNING 任务(WHERE NOT EXISTS),无 RUNNING 任务时插入并返回,否则抛异常。 */
     public void startCrawl() {
         int inserted = jdbcTemplate.update(
@@ -91,13 +108,20 @@ public class DailyNewsService {
     public void runCrawlNow() {
         CrawlTask task = latestTaskByStatus(STATUS_RUNNING);
         try {
+            // 逐源爬取:每完成一个源更新一次进度(0 → 50),跳过的源也计入分母
+            int doneSources = 0;
             for (NewsFetcher fetcher : fetchers) {
+                doneSources++;
+                if (task != null) {
+                    updateTask(task.getId(), STATUS_RUNNING,
+                        (int) Math.round(50.0 * doneSources / fetchers.size()), null);
+                }
                 if (fetcher.sourceName() != null && !sourceEnabled(fetcher.sourceName())) {
                     continue; // 停用的内置源跳过
                 }
                 List<NewsItem> items;
                 try {
-                    items = fetcher.fetch();
+                    items = fetchWithTimeout(fetcher);
                 } catch (Exception e) {
                     log.warn("新闻源爬取失败: {}", e.getMessage());
                     continue; // 单源失败不影响整轮
@@ -138,6 +162,8 @@ public class DailyNewsService {
             List<DailyNews> pending = dailyNewsMapper.selectList(
                 new LambdaQueryWrapper<DailyNews>().isNull(DailyNews::getSummary));
             ExecutorService pool = Executors.newFixedThreadPool(SUMMARIZE_PARALLELISM);
+            int total = pending.size();
+            AtomicInteger summarized = new AtomicInteger();
             try {
                 var futures = pending.stream()
                     .map(n -> pool.submit(() -> {
@@ -149,6 +175,12 @@ public class DailyNewsService {
                             log.warn("新闻摘要失败 id={}: {}", n.getId(), e.getMessage());
                         }
                         dailyNewsMapper.updateById(n);
+                        // 每 5 条更新一次进度(50 → 100),最后一次保证到 99,最终 SUCCESS 置 100
+                        int done = summarized.incrementAndGet();
+                        if (task != null && (done % 5 == 0 || done == total)) {
+                            int p = 50 + (int) Math.round(50.0 * done / total);
+                            updateTask(task.getId(), STATUS_RUNNING, Math.min(99, p), null);
+                        }
                     }))
                     .toList();
                 for (Future<?> f : futures) {
@@ -300,6 +332,20 @@ public class DailyNewsService {
     }
 
     // ---------- 私有 ----------
+
+    /** 单源爬取兜底超时:独立线程执行,DNS 挂起/连接黑洞也最多等 60s,超时中断并跳过。 */
+    private List<NewsItem> fetchWithTimeout(NewsFetcher fetcher) throws Exception {
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            Future<List<NewsItem>> f = pool.submit(fetcher::fetch);
+            return f.get(FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            throw new IllegalStateException("源爬取超时(" + FETCH_TIMEOUT_SECONDS + "s): "
+                + (fetcher.sourceName() == null ? fetcher.getClass().getSimpleName() : fetcher.sourceName()));
+        } finally {
+            pool.shutdownNow();
+        }
+    }
 
     private CrawlTask latestTaskByStatus(String status) {
         return crawlTaskMapper.selectList(

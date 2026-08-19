@@ -573,20 +573,32 @@ function onOpenSource(s: RagSource) {
 
 /* 知识库选择 */
 .chat-kb-select {
-  padding: 5px 10px;
-  border-radius: 0;
-  border: 1px solid var(--nb-border);
-  background: var(--nb-card-bg);
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 6px 30px 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background-color: var(--nb-card-bg-solid);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
   font-family: var(--nb-font-mono);
   font-size: 12px;
   color: var(--nb-text-primary);
   cursor: pointer;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.dark .chat-kb-select {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+.chat-kb-select:hover {
+  border-color: var(--nb-accent);
+  background-color: var(--nb-accent-soft);
 }
 .chat-kb-select:focus {
   border-color: var(--nb-accent);
-  box-shadow: 0 0 10px -4px var(--nb-accent);
+  box-shadow: 0 0 0 3px var(--nb-accent-soft);
 }
 .chat-kb-tag {
   padding: 3px 10px;

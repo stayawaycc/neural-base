@@ -5,7 +5,7 @@ import { Icon } from '@iconify/vue'
 import { useNewsStore } from '@/stores/news'
 import { listKbs } from '@/api/kb'
 import { message } from '@/utils/feedback'
-import type { Kb } from '@/types'
+import type { Kb, NewsItem } from '@/types'
 
 const newsStore = useNewsStore()
 const crawling = ref(false)
@@ -13,6 +13,36 @@ const favoriteModal = ref(false)
 const favoriteNewsId = ref<number | null>(null)
 const favoriteKbId = ref<number | null>(null)
 const kbs = ref<Kb[]>([])
+
+/* 悬浮预览:延迟 300ms 后 fixed 定位(避免滚动容器裁剪) */
+const hoverPreview = ref<{ n: NewsItem; x: number; y: number } | null>(null)
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+function clearPreviewTimer() {
+  if (previewTimer) {
+    clearTimeout(previewTimer)
+    previewTimer = null
+  }
+}
+function onCardEnter(e: MouseEvent, n: NewsItem) {
+  clearPreviewTimer()
+  // currentTarget 在事件处理结束后会被重置为 null,鼠标坐标需提前缓存
+  const mx = e.clientX
+  const my = e.clientY
+  const w = 300
+  const h = 180
+  previewTimer = setTimeout(() => {
+    const gap = 14
+    let x = mx + gap
+    let y = my + gap
+    if (x + w > window.innerWidth - 8) x = mx - w - gap
+    if (y + h > window.innerHeight - 8) y = my - h - gap
+    hoverPreview.value = { n, x: Math.max(8, x), y: Math.max(8, y) }
+  }, 300)
+}
+function onCardLeave() {
+  clearPreviewTimer()
+  hoverPreview.value = null
+}
 
 const sortOptions: SelectOption[] = [
   { label: '最新', value: 'created_desc' },
@@ -63,9 +93,17 @@ const categoryStyles: Record<string, { color: string; bg: string }> = {
 }
 
 onMounted(async () => {
-  await newsStore.load()
-  await newsStore.loadSources()
   await newsStore.refreshTask()
+  try {
+    await newsStore.load()
+  } catch {
+    /* 列表加载失败不阻塞任务状态展示 */
+  }
+  try {
+    await newsStore.loadSources()
+  } catch {
+    /* 来源加载失败不阻塞任务状态展示 */
+  }
 })
 
 onBeforeUnmount(() => newsStore.stopPolling())
@@ -228,6 +266,8 @@ async function onCleanupNonAi() {
         :key="n.id"
         class="news-card"
         :class="!n.isRead ? 'news-card--unread' : ''"
+        @mouseenter="onCardEnter($event, n)"
+        @mouseleave="onCardLeave"
       >
         <div class="news-card__main">
           <div class="news-card__top">
@@ -282,6 +322,25 @@ async function onCleanupNonAi() {
         :item-count="newsStore.total"
         @update:page="newsStore.page = $event"
       />
+    </div>
+
+    <!-- 悬浮预览浮层 -->
+    <div
+      v-if="hoverPreview"
+      class="news-preview"
+      :style="{ left: hoverPreview.x + 'px', top: hoverPreview.y + 'px' }"
+    >
+      <div class="news-preview__title">{{ hoverPreview.n.title }}</div>
+      <div class="news-preview__summary">
+        {{ hoverPreview.n.summary || '暂无摘要' }}
+      </div>
+      <div class="news-preview__meta">
+        <div class="news-preview__meta-left">
+          <span v-if="hoverPreview.n.category" class="news-preview__tag">{{ hoverPreview.n.category }}</span>
+          <span v-if="hoverPreview.n.sourceName" class="news-preview__src">{{ hoverPreview.n.sourceName }}</span>
+        </div>
+        <span class="news-preview__time">{{ fmtTime(hoverPreview.n.createdAt) }}</span>
+      </div>
     </div>
 
     <!-- 收藏弹窗 -->
@@ -435,7 +494,7 @@ async function onCleanupNonAi() {
   background: var(--nb-alert-soft);
 }
 
-/* 爬取进度:分段式 */
+/* 爬取进度:分段式(跳格增长,一格一格亮) */
 .news-crawl-progress {
   display: flex;
   align-items: center;
@@ -443,8 +502,8 @@ async function onCleanupNonAi() {
 }
 .news-crawl-progress__bar {
   position: relative;
-  width: 90px;
-  height: 5px;
+  width: 200px;
+  height: 6px;
   border-radius: 0;
   background: var(--nb-nav-active-bg);
   border: 1px solid var(--nb-border);
@@ -457,8 +516,8 @@ async function onCleanupNonAi() {
   pointer-events: none;
   background: repeating-linear-gradient(
     90deg,
-    transparent 0 8px,
-    var(--nb-bg) 8px 10px
+    transparent 0 10px,
+    var(--nb-bg) 10px 12px
   );
 }
 .news-crawl-progress__fill {
@@ -466,7 +525,6 @@ async function onCleanupNonAi() {
   border-radius: 0;
   background: var(--nb-accent);
   box-shadow: 0 0 8px var(--nb-accent);
-  transition: width 0.3s ease;
 }
 .news-crawl-progress__text {
   font-family: var(--nb-font-mono);
@@ -760,6 +818,113 @@ async function onCleanupNonAi() {
 }
 @media (prefers-reduced-motion: reduce) {
   .news-card__unread-dot { animation: none; }
+}
+
+/* ==================== 悬浮预览浮层 ==================== */
+.news-preview {
+  position: fixed;
+  z-index: 1000;
+  width: 300px;
+  max-width: 320px;
+  pointer-events: none;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  animation: news-preview-in 0.2s ease-out;
+}
+.dark .news-preview {
+  background: var(--nb-card-bg-solid);
+  border-color: var(--nb-border);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.5),
+    0 8px 10px -6px rgba(0, 0, 0, 0.5);
+}
+@keyframes news-preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.news-preview__title {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dark .news-preview__title {
+  color: var(--nb-text-primary);
+}
+.news-preview__summary {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b7280;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.dark .news-preview__summary {
+  color: var(--nb-text-secondary);
+}
+.news-preview__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+.news-preview__meta-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.news-preview__tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 135, 160, 0.1);
+  color: var(--nb-accent);
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.dark .news-preview__tag {
+  background: rgba(0, 240, 255, 0.12);
+}
+.news-preview__src {
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dark .news-preview__src {
+  color: var(--nb-text-secondary);
+}
+.news-preview__time {
+  font-size: 12px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+.dark .news-preview__time {
+  color: var(--nb-text-faint);
+}
+@media (prefers-reduced-motion: reduce) {
+  .news-preview {
+    animation: none;
+  }
 }
 
 /* ==================== 空态 ==================== */

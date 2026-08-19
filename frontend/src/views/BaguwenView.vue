@@ -203,7 +203,15 @@ async function onFavoriteConfirm() {
             </div>
           </div>
           <div class="bw-task__meta">
-            <span class="bw-task__badge" :style="{ color: taskStatusMeta[t.status].color, background: taskStatusMeta[t.status].bg }">
+            <span
+              v-if="t.status === 'SUCCESS'"
+              class="bw-task__badge bw-task__badge--success"
+            >成功</span>
+            <span
+              v-else
+              class="bw-task__badge"
+              :style="{ color: taskStatusMeta[t.status].color, background: taskStatusMeta[t.status].bg }"
+            >
               {{ taskStatusMeta[t.status].label }}
             </span>
             <button v-if="t.status === 'FAILED'" class="bw-task__retry" @click="baguwenStore.retry(t.id)">重试</button>
@@ -390,16 +398,16 @@ async function onFavoriteConfirm() {
 /* ==================== 导入区 ==================== */
 .bw-import {
   padding: 24px;
-  border-radius: 0;
+  border-radius: 10px;
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
   border-left: 2px solid var(--nb-alert);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--nb-card-shadow);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 .bw-import__header {
   display: flex;
@@ -430,17 +438,16 @@ async function onFavoriteConfirm() {
 }
 .bw-import__textarea {
   width: 100%;
-  padding: 12px 14px;
-  border-radius: 0;
+  padding: 14px 16px;
+  border-radius: 8px;
   border: 1px solid var(--nb-border);
-  border-bottom: 2px solid var(--nb-border);
   background: var(--nb-surface);
   font-family: var(--nb-font-mono);
   font-size: 12px;
   line-height: 1.6;
   color: var(--nb-text-primary);
   resize: vertical;
-  min-height: 72px;
+  min-height: 76px;
   max-height: 160px;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -450,8 +457,7 @@ async function onFavoriteConfirm() {
 }
 .bw-import__textarea:focus {
   border-color: var(--nb-accent);
-  border-bottom-color: var(--nb-accent);
-  box-shadow: 0 0 12px -6px var(--nb-accent);
+  box-shadow: 0 0 0 3px var(--nb-accent-soft);
 }
 .bw-import__footer {
   display: flex;
@@ -462,45 +468,36 @@ async function onFavoriteConfirm() {
   align-items: center;
   gap: 6px;
   padding: 9px 22px;
-  border-radius: 0;
+  border-radius: 8px;
   border: 1px solid var(--nb-accent);
-  background: transparent;
-  color: var(--nb-accent);
+  background: var(--nb-accent);
+  color: #050508;
   font-family: var(--nb-font-mono);
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.06em;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   cursor: pointer;
   transition: all 0.2s var(--nb-ease-spring);
 }
 .bw-import__btn:hover:not(:disabled) {
-  background: var(--nb-accent);
-  color: #050508;
+  background: var(--nb-accent-hover);
   box-shadow: var(--nb-glow-accent);
-  animation: bw-glitch-shift 0.3s steps(2) infinite;
+  transform: scale(1.02);
 }
 .bw-import__btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-@keyframes bw-glitch-shift {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(1px); }
-  50% { transform: translateX(-1px); }
-  75% { transform: translateX(0.5px); }
-  100% { transform: translateX(0); }
-}
 
 /* ==================== 任务区 ==================== */
 .bw-tasks {
   padding: 18px;
-  border-radius: 0;
+  border-radius: 10px;
   background: var(--nb-card-bg);
   border: 1px solid var(--nb-border);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--nb-card-shadow);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 .bw-tasks__header {
   display: flex;
@@ -552,7 +549,6 @@ async function onFavoriteConfirm() {
 .bw-tasks__list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 .bw-tasks__pagination {
   display: flex;
@@ -565,14 +561,17 @@ async function onFavoriteConfirm() {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: 0;
-  border: 1px solid transparent;
+  padding: 10px 10px;
+  border-radius: 6px;
+  border: none;
+  border-bottom: 1px solid var(--nb-border);
   transition: background 0.15s ease;
+}
+.bw-task:last-child {
+  border-bottom: none;
 }
 .bw-task:hover {
   background: var(--nb-nav-active-bg);
-  border-color: var(--nb-border);
 }
 .bw-task__dot {
   width: 7px;
@@ -635,6 +634,17 @@ async function onFavoriteConfirm() {
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.06em;
+}
+.bw-task__badge--success {
+  padding: 3px 12px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+.dark .bw-task__badge--success {
+  background: rgba(74, 222, 128, 0.16);
+  color: #4ade80;
 }
 .bw-task__retry {
   padding: 2px 8px;

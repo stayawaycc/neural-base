@@ -49,6 +49,7 @@ public class GenericHtmlNewsFetcher implements NewsFetcher {
                     .GET()
                     .build();
                 String html = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .build()
                     .send(request, HttpResponse.BodyHandlers.ofString())

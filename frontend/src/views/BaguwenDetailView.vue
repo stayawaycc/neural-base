@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NButton, NModal, NSelect, NTag } from 'naive-ui'
 import { Icon } from '@iconify/vue'
@@ -24,6 +24,13 @@ const difficultyMeta: Record<string, { type: 'success' | 'warning' | 'error'; la
   中等: { type: 'warning', label: '中等' },
   困难: { type: 'error', label: '困难' },
 }
+
+const readerParas = computed(() =>
+  (detail.value?.content ?? '')
+    .split(/\n{2,}/)
+    .map((s) => s.trim())
+    .filter(Boolean),
+)
 
 onMounted(async () => {
   try {
@@ -81,7 +88,7 @@ async function onFavoriteConfirm() {
         <h1 class="truncate text-xl font-semibold tracking-tight" style="color: var(--nb-text-primary)">
           {{ detail.title }}
         </h1>
-        <div class="mt-1 flex flex-wrap items-center gap-2">
+        <div class="mt-1 flex flex-wrap items-center gap-2 meta-row">
           <n-tag v-for="t in detail.tags" :key="t" size="tiny" :bordered="false">
             {{ t }}
           </n-tag>
@@ -144,13 +151,9 @@ async function onFavoriteConfirm() {
           </div>
         </v-window-item>
         <v-window-item value="article">
-          <div class="p-4">
-            <pre
-              v-if="detail.content"
-              class="whitespace-pre-wrap text-sm leading-relaxed"
-              style="color: var(--nb-text-secondary)"
-            >{{ detail.content }}</pre>
-            <div v-else class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
+          <div class="reader">
+            <p v-for="(para, i) in readerParas" :key="i" class="reader__para">{{ para }}</p>
+            <div v-if="!detail.content" class="py-8 text-center text-sm text-gray-400 dark:text-gray-600">
               未提取到原文
             </div>
           </div>
@@ -179,6 +182,30 @@ async function onFavoriteConfirm() {
 </template>
 
 <style scoped>
+/* 元数据:小字号 + 浅灰,与正文对比 */
+.meta-row :deep(.n-tag__content) {
+  font-size: 11px;
+  color: var(--nb-text-faint);
+}
+
+/* 原文阅读排版:大行高 + 段落呼吸 + 限宽 */
+.reader {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 12px 8px 20px;
+}
+.reader__para {
+  margin-bottom: 1.5em;
+  font-size: 16px;
+  line-height: 1.8;
+  text-align: justify;
+  color: var(--nb-text-primary);
+  word-break: break-word;
+}
+.reader__para:last-child {
+  margin-bottom: 0;
+}
+
 /* 问答序号徽章:霓虹空心数字 */
 .qa-badge {
   display: inline-flex;
